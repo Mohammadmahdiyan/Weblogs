@@ -10,8 +10,34 @@ import {
 } from 'react'
 import { clsx } from 'clsx'
 import { Copy, ExternalLink, Link2 } from 'lucide-react'
-import { useLightbox } from '../lib/lightbox'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
+import { withMdxErrorBoundary } from '../lib/mdx-component'
+import {
+  Alert,
+  Avatar,
+  Badge,
+  Breadcrumbs,
+  Button,
+  Buttons,
+  Card,
+  Collapse,
+  Course,
+  IconButton,
+  Lead,
+  List,
+  Pagination,
+  Popover,
+  Rating,
+  Select,
+  Skeleton,
+  Spinner,
+  Suggested,
+  Switch,
+  Tooltip,
+  UnknownDirective,
+} from './mdx/ContentBlocks'
+import { AccordionItem as MdxAccordionItem, Accordion as MdxAccordion, Modal } from './mdx/InteractiveBlocks'
+import { AudioDirective, Gallery, MarkdownImage, MarkdownVideo, VideoDirective } from './mdx/MediaBlocks'
 
 type HeadingTag = 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
 type HeadingProps = ComponentPropsWithoutRef<'h2'> & { id?: string }
@@ -28,7 +54,7 @@ function createHeading(tag: HeadingTag) {
           <a
             href={`#${id}`}
             aria-label="پیوند به این عنوان"
-            className="absolute -start-6 top-1 hidden text-gray-400 group-hover:inline-flex group-focus-within:inline-flex dark:text-gray-500"
+            className="absolute -start-6 top-1 hidden text-[var(--text-muted)] group-hover:inline-flex group-focus-within:inline-flex"
           >
             <Link2 aria-hidden="true" className="size-4" />
           </a>
@@ -45,9 +71,7 @@ function Paragraph(props: ComponentPropsWithoutRef<'p'>) {
 function Anchor({ href, target, rel, children, className, ...props }: ComponentPropsWithoutRef<'a'>) {
   const isExternal = typeof href === 'string' && /^https?:\/\//i.test(href)
   const safeTarget = isExternal ? '_blank' : target
-  const safeRel = isExternal
-    ? clsx(rel, 'noopener noreferrer')
-    : rel
+  const safeRel = isExternal ? clsx(rel, 'noopener noreferrer') : rel
 
   return (
     <a
@@ -55,7 +79,7 @@ function Anchor({ href, target, rel, children, className, ...props }: ComponentP
       href={href}
       target={safeTarget}
       rel={safeRel}
-      className={clsx('text-teal-700 underline decoration-teal-700/40 underline-offset-4 dark:text-teal-300', className)}
+      className={clsx('text-[var(--info)] underline decoration-[var(--info)]/40 underline-offset-4', className)}
     >
       {children}
       {isExternal && <ExternalLink aria-hidden="true" className="ms-1 inline size-3.5 align-text-top" />}
@@ -72,14 +96,14 @@ function OrderedList(props: ComponentPropsWithoutRef<'ol'>) {
 }
 
 function ListItem(props: ComponentPropsWithoutRef<'li'>) {
-  return <li {...props} className={clsx('ps-1 marker:text-teal-700 dark:marker:text-teal-300', props.className)} />
+  return <li {...props} className={clsx('ps-1 marker:text-[var(--brand)]', props.className)} />
 }
 
 function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
   return (
     <blockquote
       {...props}
-      className={clsx('border-s-4 border-teal-700/50 ps-4 text-start dark:border-teal-300/50', props.className)}
+      className={clsx('border-s-4 border-[var(--border-strong)] ps-4 text-start', props.className)}
     />
   )
 }
@@ -112,21 +136,21 @@ function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
   }
 
   return (
-    <div className="not-prose my-6 overflow-hidden rounded-lg border border-gray-200 bg-gray-950 text-gray-100 dark:border-gray-700">
-      <div className="flex items-center justify-between border-b border-gray-700 px-4 py-2 text-xs text-gray-300">
+    <div className="not-prose my-6 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface-alt)] text-[var(--text)]">
+      <div className="flex items-center justify-between border-b border-[var(--border-light)] px-4 py-2 text-xs text-[var(--text-muted)]">
         <span dir="ltr" className="font-mono">{language}</span>
         <button
           type="button"
           onClick={() => void copyCode()}
           aria-label={copied ? 'کپی شد' : 'کپی کد'}
           title={copied ? 'کپی شد' : 'کپی کد'}
-          className="inline-flex items-center gap-1 rounded px-2 py-1 hover:bg-gray-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400"
+          className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 hover:bg-[var(--surface-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]"
         >
           <Copy aria-hidden="true" className="size-3.5" />
           <span>{copied ? 'کپی شد' : 'کپی'}</span>
         </button>
       </div>
-      <pre dir="ltr" className="m-0 overflow-x-auto p-4 text-start text-sm leading-6">
+      <pre dir="ltr" className="m-0 overflow-x-auto p-4 text-start text-sm leading-6 text-[var(--text)]">
         {children}
       </pre>
     </div>
@@ -138,7 +162,7 @@ function InlineCode({ children, className, ...props }: ComponentPropsWithoutRef<
     <code
       {...props}
       dir="ltr"
-      className={clsx('rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-gray-800', className)}
+      className={clsx('rounded-[var(--radius-sm)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-mono text-[0.9em] text-[var(--text)]', className)}
     >
       {children}
     </code>
@@ -149,66 +173,36 @@ function Table(props: ComponentPropsWithoutRef<'table'>) {
   const { children, className, ...rest } = props
   return (
     <div className="my-6 max-w-full overflow-x-auto">
-      <table {...rest} className={clsx('w-full border-collapse text-start', className)}>
+      <table {...rest} className={clsx('w-full border-collapse text-start [&_tbody_tr:nth-child(even)]:bg-[var(--surface-alt)]', className)}>
         {children}
       </table>
     </div>
   )
 }
 
+function TableHead(props: ComponentPropsWithoutRef<'thead'>) {
+  return <thead {...props} className={clsx('sticky top-0 z-10 bg-[var(--surface-strong)]', props.className)} />
+}
+
+function TableRow(props: ComponentPropsWithoutRef<'tr'>) {
+  return <tr {...props} className={clsx('border-b border-[var(--border-light)]', props.className)} />
+}
+
+function TableHeaderCell(props: ComponentPropsWithoutRef<'th'>) {
+  return <th {...props} className={clsx('border-b border-[var(--border-strong)] px-3 py-2 text-start font-semibold text-[var(--text)]', props.className)} />
+}
+
+function TableCell(props: ComponentPropsWithoutRef<'td'>) {
+  return <td {...props} className={clsx('border-b border-[var(--border-light)] px-3 py-2 text-start text-[var(--text)]', props.className)} />
+}
+
 function HorizontalRule(props: ComponentPropsWithoutRef<'hr'>) {
-  return <hr {...props} className={clsx('my-8 border-0 border-t border-gray-300 dark:border-gray-700', props.className)} />
-}
-
-function Image({ src, alt = '', width, height, title, className, style, ...props }: ComponentPropsWithoutRef<'img'>) {
-  const openLightbox = useLightbox()
-  const dimensions = width && height ? { aspectRatio: `${width} / ${height}` } : undefined
-
-  return (
-    <button
-      type="button"
-      onClick={() => src && openLightbox({ url: src, type: 'image', alt })}
-      aria-label={alt ? `نمایش تصویر: ${alt}` : 'نمایش تصویر'}
-      className="my-4 block max-w-full cursor-zoom-in overflow-hidden rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600"
-    >
-      <img
-        {...props}
-        src={src}
-        alt={alt}
-        title={title}
-        width={width}
-        height={height}
-        loading="lazy"
-        decoding="async"
-        style={{ ...style, ...dimensions }}
-        className={clsx('h-auto max-w-full', className)}
-      />
-    </button>
-  )
-}
-
-function Video({ src, onClick, className, ...props }: ComponentPropsWithoutRef<'video'>) {
-  const openLightbox = useLightbox()
-  return (
-    <video
-      {...props}
-      src={src}
-      onClick={(event) => {
-        onClick?.(event)
-        if (src) openLightbox({ url: src, type: 'video' })
-      }}
-      className={clsx('my-4 max-h-[80vh] w-full rounded-lg bg-black', className)}
-    />
-  )
-}
-
-function Audio(props: ComponentPropsWithoutRef<'audio'>) {
-  return <audio {...props} controls className={clsx('my-4 w-full', props.className)} />
+  return <hr {...props} className={clsx('my-8 border-0 border-t border-[var(--border-light)]', props.className)} />
 }
 
 function Iframe({ title, className, ...props }: ComponentPropsWithoutRef<'iframe'>) {
   return (
-    <div className="not-prose my-6 aspect-video w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900">
+    <div className="not-prose my-6 aspect-video w-full overflow-hidden rounded-[var(--radius-md)] bg-[var(--surface-alt)]">
       <iframe
         {...props}
         title={title || 'Embedded media'}
@@ -220,12 +214,43 @@ function Iframe({ title, className, ...props }: ComponentPropsWithoutRef<'iframe
 }
 
 function Details(props: ComponentPropsWithoutRef<'details'>) {
-  return <details {...props} className={clsx('my-4 rounded-lg border border-gray-200 px-4 dark:border-gray-700', props.className)} />
+  return <details {...props} className={clsx('my-4 rounded-[var(--radius-sm)] border border-[var(--border-light)] px-4', props.className)} />
 }
 
 function Summary(props: ComponentPropsWithoutRef<'summary'>) {
-  return <summary {...props} className={clsx('cursor-pointer py-3 text-start font-semibold', props.className)} />
+  return <summary {...props} className={clsx('cursor-pointer py-3 text-start font-semibold text-[var(--text)]', props.className)} />
 }
+
+const directiveComponents = {
+  'mdx-accordion': withMdxErrorBoundary('accordion', MdxAccordion),
+  'mdx-item': withMdxErrorBoundary('item', MdxAccordionItem),
+  'mdx-alert': withMdxErrorBoundary('alert', Alert),
+  'mdx-avatar': withMdxErrorBoundary('avatar', Avatar),
+  'mdx-badge': withMdxErrorBoundary('badge', Badge),
+  'mdx-breadcrumbs': withMdxErrorBoundary('breadcrumbs', Breadcrumbs),
+  'mdx-button': withMdxErrorBoundary('button', Button),
+  'mdx-buttons': withMdxErrorBoundary('buttons', Buttons),
+  'mdx-card': withMdxErrorBoundary('card', Card),
+  'mdx-collapse': withMdxErrorBoundary('collapse', Collapse),
+  'mdx-modal': withMdxErrorBoundary('modal', Modal),
+  'mdx-gallery': withMdxErrorBoundary('gallery', Gallery),
+  'mdx-iconbutton': withMdxErrorBoundary('iconbutton', IconButton),
+  'mdx-list': withMdxErrorBoundary('list', List),
+  'mdx-pagination': withMdxErrorBoundary('pagination', Pagination),
+  'mdx-popover': withMdxErrorBoundary('popover', Popover),
+  'mdx-rating': withMdxErrorBoundary('rating', Rating),
+  'mdx-select': withMdxErrorBoundary('select', Select),
+  'mdx-skeleton': withMdxErrorBoundary('skeleton', Skeleton),
+  'mdx-spinner': withMdxErrorBoundary('spinner', Spinner),
+  'mdx-switch': withMdxErrorBoundary('switch', Switch),
+  'mdx-tooltip': withMdxErrorBoundary('tooltip', Tooltip),
+  'mdx-lead': withMdxErrorBoundary('lead', Lead),
+  'mdx-video': withMdxErrorBoundary('video', VideoDirective),
+  'mdx-audio': withMdxErrorBoundary('audio', AudioDirective),
+  'mdx-suggested': withMdxErrorBoundary('suggested', Suggested),
+  'mdx-course': withMdxErrorBoundary('course', Course),
+  'mdx-unknown': withMdxErrorBoundary('unknown', UnknownDirective),
+} as unknown as MarkdownComponents
 
 const markdownComponents: MarkdownComponents = {
   h1: createHeading('h2'),
@@ -243,13 +268,18 @@ const markdownComponents: MarkdownComponents = {
   code: InlineCode,
   pre: Pre,
   table: Table,
+  thead: TableHead,
+  tr: TableRow,
+  th: TableHeaderCell,
+  td: TableCell,
   hr: HorizontalRule,
-  img: Image,
-  video: Video,
-  audio: Audio,
+  img: MarkdownImage,
+  video: MarkdownVideo,
+  audio: AudioDirective,
   iframe: Iframe,
   details: Details,
   summary: Summary,
+  ...directiveComponents,
 }
 
 interface MarkdownRendererProps {
@@ -266,10 +296,10 @@ interface RenderedMarkdown {
 function MarkdownSkeleton() {
   return (
     <div aria-label="در حال آماده‌سازی متن" aria-busy="true" className="animate-pulse space-y-4 py-2">
-      <div className="h-7 w-2/5 rounded bg-gray-200 dark:bg-gray-800" />
-      <div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-800" />
-      <div className="h-4 w-11/12 rounded bg-gray-200 dark:bg-gray-800" />
-      <div className="h-4 w-4/5 rounded bg-gray-200 dark:bg-gray-800" />
+      <div className="h-7 w-2/5 rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
+      <div className="h-4 w-full rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
+      <div className="h-4 w-11/12 rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
+      <div className="h-4 w-4/5 rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
     </div>
   )
 }
@@ -302,14 +332,14 @@ export function MarkdownRenderer({ markdown, className }: MarkdownRendererProps)
 
   if (rendered?.source !== markdown) return <MarkdownSkeleton />
   if (rendered.error) {
-    return <p role="alert" className="text-start text-red-700 dark:text-red-300">امکان نمایش متن وجود ندارد: {rendered.error}</p>
+    return <p role="alert" className="text-start text-[var(--danger)]">امکان نمایش متن وجود ندارد: {rendered.error}</p>
   }
 
   return (
     <article
       dir="rtl"
       className={clsx(
-        'prose prose-neutral max-w-none text-start dark:prose-invert',
+        'prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-headings:var(--text)] [--tw-prose-links:var(--info)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-counters:var(--brand)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-hr:var(--border-light)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-th-borders:var(--border-strong)] [--tw-prose-td-borders:var(--border-light)]',
         'prose-headings:text-start prose-p:text-start prose-ul:ps-6 prose-ol:ps-6',
         'prose-blockquote:border-s-4 prose-blockquote:ps-4 prose-li:ps-1',
         className,

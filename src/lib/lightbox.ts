@@ -7,7 +7,7 @@ export interface LightboxMedia {
   alt?: string
 }
 
-export type OpenLightbox = (media: LightboxMedia) => void
+export type OpenLightbox = (media: LightboxMedia, gallery?: LightboxMedia[]) => void
 
 export const LightboxContext = createContext<OpenLightbox>(() => undefined)
 

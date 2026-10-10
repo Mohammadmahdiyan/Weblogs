@@ -39,10 +39,87 @@ const message = 'متن نمونه'
 console.log(message)
 ```
 
-:::accordion{title="جزئیات نمونه"}
-این متن خنثی داخل بخش بازشونده قرار دارد.
+::::accordion{faq}
+:::item{title="پرسش نمونه اول" open}
+پاسخ خنثی برای آزمایش ساختار سوالات متداول.
+:::
+:::item{title="پرسش نمونه دوم"}
+یک پاسخ کوتاه و نمونه برای مورد دوم.
+::::
+
+:::alert{type="info"}
+این پیام فقط برای نمایش حالت اطلاع‌رسانی است.
 :::
 
-:::alert{type="note"}
-این پیام آزمایشی است و اطلاعات واقعی ارائه نمی‌کند.
+::avatar{src="/content/married-prophet-with-ayesha/cover.svg" name="نویسنده نمونه" size="md"}
+
+:badge[نمونه]{color="blue"}
+
+:::breadcrumbs
+- [خانه](/)
+- [مقاله نمونه](/blog/married-prophet-with-ayesha)
+:::
+
+:button[خواندن مقاله]{href="/blog/married-prophet-with-ayesha" variant="filled" color="brand"}
+
+:::buttons
+:button[گزینه نخست]{href="/first" variant="outlined" color="blue"}
+:button[گزینه دوم]{href="/second" variant="text" color="green"}
+:::
+
+:::card{title="کارت نمونه" image="/content/married-prophet-with-ayesha/cover.svg"}
+متن خنثی کارت برای بررسی چیدمان.
+:::
+
+:::collapse{title="نمایش جزئیات بیشتر"}
+متن جزئیات نمونه.
+:::
+
+:::modal{trigger="بازکردن پنجره" title="پنجره نمونه"}
+محتوای کوتاه پنجره برای بررسی دیالوگ بومی.
+:::
+
+:::gallery
+![نمای نمونه نخست](/content/married-prophet-with-ayesha/cover.svg)
+![نمای نمونه دوم](/content/married-prophet-with-ayesha/cover.svg)
+:::
+
+:iconbutton[جستجو]{icon-name="search" href="/search"}
+
+:::list{variant="check"}
+- مورد بررسی نخست
+- مورد بررسی دوم
+:::
+
+:::pagination{total="5" current="2"}
+:::
+
+:popover[نمایش توضیح]{content="این توضیح فقط برای آزمایش است."}
+
+::rating{value="4.5" max="5"}
+
+::select{options="اول,دوم,سوم"}
+
+::skeleton{lines="3"}
+
+::spinner{size="md"}
+
+::switch{label="گزینه نمونه" checked}
+
+:tooltip[واژه نمونه]{text="توضیح کوتاه نمونه"}
+
+:::lead
+این متن نمونه برای نمایش مقدمه‌ی برجسته‌ی مقاله است.
+:::
+
+::video{poster="/content/married-prophet-with-ayesha/cover.svg"}
+
+::audio{}
+
+:::suggested{href="/blog/married-prophet-with-ayesha" label="مقاله پیشنهادی:"}
+[عنوان مقاله‌ی نمونه](/blog/married-prophet-with-ayesha)
+:::
+
+:::course{title="دوره نمونه" href="/courses/sample" image="/content/married-prophet-with-ayesha/cover.svg" label="دوره پیشنهادی" cta="مشاهده دوره"}
+توضیح کوتاه و خنثی دوره.
 :::

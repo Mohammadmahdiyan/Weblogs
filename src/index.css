@@ -4,6 +4,42 @@
 @source "../content/**/*.md";
 @source "../src/generated/bodies/*.md";
 
+:root {
+  --brand: #0f766e;
+  --brand-foreground: #ffffff;
+  --surface: #ffffff;
+  --surface-alt: #f5f7f6;
+  --surface-strong: #e7ecea;
+  --text: #202927;
+  --text-muted: #5b6763;
+  --border-light: #dce4e0;
+  --border-strong: #aab8b2;
+  --info: #0369a1;
+  --success: #15803d;
+  --warning: #a16207;
+  --danger: #b91c1c;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+}
+
+.dark {
+  --brand: #5eead4;
+  --brand-foreground: #10201d;
+  --surface: #111816;
+  --surface-alt: #1b2421;
+  --surface-strong: #2a3531;
+  --text: #e4ece8;
+  --text-muted: #a9b8b1;
+  --border-light: #33413b;
+  --border-strong: #53645c;
+  --info: #7dd3fc;
+  --success: #86efac;
+  --warning: #fcd34d;
+  --danger: #fca5a5;
+}
+
 @layer base {
   html {
     min-height: 100%;
