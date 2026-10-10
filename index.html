@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (() => {
+      const storedTheme = localStorage.theme
+      const theme = ['light', 'dark', 'system'].includes(storedTheme)
+        ? storedTheme
+        : 'system'
+      const useDarkTheme =
+        theme === 'dark' ||
+        (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+      document.documentElement.classList.toggle('dark', useDarkTheme)
+    })()
+  </script>
+  <title>وبلاگ اسلامی</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
