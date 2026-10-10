@@ -1,19 +1,28 @@
-import { Children, isValidElement, type ComponentPropsWithoutRef, type ReactNode } from 'react'
+import { Children, isValidElement, useEffect, useId, useRef, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 import { clsx } from 'clsx'
-import { LightboxContext, useLightbox, type LightboxMedia, type OpenLightbox } from '../../lib/lightbox'
+import { LightboxContext, useLightbox, useLightboxRegistration, type LightboxMedia, type OpenLightbox } from '../../lib/lightbox'
 
 export function MarkdownImage({
   src, alt = '', width, height, title, className, style, ...props
 }: ComponentPropsWithoutRef<'img'>) {
   const openLightbox = useLightbox()
+  const registerMedia = useLightboxRegistration()
+  const id = useId()
+  const imageButtonRef = useRef<HTMLButtonElement>(null)
   const dimensions = width && height ? { aspectRatio: `${width} / ${height}` } : undefined
+
+  useEffect(() => {
+    if (!src) return
+    return registerMedia(id, { url: src, type: 'image', alt, title: title ?? undefined }, imageButtonRef.current)
+  }, [alt, id, registerMedia, src, title])
 
   return (
     <button
+      ref={imageButtonRef}
       type="button"
-      onClick={() => src && openLightbox({ url: src, type: 'image', alt })}
+      onClick={() => src && openLightbox({ url: src, type: 'image', alt, title: title ?? undefined })}
       aria-label={alt ? `نمایش تصویر: ${alt}` : 'نمایش تصویر'}
-      className="not-prose my-4 block max-w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--info)]"
+      className="not-prose my-4 flex h-auto w-full max-w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--info)]"
     >
       <img
         {...props}
@@ -25,7 +34,7 @@ export function MarkdownImage({
         loading="lazy"
         decoding="async"
         style={{ ...style, ...dimensions }}
-        className={clsx('h-auto max-w-full', className)}
+        className={clsx('block h-auto w-full max-w-full', className)}
       />
     </button>
   )
@@ -35,8 +44,18 @@ export function MarkdownVideo({
   src, poster, title, onClick, className, ...props
 }: ComponentPropsWithoutRef<'video'>) {
   const openLightbox = useLightbox()
+  const registerMedia = useLightboxRegistration()
+  const id = useId()
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (!src) return
+    return registerMedia(id, { url: src, type: 'video', alt: title, title, poster: poster ?? undefined }, videoRef.current)
+  }, [id, poster, registerMedia, src, title])
+
   return (
     <video
+      ref={videoRef}
       {...props}
       src={src}
       poster={poster}
@@ -45,7 +64,7 @@ export function MarkdownVideo({
       playsInline
       onClick={(event) => {
         onClick?.(event)
-        if (src) openLightbox({ url: src, type: 'video' })
+        if (src) openLightbox({ url: src, type: 'video', alt: title, title, poster: poster ?? undefined })
       }}
       className={clsx('my-4 max-h-[80vh] w-full rounded-[var(--radius-sm)] bg-[var(--surface-strong)]', className)}
     />

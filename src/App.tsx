@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import articleData from './generated/articles.json'
 import { articleBodies } from './generated/bodies'
 import type { ArticleMeta } from './lib/types'
+import { CoverMedia } from './components/CoverMedia'
 
 const articles = articleData as ArticleMeta[]
 const MarkdownRenderer = lazy(() =>
@@ -31,6 +32,7 @@ function App() {
   return (
     <main className="min-h-screen bg-white px-5 py-10 text-gray-900 dark:bg-gray-950 dark:text-gray-100 sm:px-8">
       <article className="mx-auto max-w-3xl">
+        {article && <CoverMedia cover={article.cover} title={article.title} />}
         <h1 className="mb-8 text-start text-3xl font-bold leading-tight">
           {article?.title ?? 'وبلاگ اسلامی'}
         </h1>
