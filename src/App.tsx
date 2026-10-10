@@ -1,49 +1,45 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
-import articleData from './generated/articles.json'
-import { articleBodies } from './generated/bodies'
+import { lazy, Suspense, useEffect } from 'react'
+import { Route, Routes, useLocation } from 'react-router-dom'
+import articlesJson from './generated/articles.json'
 import type { ArticleMeta } from './lib/types'
-import { CoverMedia } from './components/CoverMedia'
+import { SiteShell } from './components/SiteShell'
 
-const articles = articleData as ArticleMeta[]
-const MarkdownRenderer = lazy(() =>
-  import('./components/MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer })),
-)
+const articles = articlesJson as ArticleMeta[]
+const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
+const ArticlePage = lazy(() => import('./pages/ArticlePage').then((module) => ({ default: module.ArticlePage })))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })))
 
-function App() {
-  const article = articles[0]
-  const articleSlug = article?.slug
-  const [markdown, setMarkdown] = useState<string | null>(null)
+function RouteEffects() {
+  const location = useLocation()
 
   useEffect(() => {
-    if (!articleSlug) return
-    let cancelled = false
-    const loadBody = articleBodies[articleSlug]
-    if (!loadBody) return
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [location.pathname])
 
-    void loadBody().then((module) => {
-      if (!cancelled) setMarkdown(module.default)
-    })
+  return null
+}
 
-    return () => {
-      cancelled = true
-    }
-  }, [articleSlug])
-
+function LoadingScreen() {
   return (
-    <main className="min-h-screen bg-white px-5 py-10 text-gray-900 dark:bg-gray-950 dark:text-gray-100 sm:px-8">
-      <article className="mx-auto max-w-3xl">
-        {article && <CoverMedia cover={article.cover} title={article.title} />}
-        <h1 className="mb-8 text-start text-3xl font-bold leading-tight">
-          {article?.title ?? 'وبلاگ اسلامی'}
-        </h1>
-        {article && markdown !== null && (
-          <Suspense fallback={<div aria-busy="true" className="h-24 animate-pulse rounded bg-gray-100 dark:bg-gray-900" />}>
-            <MarkdownRenderer markdown={markdown} />
-          </Suspense>
-        )}
-      </article>
+    <main aria-busy="true" aria-label="بارگذاری صفحه" className="mx-auto grid min-h-[55vh] w-full max-w-3xl content-start gap-4 px-4 py-12">
+      <div className="h-8 w-2/5 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
+      <div className="h-4 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
+      <div className="h-4 w-5/6 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
     </main>
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <SiteShell articles={articles}>
+      <RouteEffects />
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/blog/:slug" element={<ArticlePage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </SiteShell>
+  )
+}
