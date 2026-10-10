@@ -1,4 +1,8 @@
 
+# عنوان سطح اول در بدنه
+
+این عنوان در بدنه باید به سطح دوم تبدیل شود تا عنوان مقاله تنها `h1` صفحه باقی بماند.
+
 ## بخش نمونه
 
 این متن نمونه برای نمایش ساختار مقاله است و هیچ ادعای تاریخی یا دینی مطرح نمی‌کند.
@@ -22,6 +26,11 @@
 <img src="/content/married-prophet-with-ayesha/cover.svg" srcset="data:image/svg+xml;base64,PHN2Zy8+ 1x, /content/married-prophet-with-ayesha/cover.svg 2x" alt="تصویر HTML نمونه" />
 <a href="/content/married-prophet-with-ayesha/cover.svg">پیوند تصویر نمونه</a>
 <video poster="/content/married-prophet-with-ayesha/cover.svg" controls width="320" height="180"></video>
+<div class="rounded bg-blue-100 p-4 text-start text-blue-900">HTML خام با کلاس‌های Tailwind v4</div>
+<details><summary>جزئیات HTML خام</summary><p>این بخش برای آزمون جزئیات و خلاصه است.</p></details>
+<audio controls></audio>
+<iframe src="about:blank" title="قاب نمونه" width="640" height="360"></iframe>
+<a href="https://example.com">پیوند بیرونی نمونه</a>
 
 [فایل پیوست نمونه](/content/married-prophet-with-ayesha/x)
 
