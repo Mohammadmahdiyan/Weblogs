@@ -12,6 +12,7 @@ import { clsx } from 'clsx'
 import { Copy, ExternalLink, Link2 } from 'lucide-react'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
 import { withMdxErrorBoundary } from '../lib/mdx-component'
+import siteConfig from '../site.config'
 import {
   Alert,
   Avatar,
@@ -200,13 +201,49 @@ function HorizontalRule(props: ComponentPropsWithoutRef<'hr'>) {
   return <hr {...props} className={clsx('my-8 border-0 border-t border-[var(--border-light)]', props.className)} />
 }
 
-function Iframe({ title, className, ...props }: ComponentPropsWithoutRef<'iframe'>) {
+function isEmbedAllowed(src: string | undefined): boolean {
+  if (!src) return false
+  try {
+    const url = new URL(src, window.location.origin)
+    return siteConfig.embedAllowlist.some((allowed) => url.hostname === allowed || url.hostname.endsWith(`.${allowed}`))
+  } catch {
+    return false
+  }
+}
+
+function Iframe({ title, src, className, ...props }: ComponentPropsWithoutRef<'iframe'>) {
+  const allowed = isEmbedAllowed(src)
+
+  if (!allowed) {
+    return (
+      <div className="not-prose my-6 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-[var(--surface-alt)] p-6 text-center">
+        <p className="text-sm text-[var(--text-secondary)]">
+          جاوعی که می‌خواهید نمایش داده شود مجاز نیست. برای افزودن آن،{' '}
+          <code className="text-xs">embedAllowlist</code> را در <code className="text-xs">src/site.config.ts</code> به‌روز کنید.
+        </p>
+        {src && (
+          <a
+            href={src}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-sm text-[var(--info)] underline"
+          >
+            <ExternalLink aria-hidden="true" className="size-4" />
+            باز کردن در تب جدید
+          </a>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="not-prose my-6 aspect-video w-full overflow-hidden rounded-[var(--radius-md)] bg-[var(--surface-alt)]">
       <iframe
         {...props}
+        src={src}
         title={title || 'Embedded media'}
         loading="lazy"
+        allow="accelerometer; encrypted-media; picture-in-picture; clipboard-write"
         className={clsx('size-full border-0', className)}
       />
     </div>

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import GithubSlugger from 'github-slugger'
-import { ArrowLeft, BookOpen, ChevronLeft, Palette } from 'lucide-react'
-import { clsx } from 'clsx'
+import { ArrowLeft, BookOpen, ChevronLeft } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
@@ -11,6 +10,7 @@ import siteConfig from '../site.config'
 import { CoverMedia } from '../components/CoverMedia'
 import { ArticleSidebar } from '../components/ArticleSidebar'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
+import { StylePreviewToggle } from '../components/ThemeControls'
 import { ArticleLayout } from '../layouts'
 
 const articles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
@@ -181,63 +181,13 @@ export function ArticlePage() {
           {previous ? <ArticleNavItem article={previous} direction="previous" /> : <span />}
           {next ? <ArticleNavItem article={next} direction="next" /> : <span />}
         </nav>
-        {import.meta.env.DEV && <StylePreviewPanel activeStyle={activeStyle} />}
+        <StylePreviewToggle activeStyle={activeStyle} />
       </ArticleLayout>
     </>
   )
 }
 
-function StylePreviewPanel({ activeStyle }: { activeStyle: number }) {
-  const location = useLocation()
-  const currentParams = new URLSearchParams(location.search)
 
-  return (
-    <section
-      aria-label="پیش‌نمایش استایل‌ها"
-      className="fixed bottom-6 end-6 z-50 flex flex-wrap gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-2 text-xs shadow-[var(--shadow-card)]"
-    >
-      <span className="mb-1 flex w-full items-center gap-1 text-[var(--muted)]">
-        <Palette aria-hidden="true" className="size-3" />
-        پیش‌نمایش استایل
-      </span>
-      {Array.from({ length: 8 }, (_, index) => {
-        const styleNumber = index + 1
-        const isActive = styleNumber === activeStyle && !currentParams.has('style')
-        const label = [
-          'سبزلرن',
-          'مدیوم',
-          'دِو.تو',
-          'استریپ',
-          'مجله',
-          'نوتیون',
-          'گلو',
-          'براتالیست',
-        ]
-        return (
-          <button
-            key={styleNumber}
-            type="button"
-            aria-label={`استایل ${styleNumber}: ${label[index]}`}
-            onClick={() => {
-              const newParams = new URLSearchParams(location.search)
-              newParams.set('style', String(styleNumber))
-              window.history.pushState(null, '', `${location.pathname}?${newParams.toString()}`)
-              window.dispatchEvent(new PopStateEvent('popstate'))
-            }}
-            className={clsx(
-              'rounded-[var(--radius-sm)] px-2 py-1 font-medium',
-              isActive
-                ? 'bg-[var(--brand)] text-[var(--brand-contrast)]'
-                : 'text-[var(--text-secondary)] hover:bg-[var(--surface-alt)]',
-            )}
-          >
-            {styleNumber}
-          </button>
-        )
-      })}
-    </section>
-  )
-}
 
 function MetaValue({ label, value }: { label: string; value: string }) {
   return <div className="min-w-0"><span className="mb-1 block text-[10px] text-[var(--muted)] sm:text-xs">{label}</span><span className="block truncate text-xs text-[var(--text)] sm:text-sm">{value}</span></div>

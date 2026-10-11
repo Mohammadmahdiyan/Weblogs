@@ -7,14 +7,14 @@
     <language>fa-IR</language>
 <atom:link href="https://example.com/rss.xml" rel="self" type="application/rss+xml" />
   <item>
-  <title>مثال مقاله آزمایشی</title>
-  <description>این یک مقاله تستی است برای بررسی سیستم.</description>
-  <link>https://example.com/blog/example-article</link>
-  <guid isPermaLink="false">https://example.com/blog/example-article</guid>
-  <pubDate>Sat, 10 Oct 2026 12:00:00 GMT</pubDate>
-  <category>تست</category>
-  <enclosure url="https://example.com/favicon.svg" type="image/svg+xml" length="0" />
-  <content:encoded>این یک مقاله تستی است برای بررسی سیستم.</content:encoded>
+  <title>ازدواج پیامبر ص با مادر عایشه رض</title>
+  <description>عنوان سطح اول در بدنه این عنوان در بدنه باید به سطح دوم تبدیل شود تا عنوان مقاله تنها h1 صفحه باقی بماند. بخش نمونه این متن نمونه برای نمایش ساختار مقاله است و </description>
+  <link>https://example.com/blog/married-prophet-with-ayesha</link>
+  <guid isPermaLink="false">https://example.com/blog/married-prophet-with-ayesha</guid>
+  <pubDate>Fri, 31 Jan 2025 12:00:00 GMT</pubDate>
+  <category>history</category>
+  <enclosure url="/content/married-prophet-with-ayesha/cover.svg" type="image/image" length="0" />
+  <content:encoded>عنوان سطح اول در بدنه این عنوان در بدنه باید به سطح دوم تبدیل شود تا عنوان مقاله تنها h1 صفحه باقی بماند. بخش نمونه این متن نمونه برای نمایش ساختار مقاله است و </content:encoded>
 </item>
   </channel>
 </rss>
