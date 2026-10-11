@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "slug": "example-article",
+    "title": "مثال مقاله آزمایشی",
+    "description": "این یک مقاله تستی است برای بررسی سیستم.",
+    "date": "2026-10-10",
+    "updated": null,
+    "tags": [
+      "تست",
+      "مثال"
+    ],
+    "suggestions": [],
+    "cover": null,
+    "style": 1,
+    "readingTime": 1
+  }
+]

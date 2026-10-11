@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://search.yahoo.com/mrss/" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>وبلاگ اسلامی</title>
+    <description>مقاله‌ها و یادداشت‌های آموزشی</description>
+    <link>https://example.com</link>
+    <language>fa-IR</language>
+<atom:link href="https://example.com/rss.xml" rel="self" type="application/rss+xml" />
+  <item>
+  <title>مثال مقاله آزمایشی</title>
+  <description>این یک مقاله تستی است برای بررسی سیستم.</description>
+  <link>https://example.com/blog/example-article</link>
+  <guid isPermaLink="false">https://example.com/blog/example-article</guid>
+  <pubDate>Sat, 10 Oct 2026 12:00:00 GMT</pubDate>
+  <category>تست</category>
+  <enclosure url="https://example.com/favicon.svg" type="image/svg+xml" length="0" />
+  <content:encoded>این یک مقاله تستی است برای بررسی سیستم.</content:encoded>
+</item>
+  </channel>
+</rss>

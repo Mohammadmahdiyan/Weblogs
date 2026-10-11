@@ -1048,3 +1048,70 @@
 .blog-style-8 .blog-content li {
   margin-bottom: 0.5rem;
 }
+
+@layer components {
+  pre[class*="language-"] {
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    overflow-x: auto;
+  }
+
+  .hljs-comment,
+  .hljs-quote {
+    color: var(--text-muted);
+  }
+
+  .hljs-keyword,
+  .hljs-attr,
+  .hljs-addition {
+    color: var(--info);
+  }
+
+  .hljs-string,
+  .hljs-content,
+  .hljs-section,
+  .hljs-emphasis {
+    color: var(--success);
+  }
+
+  .hljs-title,
+  .hljs-meta,
+  .hljs-name,
+  .hljs-type,
+  .hljs-literal {
+    color: var(--warn);
+  }
+
+  .hljs-attribute {
+    color: var(--brand);
+  }
+
+  .hljs-deletion,
+  .hljs-regexp,
+  .hljs-symbol,
+  .hljs-variable {
+    color: var(--danger);
+  }
+
+  .hljs-number,
+  .hljs-builtin-function,
+  .hljs-builtin-name,
+  .hljs-template-variable {
+    color: var(--info);
+  }
+
+  .language-css .hljs-string,
+  .language-scss .hljs-string,
+  .language-scss .hljsnumber,
+  .language-javascript .hljs-string,
+  .language-typescript .hljs-string {
+    color: var(--warn);
+  }
+
+  /* Light theme overrides for code blocks */
+  :not(.dark) pre[class*="language-"] {
+    --hljs-comment: var(--text-muted);
+    --hljs-keyword: var(--info);
+    --hljs-string: var(--success);
+  }
+}

@@ -105,7 +105,15 @@ export function ArticlePage() {
   const toc = useMemo(() => buildToc(markdown ?? ''), [markdown])
   const articleIndex = articles.findIndex((item) => item.slug === slug)
 
-  usePageMeta({ title: article?.title ?? 'مقاله پیدا نشد', description: article?.description ?? 'مقاله‌ی درخواستی پیدا نشد.', image: article?.cover?.type === 'image' ? article.cover.url : undefined })
+  usePageMeta({
+    title: article?.title ?? 'مقاله پیدا نشد',
+    description: article?.description ?? 'مقاله‌ی درخواستی پیدا نشد.',
+    image: article?.cover?.type === 'image' ? article.cover.url : undefined,
+    canonical: article ? `${siteConfig.siteUrl}/blog/${article.slug}` : undefined,
+    article: article
+      ? { date: article.date, updated: article.updated, tags: article.tags, authors: [siteConfig.siteName] }
+      : undefined,
+  })
 
   useEffect(() => {
     if (!article) return
@@ -129,7 +137,11 @@ export function ArticlePage() {
     <>
       <ReadingProgress />
       <ArticleLayout style={activeStyle} sidebar={<ArticleSidebar articles={articles} article={article} />}>
-        <article className="blog-content rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-5 text-[var(--text)] shadow-[var(--shadow-card)] sm:p-7 prose-headings:text-start prose-p:text-start">
+        <article
+          lang={article.lang}
+          dir={article.dir ?? 'rtl'}
+          className="blog-content rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-5 text-[var(--text)] shadow-[var(--shadow-card)] sm:p-7 prose-headings:text-start prose-p:text-start"
+        >
           <CoverMedia cover={article.cover} title={article.title} />
           <nav aria-label="مسیر صفحه" className="mb-4 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
             <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>

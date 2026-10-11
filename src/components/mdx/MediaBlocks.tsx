@@ -1,4 +1,4 @@
-import { Children, isValidElement, useEffect, useId, useRef, type ComponentPropsWithoutRef, type ReactNode } from 'react'
+import { Children, isValidElement, useEffect, useId, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 import { clsx } from 'clsx'
 import { LightboxContext, useLightbox, useLightboxRegistration, type LightboxMedia, type OpenLightbox } from '../../lib/lightbox'
 
@@ -10,6 +10,7 @@ export function MarkdownImage({
   const id = useId()
   const imageButtonRef = useRef<HTMLButtonElement>(null)
   const dimensions = width && height ? { aspectRatio: `${width} / ${height}` } : undefined
+  const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
     if (!src) return
@@ -33,9 +34,19 @@ export function MarkdownImage({
         height={height}
         loading="lazy"
         decoding="async"
+        onLoad={() => setIsLoaded(true)}
         style={{ ...style, ...dimensions }}
-        className={clsx('block h-auto w-full max-w-full', className)}
+        className={clsx(
+          'block h-auto w-full max-w-full transition-opacity duration-300',
+          isLoaded ? 'opacity-100' : 'opacity-0 blur-sm',
+          className,
+        )}
       />
+      {!isLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-sm)] bg-[var(--surface-strong)]">
+          <span aria-hidden="true" className="text-xs text-[var(--text-muted)]">در حال بارگذاری…</span>
+        </div>
+      )}
     </button>
   )
 }

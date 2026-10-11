@@ -14,6 +14,8 @@ export interface ArticleMeta {
   } | null
   style: number
   readingTime: number
+  lang?: string
+  dir?: 'ltr' | 'rtl'
 }
 
 export interface SearchEntry {

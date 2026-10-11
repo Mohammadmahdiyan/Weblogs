@@ -155,9 +155,17 @@ function Footer({ articles }: { articles: ArticleMeta[] }) {
 export function SiteShell({ children, articles }: { children: ReactNode; articles: ArticleMeta[] }) {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      <a
+        href="#main-content"
+        className="absolute top-4 start-4 z-50 rounded-[var(--radius-sm)] bg-[var(--brand)] px-4 py-2 text-xs font-medium text-[var(--brand-contrast)] underline focus-visible:outline-2 focus-visible:outline-[var(--info)] focus-visible:outline-offset-2"
+      >
+        پرش به محتوا
+      </a>
       <AnnouncementBar />
       <Header />
-      {children}
+      <main id="main-content" tabIndex={-1}>
+        {children}
+      </main>
       <Footer articles={articles} />
     </div>
   )

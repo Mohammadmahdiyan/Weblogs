@@ -150,7 +150,7 @@ function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
           <span>{copied ? 'کپی شد' : 'کپی'}</span>
         </button>
       </div>
-      <pre dir="ltr" className="m-0 overflow-x-auto p-4 text-start text-sm leading-6 text-[var(--text)]">
+      <pre dir="ltr" className="hljs m-0 overflow-x-auto p-4 text-start text-sm leading-6 text-[var(--text)]">
         {children}
       </pre>
     </div>

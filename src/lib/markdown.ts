@@ -1,5 +1,6 @@
 import { Fragment, jsx, jsxs } from 'react/jsx-runtime'
 import rehypeRaw from 'rehype-raw'
+import rehypeHighlight from 'rehype-highlight'
 import rehypeReact, { type Options as RehypeReactOptions } from 'rehype-react'
 import rehypeSlug from 'rehype-slug'
 import remarkDirective from 'remark-directive'
@@ -184,7 +185,11 @@ function removeUnsafeMarkup(parent: Parent): void {
   })
 }
 
+// Using rehype-highlight instead of shiki: it's lighter (no WASM runtime, ~90kb vs ~300kb)
+// and integrates with the existing unified pipeline. Themes are applied via CSS classes
+// that can be styled for light/dark mode via CSS variables.
 const rehypeStripUnsafe = () => (tree: Root) => removeUnsafeMarkup(tree)
+// that can be styled for light/dark mode via CSS variables.
 
 export function createMarkdownProcessor(components: MarkdownComponents) {
   return unified()
@@ -194,6 +199,7 @@ export function createMarkdownProcessor(components: MarkdownComponents) {
     .use(remarkComponents)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
+    .use(rehypeHighlight, { whitespace: false, noEscape: true } as never)
     .use(rehypeSlug)
     .use(rehypeStripUnsafe)
     .use(rehypeReact, { Fragment, jsx, jsxs, components })

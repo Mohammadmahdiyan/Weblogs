@@ -7,6 +7,7 @@ import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import { visit } from 'unist-util-visit'
 import type { ArticleMeta, CoverType, SearchEntry } from '../src/lib/types.ts'
+import siteConfig from '../src/site.config.ts'
 
 interface MediaFile {
   sourcePath: string
@@ -283,6 +284,12 @@ async function prepareArticle(articleDirectory: string): Promise<PreparedArticle
   if (data.draft !== undefined && typeof data.draft !== 'boolean') {
     return fail(indexPath, '"draft" must be a boolean')
   }
+  if (data.lang !== undefined && typeof data.lang !== 'string') {
+    return fail(indexPath, '"lang" must be a string')
+  }
+  if (data.dir !== undefined && data.dir !== 'ltr' && data.dir !== 'rtl') {
+    return fail(indexPath, '"dir" must be "ltr" or "rtl"')
+  }
 
   const date = readOptionalDate(data.date, 'date', indexPath) ?? (await stat(indexPath)).mtime.toISOString().slice(0, 10)
   const updated = readOptionalDate(data.updated, 'updated', indexPath)
@@ -315,9 +322,98 @@ async function prepareArticle(articleDirectory: string): Promise<PreparedArticle
       : null,
     style,
     readingTime: Math.max(1, Math.ceil(words / 200)),
+    lang: typeof data.lang === 'string' ? data.lang : undefined,
+    dir: (data.dir === 'ltr' || data.dir === 'rtl') ? data.dir : undefined,
   }
 
   return { meta, body, mediaFiles, articleDirectory }
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+function generateRobotsTxt(siteUrl: string): string {
+  return [
+    'User-agent: *',
+    'Allow: /',
+    '',
+    `Sitemap: ${siteUrl}/sitemap.xml`,
+    '',
+  ].join('\n')
+}
+
+function generateSitemapXml(siteUrl: string, articles: ArticleMeta[]): string {
+  const baseUrl = siteUrl.replace(/\/+$/, '')
+  const urls: string[] = [
+    `<url>
+  <loc>${baseUrl}/</loc>
+  <changefreq>daily</changefreq>
+  <priority>1.0</priority>
+</url>`,
+    ...articles.map((article) => {
+      const lastMod = article.updated ?? article.date
+      return `<url>
+  <loc>${baseUrl}/blog/${article.slug}</loc>
+  <lastmod>${lastMod}</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.7</priority>
+</url>`
+    }),
+  ]
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...urls,
+    '</urlset>',
+    '',
+  ].join('\n')
+}
+
+function generateRssXml(siteUrl: string, articles: ArticleMeta[]): string {
+  const baseUrl = siteUrl.replace(/\/+$/, '')
+  const latest = [...articles].sort((a, b) => b.date.localeCompare(a.date))
+
+  const items = latest
+    .map((article) => {
+      const escapedTitle = escapeXml(article.title)
+      const escapedDescription = escapeXml(article.description)
+      const link = `${baseUrl}/blog/${article.slug}`
+      const pubDate = new Date(`${article.date}T12:00:00Z`).toUTCString()
+      const encodedContent = escapeXml(article.description)
+
+      return `<item>
+  <title>${escapedTitle}</title>
+  <description>${escapedDescription}</description>
+  <link>${link}</link>
+  <guid isPermaLink="false">${link}</guid>
+  <pubDate>${pubDate}</pubDate>
+  <category>${escapeXml((article.tags[0] ?? 'مقالات').trim())}</category>
+  <enclosure url="${escapeXml(article.cover?.url ?? `${baseUrl}/favicon.svg`)}" type="image/${article.cover?.type ?? 'svg+xml'}" length="0" />
+  <content:encoded>${encodedContent}</content:encoded>
+</item>`
+    })
+    .join('\n  ')
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://search.yahoo.com/mrss/" xmlns:media="http://search.yahoo.com/mrss/">',
+    '  <channel>',
+    `    <title>${escapeXml(siteConfig.siteName)}</title>`,
+    `    <description>${escapeXml(siteConfig.siteDescription)}</description>`,
+    `    <link>${baseUrl}</link>`,
+    `    <language>fa-IR</language>`,
+    `<atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml" />`,
+    items ? `  ${items}` : '',
+    '  </channel>',
+    '</rss>',
+    '',
+  ].join('\n')
 }
 
 async function buildContent(): Promise<void> {
@@ -395,9 +491,14 @@ async function buildContent(): Promise<void> {
     '',
   ].join('\n')
 
-  await writeFile(path.join(generatedRoot, 'articles.json'), `${JSON.stringify(metadata, null, 2)}\n`, 'utf8')
+   await writeFile(path.join(generatedRoot, 'articles.json'), `${JSON.stringify(metadata, null, 2)}\n`, 'utf8')
   await writeFile(path.join(generatedRoot, 'search-index.json'), `${JSON.stringify(searchIndex, null, 2)}\n`, 'utf8')
   await writeFile(path.join(generatedRoot, 'bodies.ts'), bodyModule, 'utf8')
+
+  const publicRoot = path.join(projectRoot, 'public')
+  await writeFile(path.join(publicRoot, 'robots.txt'), generateRobotsTxt(siteConfig.siteUrl), 'utf8')
+  await writeFile(path.join(publicRoot, 'sitemap.xml'), generateSitemapXml(siteConfig.siteUrl, metadata), 'utf8')
+  await writeFile(path.join(publicRoot, 'rss.xml'), generateRssXml(siteConfig.siteUrl, metadata), 'utf8')
 
   console.table(metadata.map((article) => ({
     slug: article.slug,

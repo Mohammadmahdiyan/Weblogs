@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "content": "tsx scripts/build-content.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run prerender",
+    "prerender": "tsx scripts/prerender.ts",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lighthouse": "lighthouse http://localhost:4173/blog/example-article --output=html --output-path=./lighthouse-report.html --chrome-flags='--headless' --preset=desktop"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -19,6 +21,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.6",
+    "rehype-highlight": "^7.0.2",
     "rehype-raw": "^7.0.0",
     "rehype-react": "^8.0.0",
     "rehype-slug": "^6.0.0",
