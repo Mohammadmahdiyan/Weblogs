@@ -30,7 +30,7 @@
     --heading-weight: 700;
   }
 
-  .dark {
+  html.dark {
     --bg: #141414;
     --surface: #1c1c1c;
     --surface-alt: #1b2421;
@@ -82,7 +82,7 @@
   --heading-weight: 700;
 }
 
-.blog-style-1.dark {
+.dark .blog-style-1 {
   --bg: #141414;
   --surface: #1c1c1c;
   --surface-alt: #242424;
@@ -254,7 +254,7 @@
   --heading-weight: 600;
 }
 
-.blog-style-2.dark {
+.dark .blog-style-2 {
   --bg: #0f0f0f;
   --surface: #171717;
   --surface-alt: #1f1f1f;
@@ -366,7 +366,7 @@
   --heading-weight: 700;
 }
 
-.blog-style-3.dark {
+.dark .blog-style-3 {
   --bg: #0f172a;
   --surface: #1e293b;
   --surface-alt: #273449;
@@ -462,7 +462,7 @@
   --heading-weight: 600;
 }
 
-.blog-style-4.dark {
+.dark .blog-style-4 {
   --bg: #0f172a;
   --surface: #1e293b;
   --surface-alt: #334155;
@@ -553,7 +553,7 @@
   --heading-weight: 700;
 }
 
-.blog-style-5.dark {
+.dark .blog-style-5 {
   --bg: #121212;
   --surface: #1e1e1e;
   --surface-alt: #252525;
@@ -696,7 +696,7 @@
   --heading-weight: 600;
 }
 
-.blog-style-6.dark {
+.dark .blog-style-6 {
   --bg: #0f172a;
   --surface: #1e293b;
   --surface-alt: #273449;
@@ -825,7 +825,7 @@
   background-attachment: fixed;
 }
 
-.blog-style-7.dark {
+.dark .blog-style-7 {
   --bg: #050012;
   --surface: rgba(255, 255, 255, 0.08);
   --surface-alt: rgba(255, 255, 255, 0.05);
@@ -951,7 +951,7 @@
   --heading-weight: 800;
 }
 
-.blog-style-8.dark {
+.dark .blog-style-8 {
   --bg: #000000;
   --surface: #000000;
   --surface-alt: #111111;

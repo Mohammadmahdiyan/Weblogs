@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Menu, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import siteConfig from '../site.config'
-import { FontControls, ThemeToggle } from './ThemeControls'
+import { FontControls, StylePreviewToggle, ThemeToggle } from './ThemeControls'
 import type { ArticleMeta } from '../lib/types'
 
 function SiteLink({ href, children, className, onClick }: { href: string; children: ReactNode; className?: string; onClick?: () => void }) {
@@ -92,9 +92,10 @@ function Header() {
           <nav aria-label="پیمایش اصلی" className="hidden items-center gap-7 md:flex">
             {siteConfig.nav.map((item) => <SiteLink key={item.href} href={item.href} className="text-sm text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">{item.label}</SiteLink>)}
           </nav>
-          <div className="flex items-center gap-3">
+           <div className="flex items-center gap-3">
             <div className="hidden items-center gap-3 lg:flex">
               <ThemeToggle />
+              <StylePreviewToggle activeStyle={1} />
               <details className="group relative">
                 <summary className="cursor-pointer list-none rounded-[var(--radius-sm)] border border-[var(--border-light)] px-3 py-2 text-sm text-[var(--text-secondary)]">تنظیم متن</summary>
                 <div className="absolute end-0 top-full z-10 mt-2 rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">

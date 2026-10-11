@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Monitor, Moon, Sun } from 'lucide-react'
+import { Monitor, Moon, Palette, Sun } from 'lucide-react'
 import { clsx } from 'clsx'
 import { ThemeContext, type ThemeMode, useTheme } from '../lib/theme'
 import { useFont } from '../lib/font-context'
@@ -118,6 +118,65 @@ export function FontControls() {
           بازنشانی
         </button>
       </label>
+    </div>
+  )
+}
+
+const styleLabels = [
+  { id: 1, label: 'سبزلرن' },
+  { id: 2, label: 'مدیوم' },
+  { id: 3, label: 'دِو.تو' },
+  { id: 4, label: 'استریپ' },
+  { id: 5, label: 'مجله' },
+  { id: 6, label: 'نوتیون' },
+  { id: 7, label: 'گلو' },
+  { id: 8, label: 'براتالیست' },
+]
+
+export function StylePreviewToggle({ activeStyle }: { activeStyle: number }) {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        aria-label="پیش‌نمایش استایل"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((value) => !value)}
+        className="inline-flex size-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface-alt)] text-[var(--text-secondary)] hover:text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+      >
+        <Palette aria-hidden="true" className="size-4" />
+      </button>
+      {isOpen && (
+        <div
+          onMouseLeave={() => setIsOpen(false)}
+          className="absolute start-0 top-full z-10 mt-2 flex flex-wrap gap-1.5 rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-2 text-xs shadow-[var(--shadow-card)]"
+          role="menu"
+          aria-label="پیش‌نمایش استایل‌ها"
+        >
+          {styleLabels.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              role="menuitem"
+              aria-label={`استایل ${id}: ${label}`}
+              onClick={() => {
+                const params = new URLSearchParams(window.location.search)
+                params.set('style', String(id))
+                window.history.pushState(null, '', `${window.location.pathname}?${params.toString()}`)
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }}
+              className={clsx(
+                'rounded-[var(--radius-sm)] px-2 py-1 font-medium',
+                id === activeStyle
+                  ? 'bg-[var(--brand)] text-[var(--brand-contrast)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-alt)]',
+              )}
+            >
+              {id}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
