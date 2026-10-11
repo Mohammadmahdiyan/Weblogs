@@ -53,13 +53,18 @@
     background-position: 0 100%;
     background-repeat: no-repeat;
     background-size: 0 1px;
-    color: var(--info);
+    color: inherit;
     text-decoration: none;
     transition: background-size 0.2s ease;
   }
 
-  a:where(.not-prose):hover,
-  a:where(.not-prose):focus-visible {
+  a.no-underline {
+    background-image: none !important;
+    text-decoration: none !important;
+  }
+
+  a:not(.no-underline):hover,
+  a:not(.no-underline):focus-visible {
     background-size: 100% 1px;
   }
 

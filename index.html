@@ -22,7 +22,9 @@
           const storedFont = localStorage.getItem('font') || 'vazirmatn'
           const storedScale = localStorage.getItem('fontSize')
           const fonts = {
-            vazirmatn: { family: 'Vazirmatn', fallback: 'Tahoma, system-ui, sans-serif' }
+            vazirmatn: { family: 'Vazirmatn', fallback: 'Tahoma, system-ui, sans-serif' },
+            shabnam: { family: 'Shabnam', fallback: 'Tahoma, system-ui, sans-serif' },
+            inter: { family: 'Inter', fallback: 'system-ui, sans-serif' }
           }
           const font = fonts[storedFont] || fonts.vazirmatn
           document.documentElement.style.setProperty('--app-font-family', `"${font.family}", ${font.fallback}`)

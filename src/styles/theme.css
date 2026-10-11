@@ -100,18 +100,18 @@
 }
 
 .blog-style-1 .blog-content {
-  font-size: 0.875rem;
+  font-size: calc(0.875rem * var(--app-font-scale, 1));
   line-height: var(--body-line-height);
   text-align: justify;
 }
 
-@media (min-width: 640px) {
-  .blog-style-1 .blog-content {
-    font-size: var(--prose-size);
+  @media (min-width: 640px) {
+    .blog-style-1 .blog-content {
+      font-size: calc(var(--prose-size) * var(--app-font-scale, 1));
+    }
   }
-}
 
-.blog-style-1 .blog-content h1 {
+  .blog-style-1 .blog-content h1 {
   font-weight: 800;
   text-align: start;
 }
@@ -274,7 +274,7 @@
 .blog-style-2 .blog-content {
   max-width: 680px;
   margin-inline: auto;
-  font-size: 1.125rem;
+  font-size: calc(1.125rem * var(--app-font-scale, 1));
   line-height: var(--body-line-height);
   text-align: start;
 }
@@ -384,7 +384,7 @@
 }
 
 .blog-style-3 .blog-content {
-  font-size: var(--prose-size);
+  font-size: calc(var(--prose-size) * var(--app-font-scale, 1));
   line-height: var(--body-line-height);
 }
 
@@ -480,7 +480,7 @@
 }
 
 .blog-style-4 .blog-content {
-  font-size: var(--prose-size);
+  font-size: calc(var(--prose-size) * var(--app-font-scale, 1));
   line-height: var(--body-line-height);
 }
 
@@ -571,7 +571,7 @@
 }
 
 .blog-style-5 .blog-content {
-  font-size: var(--prose-size);
+  font-size: calc(var(--prose-size) * var(--app-font-scale, 1));
   line-height: var(--body-line-height);
   text-align: start;
 }
@@ -716,7 +716,7 @@
 .blog-style-6 .blog-content {
   max-width: 48rem;
   margin-inline: auto;
-  font-size: var(--prose-size);
+  font-size: calc(var(--prose-size) * var(--app-font-scale, 1));
   line-height: var(--body-line-height);
 }
 
@@ -843,7 +843,7 @@
 }
 
 .blog-style-7 .blog-content {
-  font-size: var(--prose-size);
+  font-size: calc(var(--prose-size) * var(--app-font-scale, 1));
   line-height: var(--body-line-height);
   backdrop-filter: blur(10px);
 }
@@ -974,7 +974,7 @@
 }
 
 .blog-style-8 .blog-content {
-  font-size: var(--prose-size);
+  font-size: calc(var(--prose-size) * var(--app-font-scale, 1));
   line-height: var(--body-line-height);
   border: 2px solid var(--text);
   padding: 2rem;

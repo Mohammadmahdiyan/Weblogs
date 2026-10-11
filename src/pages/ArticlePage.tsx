@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import GithubSlugger from 'github-slugger'
-import { ArrowLeft, ArrowRight, BookOpen, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
@@ -154,9 +154,9 @@ export function ArticlePage() {
           <CoverMedia cover={article.cover} title={article.title} />
           <nav aria-label="مسیر صفحه" className="mb-4 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
             <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>
-            <ChevronRight aria-hidden="true" className="size-3" />
+            <ChevronLeft aria-hidden="true" className="size-3" />
             <Link to="/#articles" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">همه مقاله‌ها</Link>
-            <ChevronRight aria-hidden="true" className="size-3" />
+            <ChevronLeft aria-hidden="true" className="size-3" />
             <span aria-current="page" className="max-w-full truncate">{article.title}</span>
           </nav>
 

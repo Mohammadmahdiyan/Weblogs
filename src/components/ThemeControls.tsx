@@ -73,7 +73,7 @@ export function FontControls() {
             value={current}
             onChange={(event) => setFont(event.currentTarget.value)}
             aria-label="انتخاب فونت"
-            className="rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+            className="cursor-pointer rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
           >
             {fonts.map((font) => (
               <option key={font.id} value={font.id}>{font.label}</option>

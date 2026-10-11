@@ -12,6 +12,30 @@
         "500": "vazir/Vazir-Medium-FD.woff2",
         "700": "vazir/Vazir-Bold-FD.woff2"
       }
+    },
+    {
+      "id": "shabnam",
+      "label": "شبنم",
+      "family": "Shabnam",
+      "fallback": "Tahoma, system-ui, sans-serif",
+      "weights": {
+        "300": "shabnam/Shabnam-Light-FD.woff2",
+        "400": "shabnam/Shabnam-FD.woff2",
+        "500": "shabnam/Shabnam-Medium-FD.woff2",
+        "700": "shabnam/Shabnam-Bold-FD.woff2"
+      }
+    },
+    {
+      "id": "inter",
+      "label": "اینتر",
+      "family": "Inter",
+      "fallback": "system-ui, sans-serif",
+      "weights": {
+        "300": "inter/Inter-Light.woff2",
+        "400": "inter/Inter-Regular.woff2",
+        "500": "inter/Inter-Medium.woff2",
+        "700": "inter/Inter-Bold.woff2"
+      }
     }
   ]
 }

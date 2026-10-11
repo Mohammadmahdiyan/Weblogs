@@ -49,3 +49,21 @@
   font-display: swap;
   font-style: normal;
 }
+
+/* Shabnam (system fallback - web version of IRANSANS / Shabnam) */
+@font-face {
+  font-family: 'Shabnam';
+  src: local('Shabnam'), local('Tahoma');
+  font-weight: 300 700;
+  font-display: swap;
+  font-style: normal;
+}
+
+/* Inter (system fallback) */
+@font-face {
+  font-family: 'Inter';
+  src: local('Inter'), local('system-ui'), local('sans-serif');
+  font-weight: 100 900;
+  font-display: swap;
+  font-style: normal;
+}

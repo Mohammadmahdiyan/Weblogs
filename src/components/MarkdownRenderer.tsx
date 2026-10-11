@@ -81,7 +81,7 @@ function Anchor({ href, target, rel, children, className, ...props }: ComponentP
       target={safeTarget}
       rel={safeRel}
       className={clsx(
-        'text-[var(--info)] underline-offset-[2px] decoration-transparent transition-all duration-200 hover:text-[var(--brand)] hover:decoration-[var(--brand)]',
+        'underline-offset-[2px] decoration-transparent transition-all duration-200 hover:decoration-current',
         className,
       )}
     >
@@ -382,7 +382,7 @@ export function MarkdownRenderer({ markdown, className }: MarkdownRendererProps)
          'prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-headings:var(--text)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-counters:var(--brand)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-hr:var(--border-light)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-th-borders:var(--border-strong)] [--tw-prose-td-borders:var(--border-light)]',
          'prose-headings:text-start prose-p:text-start',
          'prose-blockquote:border-s-4 prose-blockquote:ps-4 prose-li:ps-1',
-         'prose-a:text-[var(--info)] prose-a:underline-offset-[2px] prose-a:decoration-transparent prose-a:transition-all prose-a:duration-200 prose-a:hover:text-[var(--brand)] prose-a:hover:decoration-[var(--brand)]',
+         'prose-a:text-[var(--info)] prose-a:underline-offset-[2px] prose-a:decoration-transparent prose-a:transition-all prose-a:duration-200 prose-a:hover:decoration-[var(--info)]',
          className,
        )}
      >
