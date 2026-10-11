@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import GithubSlugger from 'github-slugger'
-import { ArrowLeft, BookOpen, ChevronLeft } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, ChevronRight } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
@@ -58,14 +58,23 @@ function ArticleToc({ items }: { items: TocItem[] }) {
         <BookOpen aria-hidden="true" className="size-4 text-[var(--brand)]" />
         نگاه کلی به مطالب
       </summary>
-      <nav aria-label="فهرست مطالب" className="px-4 py-3">
+      <nav aria-label="فهرست مطلب" className="px-4 py-3">
         <ul className="m-0 grid list-none gap-2 p-0">
-          {items.map((item) => <li key={item.id} className={item.level === 3 ? 'ps-5' : ''}>
-            <a href={`#${item.id}`} className="flex items-center gap-3 text-start text-sm text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">
-              <span aria-hidden="true" className="h-1 w-2.5 shrink-0 rounded-[var(--radius-pill)] bg-[var(--brand)]" />
-              {item.title}
-            </a>
-          </li>)}
+          {items.map((item) => (
+            <li key={item.id} className={item.level === 3 ? 'ps-5' : ''}>
+              <a
+                href={`#${item.id}`}
+                className="flex items-center gap-3 text-start text-sm text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]"
+              >
+                {item.level === 3 ? (
+                  <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--info)]" />
+                ) : (
+                  <BookOpen aria-hidden="true" className="size-3 shrink-0 text-[var(--brand)]" />
+                )}
+                {item.title}
+              </a>
+            </li>
+          ))}
         </ul>
       </nav>
     </details>
@@ -145,9 +154,9 @@ export function ArticlePage() {
           <CoverMedia cover={article.cover} title={article.title} />
           <nav aria-label="مسیر صفحه" className="mb-4 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
             <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>
-            <ChevronLeft aria-hidden="true" className="size-3 rtl:rotate-180" />
+            <ChevronRight aria-hidden="true" className="size-3" />
             <Link to="/#articles" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">همه مقاله‌ها</Link>
-            <ChevronLeft aria-hidden="true" className="size-3 rtl:rotate-180" />
+            <ChevronRight aria-hidden="true" className="size-3" />
             <span aria-current="page" className="max-w-full truncate">{article.title}</span>
           </nav>
 
@@ -166,13 +175,24 @@ export function ArticlePage() {
           {article.suggestions.length > 0 && <section className="mt-8 border-t border-[var(--border-light)] pt-5">
             <h2 className="mb-3 text-start text-base font-bold">پرسش‌های مرتبط</h2>
             <ul className="flex flex-wrap gap-2 p-0">
-              {article.suggestions.map((suggestion) => <li key={suggestion} className="list-none rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2 text-start text-sm text-[var(--text-secondary)]">{suggestion}</li>)}
+              {article.suggestions.map((suggestion) => (
+                <li key={suggestion} className="list-none rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2 text-start text-sm text-[var(--text-secondary)]">
+                  {suggestion}
+                </li>
+              ))}
             </ul>
           </section>}
 
           <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[var(--border-light)] pt-5">
             <span className="text-sm font-semibold">برچسب‌ها:</span>
-            {article.tags.map((tag) => <span key={tag} className="rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-2.5 py-1 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--brand)] hover:text-[var(--brand-contrast)]">{tag}</span>)}
+            {article.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-2.5 py-1 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--brand)] hover:text-[var(--brand-contrast)]"
+              >
+                {tag}
+              </span>
+            ))}
           </div>
         </article>
 
@@ -194,13 +214,13 @@ function MetaValue({ label, value }: { label: string; value: string }) {
 }
 
 function ArticleNavItem({ article, direction }: { article: ArticleMeta; direction: 'previous' | 'next' }) {
-  const Icon = direction === 'previous' ? ArrowLeft : ArrowLeft
+  const Icon = direction === 'previous' ? ArrowRight : ArrowLeft
   const label = direction === 'previous' ? 'مقاله پیشین' : 'مقاله بعدی'
   return (
     <Link to={`/blog/${article.slug}`} className="flex min-w-0 items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-4 text-start no-underline hover:border-[var(--brand)]">
-      {direction === 'next' && <Icon aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />}
+      {direction === 'previous' && <Icon aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)]" />}
       <span className="min-w-0 flex-1"><span className="block text-xs text-[var(--muted)]">{label}</span><span className="mt-1 line-clamp-2 block text-sm font-semibold text-[var(--text)]">{article.title}</span></span>
-      {direction === 'previous' && <Icon aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />}
+      {direction === 'next' && <Icon aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)]" />}
     </Link>
   )
 }

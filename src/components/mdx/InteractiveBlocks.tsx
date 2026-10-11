@@ -104,7 +104,7 @@ export function AccordionItem({ title = 'جزئیات', open = false, children }
   const panelId = `accordion-panel-${id}`
 
   return (
-    <section className="overflow-hidden rounded-[var(--radius-sm)] bg-[var(--surface-alt)]">
+    <section className="overflow-hidden rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface-alt)]">
       <h3 className="m-0">
         <button
           id={triggerId}
@@ -112,9 +112,9 @@ export function AccordionItem({ title = 'جزئیات', open = false, children }
           aria-expanded={expanded}
           aria-controls={panelId}
           onClick={() => setExpanded((value) => !value)}
-          className="flex min-h-12 w-full items-center justify-between gap-3 bg-[var(--surface-strong)] px-4 py-3 text-start text-sm font-semibold text-[var(--text)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--info)]"
+          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-center text-sm font-semibold text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
         >
-          <span>{title}</span>
+          <span className="flex-1">{title}</span>
           <ChevronDown aria-hidden="true" className={clsx('size-4 shrink-0 transition-transform motion-reduce:transition-none', expanded && 'rotate-180')} />
         </button>
       </h3>
@@ -128,7 +128,7 @@ export function AccordionItem({ title = 'جزئیات', open = false, children }
             ref={(element) => {
               if (element) element.inert = !expanded
             }}
-            className="px-4 py-3 text-start text-sm leading-6 text-[var(--text-muted)]"
+            className="border-t border-[var(--border-light)] px-4 py-3 text-start text-sm leading-6 text-[var(--text-muted)]"
           >
             {children}
           </div>
@@ -159,7 +159,7 @@ export function Modal({
       <button
         type="button"
         onClick={() => dialogRef.current?.showModal()}
-        className="min-h-10 rounded-[var(--radius-sm)] bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-[var(--brand-foreground)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]"
+        className="min-h-10 rounded-[var(--radius-sm)] bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-[var(--brand-contrast)] transition-colors hover:bg-[var(--brand-dark)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]"
       >
         {trigger}
       </button>
@@ -180,7 +180,7 @@ export function Modal({
         onClick={(event) => {
           if (event.target === event.currentTarget) closeDialog()
         }}
-        className="m-auto max-h-[85vh] w-[min(92vw,40rem)] rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-0 text-[var(--text)] backdrop:bg-[color-mix(in_srgb,var(--text)_55%,transparent)]"
+        className="m-auto max-h-[85vh] w-[min(92vw,40rem)] rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-0 text-[var(--text)] backdrop:bg-[color-mix(in_srgb,var(--text)_55%,transparent)] [dialog::backdrop]:bg-black/50"
       >
         <div className="flex items-center justify-between gap-4 border-b border-[var(--border-light)] px-5 py-4">
           <h2 id={titleId} className="m-0 text-start text-lg font-semibold">{title}</h2>

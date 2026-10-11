@@ -195,7 +195,7 @@ export function Pagination({ total = '1', current = '1' }: { total?: string; cur
 
   return (
     <nav aria-label="صفحه‌بندی" className="not-prose my-5 flex flex-wrap items-center gap-1">
-      <button type="button" disabled aria-label="صفحه قبل" className="rounded-[var(--radius-sm)] border border-[var(--border-light)] px-3 py-2 text-[var(--text-muted)] disabled:opacity-50"><ArrowRight aria-hidden="true" className="size-4 rtl:rotate-180" /></button>
+      <button type="button" disabled aria-label="صفحه قبل" className="rounded-[var(--radius-sm)] border border-[var(--border-light)] px-3 py-2 text-[var(--text-muted)] disabled:opacity-50"><ArrowLeft aria-hidden="true" className="size-4" /></button>
       {pages.map((page) => (
         <button key={page} type="button" disabled aria-current={page === activePage ? 'page' : undefined} className={clsx('min-h-9 min-w-9 rounded-[var(--radius-sm)] border px-2 py-1 text-sm', page === activePage ? 'border-[var(--brand)] bg-[var(--brand)] text-[var(--brand-foreground)]' : 'border-[var(--border-light)] text-[var(--text)]')}>
           {page}
@@ -295,8 +295,11 @@ export function Course({
         <LinkOrAnchor href={href} className="block text-sm font-semibold text-[var(--text)] no-underline hover:text-[var(--brand)]">{title || children}</LinkOrAnchor>
         {title && children && <div className="mt-1 text-sm text-[var(--text-muted)]">{children}</div>}
       </div>
-      <LinkOrAnchor href={href} className="inline-flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--info)_10%,transparent)] px-3 py-2 text-xs font-semibold text-[var(--info)] no-underline">
-        {cta}<ArrowRight aria-hidden="true" className="size-3.5 rtl:rotate-180" />
+      <LinkOrAnchor
+        href={href}
+        className="inline-flex shrink-0 items-center gap-1 rounded-[var(--radius-sm)] bg-[var(--info)] px-3 py-2 text-xs font-semibold text-[var(--surface)] no-underline transition-colors hover:bg-[var(--info)]/90"
+      >
+         {cta}<ArrowRight aria-hidden="true" className="size-3.5" />
       </LinkOrAnchor>
     </aside>
   )

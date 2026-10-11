@@ -80,7 +80,10 @@ function Anchor({ href, target, rel, children, className, ...props }: ComponentP
       href={href}
       target={safeTarget}
       rel={safeRel}
-      className={clsx('text-[var(--info)] underline decoration-[var(--info)]/40 underline-offset-4', className)}
+      className={clsx(
+        'text-[var(--info)] underline-offset-[2px] decoration-transparent transition-all duration-200 hover:text-[var(--brand)] hover:decoration-[var(--brand)]',
+        className,
+      )}
     >
       {children}
       {isExternal && <ExternalLink aria-hidden="true" className="ms-1 inline size-3.5 align-text-top" />}
@@ -136,26 +139,26 @@ function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
     }
   }
 
-  return (
-    <div className="not-prose my-6 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface-alt)] text-[var(--text)]">
-      <div className="flex items-center justify-between border-b border-[var(--border-light)] px-4 py-2 text-xs text-[var(--text-muted)]">
-        <span dir="ltr" className="font-mono">{language}</span>
-        <button
-          type="button"
-          onClick={() => void copyCode()}
-          aria-label={copied ? 'کپی شد' : 'کپی کد'}
-          title={copied ? 'کپی شد' : 'کپی کد'}
-          className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 hover:bg-[var(--surface-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]"
-        >
-          <Copy aria-hidden="true" className="size-3.5" />
-          <span>{copied ? 'کپی شد' : 'کپی'}</span>
-        </button>
-      </div>
-      <pre dir="ltr" className="hljs m-0 overflow-x-auto p-4 text-start text-sm leading-6 text-[var(--text)]">
-        {children}
-      </pre>
-    </div>
-  )
+   return (
+     <div className="not-prose my-5 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface-alt)] text-[var(--text)]">
+       <div className="flex items-center justify-between border-b border-[var(--border-light)] px-3 py-2 text-xs text-[var(--text-muted)]">
+         <span dir="ltr" className="font-mono">{language}</span>
+         <button
+           type="button"
+           onClick={() => void copyCode()}
+           aria-label={copied ? 'کپی شد' : 'کپی کد'}
+           title={copied ? 'کپی شد' : 'کپی کد'}
+           className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-strong)] hover:text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+         >
+           <Copy aria-hidden="true" className="size-3" />
+           <span>{copied ? 'کپی شد' : 'کپی'}</span>
+         </button>
+       </div>
+       <pre dir="ltr" className="hljs m-0 overflow-x-auto p-3 text-start text-sm leading-6 text-[var(--text)]">
+         {children}
+       </pre>
+     </div>
+   )
 }
 
 function InlineCode({ children, className, ...props }: ComponentPropsWithoutRef<'code'>) {
@@ -372,17 +375,18 @@ export function MarkdownRenderer({ markdown, className }: MarkdownRendererProps)
     return <p role="alert" className="text-start text-[var(--danger)]">امکان نمایش متن وجود ندارد: {rendered.error}</p>
   }
 
-  return (
-    <article
-      dir="rtl"
-      className={clsx(
-        'prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-headings:var(--text)] [--tw-prose-links:var(--info)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-counters:var(--brand)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-hr:var(--border-light)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-th-borders:var(--border-strong)] [--tw-prose-td-borders:var(--border-light)]',
-        'prose-headings:text-start prose-p:text-start prose-ul:ps-6 prose-ol:ps-6',
-        'prose-blockquote:border-s-4 prose-blockquote:ps-4 prose-li:ps-1',
-        className,
-      )}
-    >
-      {rendered.content}
-    </article>
-  )
+   return (
+     <article
+       dir="rtl"
+       className={clsx(
+         'prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-headings:var(--text)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-counters:var(--brand)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-hr:var(--border-light)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-th-borders:var(--border-strong)] [--tw-prose-td-borders:var(--border-light)]',
+         'prose-headings:text-start prose-p:text-start',
+         'prose-blockquote:border-s-4 prose-blockquote:ps-4 prose-li:ps-1',
+         'prose-a:text-[var(--info)] prose-a:underline-offset-[2px] prose-a:decoration-transparent prose-a:transition-all prose-a:duration-200 prose-a:hover:text-[var(--brand)] prose-a:hover:decoration-[var(--brand)]',
+         className,
+       )}
+     >
+       {rendered.content}
+     </article>
+   )
 }

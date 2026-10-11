@@ -98,9 +98,11 @@ export function FontControls() {
           value={size}
           aria-label="اندازه متن"
           onChange={(event) => setSize(Number(event.currentTarget.value))}
-          className="w-24 accent-[var(--brand)]"
+          className="w-24 cursor-pointer accent-[var(--brand)]"
         />
-        <output className="min-w-10 text-center text-xs tabular-nums">{size}%</output>
+        <output className="min-w-10 text-center text-xs tabular-nums" aria-label="اندازه فعلی">
+          {size}%
+        </output>
         <button
           type="button"
           aria-label="بزرگ کردن متن"
@@ -136,13 +138,13 @@ const styleLabels = [
 export function StylePreviewToggle({ activeStyle }: { activeStyle: number }) {
   const [isOpen, setIsOpen] = useState(false)
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-flex items-center">
       <button
         type="button"
         aria-label="پیش‌نمایش استایل"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((value) => !value)}
-        className="inline-flex size-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface-alt)] text-[var(--text-secondary)] hover:text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+        className="inline-flex size-8 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface-alt)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-strong)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
       >
         <Palette aria-hidden="true" className="size-4" />
       </button>
@@ -166,10 +168,10 @@ export function StylePreviewToggle({ activeStyle }: { activeStyle: number }) {
                 window.dispatchEvent(new PopStateEvent('popstate'))
               }}
               className={clsx(
-                'rounded-[var(--radius-sm)] px-2 py-1 font-medium',
+                'rounded-[var(--radius-sm)] px-2 py-1 font-medium transition-colors',
                 id === activeStyle
                   ? 'bg-[var(--brand)] text-[var(--brand-contrast)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-alt)]',
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-alt)] hover:text-[var(--text)]',
               )}
             >
               {id}

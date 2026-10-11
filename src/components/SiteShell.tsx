@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Menu, X } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  ExternalLink,
+  Globe,
+  Menu,
+  Send,
+  Share2,
+  X,
+} from 'lucide-react'
 import { clsx } from 'clsx'
 import siteConfig from '../site.config'
 import { FontControls, StylePreviewToggle, ThemeToggle } from './ThemeControls'
@@ -10,6 +19,22 @@ function SiteLink({ href, children, className, onClick }: { href: string; childr
   return href.startsWith('/')
     ? <Link to={href} onClick={onClick} className={className}>{children}</Link>
     : <a href={href} onClick={onClick} className={className}>{children}</a>
+}
+
+const socialIcons: Record<string, typeof Share2> = {
+  تلگرام: Send,
+  ایکس: X,
+  توییتر: Share2,
+  اینستاگرام: Share2,
+  لینکدین: Share2,
+  گیتهاب: Share2,
+  وبسایت: Globe,
+  بلاگ: ExternalLink,
+}
+
+function getSocialIcon(label: string) {
+  const key = label.toLowerCase().trim()
+  return socialIcons[key] ?? ExternalLink
 }
 
 function AnnouncementBar() {
@@ -140,7 +165,24 @@ function Footer({ articles }: { articles: ArticleMeta[] }) {
           <section>
             <h2 className="mb-3 text-sm font-bold">شبکه‌های اجتماعی</h2>
             <ul className="m-0 grid list-none gap-2 p-0">
-              {siteConfig.social.map((item) => <li key={item.href}><a href={item.href} target="_blank" rel="noopener noreferrer" className="text-sm opacity-75 no-underline hover:opacity-100">{item.label}</a></li>)}
+              {siteConfig.social.map((item) => {
+                const Icon = getSocialIcon(item.label)
+                return (
+                  <li key={item.href}>
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm opacity-75 no-underline hover:opacity-100"
+                    >
+                      <span className="flex size-5 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)]/10 text-[var(--brand)]">
+                        <Icon aria-hidden="true" className="size-3.5" />
+                      </span>
+                      {item.label}
+                    </a>
+                  </li>
+                )
+              })}
               {siteConfig.social.length === 0 && <li className="text-sm opacity-60">پیوندی ثبت نشده است</li>}
             </ul>
           </section>
@@ -173,9 +215,9 @@ export function SiteShell({ children, articles }: { children: ReactNode; article
 }
 
 export function DirectionArrow({ className }: { className?: string }) {
-  return <ArrowLeft aria-hidden="true" className={clsx('size-4 rtl:rotate-180', className)} />
+  return <ArrowRight aria-hidden="true" className={clsx('size-4', className)} />
 }
 
 export function NextArrow({ className }: { className?: string }) {
-  return <ArrowRight aria-hidden="true" className={clsx('size-4 rtl:rotate-180', className)} />
+  return <ArrowLeft aria-hidden="true" className={clsx('size-4', className)} />
 }

@@ -34,10 +34,12 @@ export function MarkdownImage({
         height={height}
         loading="lazy"
         decoding="async"
+        draggable={false}
+        onContextMenu={(event) => event.preventDefault()}
         onLoad={() => setIsLoaded(true)}
         style={{ ...style, ...dimensions }}
         className={clsx(
-          'block h-auto w-full max-w-full transition-opacity duration-300',
+          'block h-auto w-full max-w-full select-none transition-opacity duration-300',
           isLoaded ? 'opacity-100' : 'opacity-0 blur-sm',
           className,
         )}
@@ -73,11 +75,12 @@ export function MarkdownVideo({
       title={title}
       controls
       playsInline
+      onContextMenu={(event) => event.preventDefault()}
       onClick={(event) => {
         onClick?.(event)
         if (src) openLightbox({ url: src, type: 'video', alt: title, title, poster: poster ?? undefined })
       }}
-      className={clsx('my-4 max-h-[80vh] w-full rounded-[var(--radius-sm)] bg-[var(--surface-strong)]', className)}
+      className={clsx('not-prose my-4 max-h-[80vh] w-full rounded-[var(--radius-sm)] bg-[var(--surface-strong)] select-none', className)}
     />
   )
 }
@@ -87,7 +90,7 @@ export function VideoDirective({ src = '', poster, title, alt }: { src?: string;
 }
 
 export function AudioDirective({ src = '', title, alt }: { src?: string; title?: string; alt?: string }) {
-  return <audio src={src} controls preload="none" aria-label={alt ?? title ?? 'صوت'} className="not-prose my-4 w-full" />
+  return <audio src={src} controls preload="none" aria-label={alt ?? title ?? 'صدا'} className="not-prose my-4 w-full select-none" onContextMenu={(event) => event.preventDefault()} />
 }
 
 function collectGalleryImages(node: ReactNode): LightboxMedia[] {
@@ -103,10 +106,18 @@ export function Gallery({ children }: { children?: ReactNode }) {
   const openLightbox = useLightbox()
   const images = collectGalleryImages(children)
   const openGalleryItem: OpenLightbox = (item) => openLightbox(item, images)
+  const imageCount = images.length
+
+  let gridClass = 'grid-cols-1'
+  if (imageCount === 2) gridClass = 'sm:grid-cols-2'
+  else if (imageCount === 3) gridClass = 'sm:grid-cols-2 lg:grid-cols-3'
+  else if (imageCount === 4) gridClass = 'sm:grid-cols-2 lg:grid-cols-4'
+  else if (imageCount === 5) gridClass = 'sm:grid-cols-2 lg:grid-cols-3'
+  else if (imageCount > 5) gridClass = 'sm:grid-cols-2 lg:grid-cols-3'
 
   return (
     <LightboxContext.Provider value={openGalleryItem}>
-      <div className="not-prose my-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&_p]:m-0">
+      <div className={clsx('not-prose my-5 grid gap-3', gridClass, '[&_p]:m-0')}>
         {children}
       </div>
     </LightboxContext.Provider>

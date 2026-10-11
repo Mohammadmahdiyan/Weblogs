@@ -37,13 +37,13 @@ export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[];
         </ul>
       </SidebarCard>
 
-      {previous.length > 0 && <SidebarCard title="مقالات پیشین" icon={<ArrowRight aria-hidden="true" className="size-4 rtl:rotate-180" />}>
+      {previous.length > 0 && <SidebarCard title="مقالات پیشین" icon={<ArrowRight aria-hidden="true" className="size-4" />}>
         <ul className="m-0 grid list-none gap-3 p-0">
           {previous.map((item) => <li key={item.slug}><ArticleNeighbor article={item} current={item.slug === article.slug} /></li>)}
         </ul>
       </SidebarCard>}
 
-      {next.length > 0 && <SidebarCard title="مقالات بعدی" icon={<ArrowLeft aria-hidden="true" className="size-4 rtl:rotate-180" />}>
+      {next.length > 0 && <SidebarCard title="مقالات بعدی" icon={<ArrowLeft aria-hidden="true" className="size-4" />}>
         <ul className="m-0 grid list-none gap-3 p-0">
           {next.map((item) => <li key={item.slug}><ArticleNeighbor article={item} current={item.slug === article.slug} /></li>)}
         </ul>
@@ -61,9 +61,9 @@ export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[];
       </SidebarCard>
 
       {siteConfig.sidebarCards.map((card) => <SidebarCard key={card.title} title={card.title} icon={<Share2 aria-hidden="true" className="size-4" />}>
-        <Link to={card.href} className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border-light)] p-3 text-start no-underline hover:border-[var(--border-strong)]">
-          <span className="min-w-0 flex-1"><span className="block text-xs text-[var(--muted)]">{card.text}</span><strong className="mt-1 block text-sm text-[var(--text)]">{card.title}</strong></span>
-          <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />
+        <Link to={card.href} className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border-light)] p-2 text-start no-underline hover:border-[var(--border-strong)]">
+          <span className="min-w-0 flex-1"><span className="block text-xs text-[var(--muted)]">{card.text}</span><strong className="mt-0.5 block text-sm text-[var(--text)]">{card.title}</strong></span>
+          <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)]" />
         </Link>
       </SidebarCard>)}
     </aside>
@@ -73,7 +73,7 @@ export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[];
 function ArticleNeighbor({ article, current }: { article: ArticleMeta; current: boolean }) {
   return (
     <Link to={`/blog/${article.slug}`} aria-current={current ? 'page' : undefined} className="flex items-center gap-3 rounded-[var(--radius-sm)] bg-[var(--surface-alt)] p-2.5 text-start no-underline hover:bg-[var(--surface-strong)]">
-      {article.cover?.type === 'image' && <img src={article.cover.url} alt="" loading="lazy" decoding="async" className="size-12 shrink-0 rounded-[var(--radius-sm)] object-cover" />}
+      {article.cover?.type === 'image' && <img src={article.cover.url} alt="" loading="lazy" decoding="async" className="size-12 shrink-0 rounded-[var(--radius-sm)] object-cover" onContextMenu={(event) => event.preventDefault()} />}
       <span className="line-clamp-2 text-sm leading-6 text-[var(--text)]">{article.title}</span>
     </Link>
   )

@@ -38,7 +38,10 @@ const siteConfig: SiteConfig = {
     { label: 'خانه', href: '/' },
     { label: 'همه مقاله‌ها', href: '/#articles' },
   ],
-  social: [],
+  social: [
+    { label: 'تلگرام', href: 'https://t.me/weblog_islam' },
+    { label: 'ایکس', href: 'https://twitter.com/weblog_islam' },
+  ],
   sidebarCards: [],
   embedAllowlist: [
     'youtube.com',
