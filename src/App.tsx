@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import articlesJson from './generated/articles.json'
 import type { ArticleMeta } from './lib/types'
 import { SiteShell } from './components/SiteShell'
+import { LoadingScreen } from './components/LoadingScreen'
 
 const articles = articlesJson as ArticleMeta[]
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })))
@@ -17,16 +18,6 @@ function RouteEffects() {
   }, [location.pathname])
 
   return null
-}
-
-function LoadingScreen() {
-  return (
-    <main aria-busy="true" aria-label="بارگذاری صفحه" className="mx-auto grid min-h-[55vh] w-full max-w-3xl content-start gap-4 px-4 py-12">
-      <div className="h-8 w-2/5 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
-      <div className="h-4 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
-      <div className="h-4 w-5/6 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
-    </main>
-  )
 }
 
 export default function App() {

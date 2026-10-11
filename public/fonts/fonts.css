@@ -1,0 +1,51 @@
+/* Fonts registry: fonts.json defines available fonts and their families.
+   To add a new font, follow the steps in public/fonts/README.md.
+
+   This file contains @font-face blocks for Vazirmatn. The font files are
+   expected in this directory (public/fonts/).
+*/
+
+/* Setup (a): Variable font support
+   If you have a variable font file Vazirmatn[wght].woff2, use:
+   @font-face {
+     font-family: 'Vazirmatn';
+     src: url('./Vazirmatn[wght].woff2') format('woff2');
+     font-weight: 100 900;
+     font-display: swap;
+   }
+
+   Setup (b): Static font files (currently active setup)
+   Place font files in this directory matching the filenames in fonts.json
+*/
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('./vazir/Vazir-Thin-FD.woff2') format('woff2');
+  font-weight: 300;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('./vazir/Vazir-FD.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('./vazir/Vazir-Medium-FD.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('./vazir/Vazir-Bold-FD.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+  font-style: normal;
+}

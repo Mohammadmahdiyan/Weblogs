@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { clsx } from 'clsx'
 import { ThemeContext, type ThemeMode, useTheme } from '../lib/theme'
+import { useFont } from '../lib/font-context'
 
 function applyTheme(theme: ThemeMode, systemDark: boolean) {
   const dark = theme === 'dark' || (theme === 'system' && systemDark)
@@ -60,18 +61,63 @@ export function ThemeToggle() {
 }
 
 export function FontControls() {
-  const [size, setSize] = useState(() => Number(localStorage.getItem('font-size') ?? '16'))
-
-  useEffect(() => {
-    document.documentElement.style.setProperty('--prose-size', `${size}px`)
-    localStorage.setItem('font-size', String(size))
-  }, [size])
+  const { fonts, current, setFont, size, setSize, resetFont } = useFont()
+  const showFontSelect = fonts.length > 1
 
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-      <span>اندازه متن</span>
-      <input type="range" min="14" max="22" step="1" value={size} aria-label="اندازه متن مقاله" onChange={(event) => setSize(Number(event.currentTarget.value))} className="w-24 accent-[var(--brand)]" />
-      <output className="min-w-8 text-center tabular-nums">{size}</output>
-    </label>
+    <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)]">
+      {showFontSelect && (
+        <label className="flex items-center gap-1.5">
+          <span>خانواده فونت:</span>
+          <select
+            value={current}
+            onChange={(event) => setFont(event.currentTarget.value)}
+            aria-label="انتخاب فونت"
+            className="rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--text)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+          >
+            {fonts.map((font) => (
+              <option key={font.id} value={font.id}>{font.label}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      <label className="flex items-center gap-1.5">
+        <button
+          type="button"
+          aria-label="کوچک کردن متن"
+          onClick={() => setSize(Math.max(80, size - 5))}
+          className="rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface-alt)] px-2 py-1 text-xs text-[var(--text)] hover:bg-[var(--surface-strong)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+        >
+          A−
+        </button>
+        <input
+          type="range"
+          min="80"
+          max="150"
+          step="5"
+          value={size}
+          aria-label="اندازه متن"
+          onChange={(event) => setSize(Number(event.currentTarget.value))}
+          className="w-24 accent-[var(--brand)]"
+        />
+        <output className="min-w-10 text-center text-xs tabular-nums">{size}%</output>
+        <button
+          type="button"
+          aria-label="بزرگ کردن متن"
+          onClick={() => setSize(Math.min(150, size + 5))}
+          className="rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface-alt)] px-2 py-1 text-xs text-[var(--text)] hover:bg-[var(--surface-strong)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+        >
+          A+
+        </button>
+        <button
+          type="button"
+          aria-label="بازنشانی فونت و اندازه"
+          onClick={resetFont}
+          className="rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface-alt)] px-2 py-1 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-strong)] focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+        >
+          بازنشانی
+        </button>
+      </label>
+    </div>
   )
 }

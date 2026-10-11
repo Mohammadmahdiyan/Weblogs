@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { LightboxProvider } from './components/Lightbox'
 import { ThemeProvider } from './components/ThemeControls'
+import { FontProvider } from './components/FontProvider'
 import './index.css'
 import App from './App'
 
@@ -11,7 +12,9 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <LightboxProvider>
         <ThemeProvider>
-          <App />
+          <FontProvider>
+            <App />
+          </FontProvider>
         </ThemeProvider>
       </LightboxProvider>
     </BrowserRouter>

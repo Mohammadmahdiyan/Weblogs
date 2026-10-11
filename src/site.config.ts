@@ -14,6 +14,8 @@ export interface SiteConfig {
   footerLinks: { label: string; href: string }[]
   social: { label: string; href: string }[]
   sidebarCards: { icon: string; title: string; text: string; href: string }[]
+  embedAllowlist: string[]
+  embedPoster: boolean
 }
 
 const siteConfig: SiteConfig = {
@@ -38,6 +40,15 @@ const siteConfig: SiteConfig = {
   ],
   social: [],
   sidebarCards: [],
+  embedAllowlist: [
+    'youtube.com',
+    'www.youtube-nocookie.com',
+    'instagram.com',
+    'www.instagram.com',
+    'aparat.com',
+    'www.aparat.com',
+  ],
+  embedPoster: true,
 }
 
 export default siteConfig

@@ -1,0 +1,17 @@
+{
+  "default": "vazirmatn",
+  "fonts": [
+    {
+      "id": "vazirmatn",
+      "label": "وزیرمتن",
+      "family": "Vazirmatn",
+      "fallback": "Tahoma, system-ui, sans-serif",
+      "weights": {
+        "300": "vazir/Vazir-Thin-FD.woff2",
+        "400": "vazir/Vazir-FD.woff2",
+        "500": "vazir/Vazir-Medium-FD.woff2",
+        "700": "vazir/Vazir-Bold-FD.woff2"
+      }
+    }
+  ]
+}

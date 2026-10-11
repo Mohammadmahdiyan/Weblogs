@@ -5,24 +5,46 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script>
-    (() => {
-      const storedTheme = localStorage.theme
-      const theme = ['light', 'dark', 'system'].includes(storedTheme)
-        ? storedTheme
-        : 'system'
-      const useDarkTheme =
-        theme === 'dark' ||
-        (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
-      document.documentElement.classList.toggle('dark', useDarkTheme)
-    })()
-  </script>
-  <title>وبلاگ اسلامی</title>
+      <script>
+        (() => {
+          const storedTheme = localStorage.theme
+          const theme = ['light', 'dark', 'system'].includes(storedTheme)
+            ? storedTheme
+            : 'system'
+          const useDarkTheme =
+            theme === 'dark' ||
+            (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', useDarkTheme)
+        })()
+      </script>
+      <script>
+        (() => {
+          const storedFont = localStorage.getItem('font') || 'vazirmatn'
+          const storedScale = localStorage.getItem('font-scale')
+          const fonts = {
+            vazirmatn: { family: 'Vazirmatn', fallback: 'Tahoma, system-ui, sans-serif' }
+          }
+          const font = fonts[storedFont] || fonts.vazirmatn
+          document.documentElement.style.setProperty('--app-font-family', `"${font.family}", ${font.fallback}`)
+          document.documentElement.style.setProperty('--app-font-scale', storedScale || '1')
+        })()
+      </script>
+      <link rel="stylesheet" href="/fonts/fonts.css" />
+      <title>وبلاگ اسلامی</title>
 </head>
 
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
-</body>
+  <body>
+    <div id="root">
+      <div class="flex min-h-screen w-full items-center justify-center" aria-label="در حال بارگذاری…" aria-busy="true">
+        <div class="relative flex flex-col items-center gap-6">
+          <div class="relative">
+            <div class="size-16 animate-spin rounded-full border-4 border-[#e2e8f0] border-t-[#1eb35b] motion-reduce:animate-none" aria-hidden="true"></div>
+          </div>
+          <span class="text-sm text-[#575757] dark:text-[#a9b8b1]">در حال بارگذاری…</span>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 
 </html>
