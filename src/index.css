@@ -48,13 +48,27 @@
     line-height: var(--body-line-height, 1.9);
   }
 
+  a {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    transition: text-decoration-color 0.2s ease, text-decoration-thickness 0.2s ease;
+  }
+
+  a:hover,
+  a:focus-visible {
+    text-decoration-color: currentColor;
+    text-decoration-thickness: 2px;
+  }
+
   a:focus-visible,
   button:focus-visible,
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
     outline: 2px solid var(--info);
-    outline-offset: 2px;
+    outlineOffset: 2px;
   }
 }
 

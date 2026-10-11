@@ -17,8 +17,8 @@ export function FontProvider({ children }: { children: ReactNode }) {
   const [fonts, setFonts] = useState<FontConfig[]>([defaultFontConfig])
   const [current, setCurrent] = useState(() => localStorage.getItem('font') || 'vazirmatn')
   const [size, setSizeState] = useState(() => {
-    const stored = localStorage.getItem('font-scale')
-    const parsed = stored ? Number.parseFloat(stored) : 1
+    const stored = localStorage.getItem('fontSize')
+    const parsed = stored ? Number.parseFloat(stored) : 100
     return Math.min(150, Math.max(80, parsed))
   })
 
@@ -31,9 +31,11 @@ export function FontProvider({ children }: { children: ReactNode }) {
         if (!cancelled) {
           const loadedFonts = data.fonts && data.fonts.length > 0 ? data.fonts : [defaultFontConfig]
           setFonts(loadedFonts)
-          if (data.default && !loadedFonts.find((font) => font.id === current)) {
-            setCurrent(data.default)
+          const defaultId = data.default || 'vazirmatn'
+          if (!loadedFonts.find((font) => font.id === current) && current !== defaultId) {
+            setCurrent(defaultId)
           }
+          localStorage.setItem('fonts-default', JSON.stringify(defaultId))
         }
       })
       .catch(() => {
@@ -55,7 +57,7 @@ export function FontProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const scale = size / 100
     document.documentElement.style.setProperty('--app-font-scale', String(scale))
-    localStorage.setItem('font-scale', String(size))
+    localStorage.setItem('fontSize', String(size))
   }, [size])
 
   const value = useMemo(() => ({
@@ -70,7 +72,7 @@ export function FontProvider({ children }: { children: ReactNode }) {
       setSizeState(Math.min(150, Math.max(80, nextSize)))
     },
     resetFont: () => {
-      const defaultId = typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('fonts-default') || '"vazirmatn"') as string) : 'vazirmatn'
+      const defaultId = JSON.parse(localStorage.getItem('fonts-default') || '"vazirmatn"') as string
       localStorage.setItem('font', defaultId)
       setCurrent(defaultId)
       setSizeState(100)

@@ -92,7 +92,7 @@ function Header() {
           <nav aria-label="پیمایش اصلی" className="hidden items-center gap-7 md:flex">
             {siteConfig.nav.map((item) => <SiteLink key={item.href} href={item.href} className="text-sm text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">{item.label}</SiteLink>)}
           </nav>
-           <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <div className="hidden items-center gap-3 lg:flex">
               <ThemeToggle />
               <StylePreviewToggle activeStyle={1} />

@@ -20,13 +20,13 @@
       <script>
         (() => {
           const storedFont = localStorage.getItem('font') || 'vazirmatn'
-          const storedScale = localStorage.getItem('font-scale')
+          const storedScale = localStorage.getItem('fontSize')
           const fonts = {
             vazirmatn: { family: 'Vazirmatn', fallback: 'Tahoma, system-ui, sans-serif' }
           }
           const font = fonts[storedFont] || fonts.vazirmatn
           document.documentElement.style.setProperty('--app-font-family', `"${font.family}", ${font.fallback}`)
-          document.documentElement.style.setProperty('--app-font-scale', storedScale || '1')
+          document.documentElement.style.setProperty('--app-font-scale', storedScale ? (Number(storedScale) / 100).toString() : '1')
         })()
       </script>
       <link rel="stylesheet" href="/fonts/fonts.css" />
