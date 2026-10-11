@@ -14,6 +14,10 @@ export interface SiteConfig {
   footerLinks: { label: string; href: string }[]
   social: { label: string; href: string }[]
   sidebarCards: { icon: string; title: string; text: string; href: string }[]
+  /** Hostnames allowed for generic embeds. Others still render, with an «external content» notice. */
+  embedAllowlist: string[]
+  /** false = never request the YouTube poster image (no third-party request before a click). */
+  embedPoster: boolean
 }
 
 const siteConfig: SiteConfig = {
@@ -38,6 +42,15 @@ const siteConfig: SiteConfig = {
   ],
   social: [],
   sidebarCards: [],
+  embedAllowlist: [
+    'youtube.com',
+    'youtube-nocookie.com',
+    'instagram.com',
+    'aparat.com',
+    // Add the hostnames of your hadith / reference websites here, e.g.:
+    // 'hadith.example.org',
+  ],
+  embedPoster: true,
 }
 
 export default siteConfig

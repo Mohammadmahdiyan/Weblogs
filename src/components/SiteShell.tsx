@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Menu, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import siteConfig from '../site.config'
-import { FontControls, ThemeToggle } from './ThemeControls'
+import { ThemeToggle } from './ThemeControls'
+import { FontControls } from './FontControls'
 import type { ArticleMeta } from '../lib/types'
 
 function SiteLink({ href, children, className, onClick }: { href: string; children: ReactNode; className?: string; onClick?: () => void }) {
@@ -155,6 +156,7 @@ function Footer({ articles }: { articles: ArticleMeta[] }) {
 export function SiteShell({ children, articles }: { children: ReactNode; articles: ArticleMeta[] }) {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[60] focus:rounded-[var(--radius-sm)] focus:bg-[var(--brand)] focus:px-4 focus:py-2 focus:text-[var(--brand-contrast)]">پرش به محتوای اصلی</a>
       <AnnouncementBar />
       <Header />
       {children}

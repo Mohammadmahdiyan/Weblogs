@@ -6,13 +6,11 @@ import matter from 'gray-matter'
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import { visit } from 'unist-util-visit'
-import type { ArticleMeta, CoverType, SearchEntry } from '../src/lib/types.ts'
-
-interface MediaFile {
-  sourcePath: string
-  relativePath: string
-  type: CoverType | null
-}
+import type { ArticleMeta, SearchEntry } from '../src/lib/types.ts'
+import siteConfig from '../src/site.config.ts'
+import { detectProvider, parseYouTubeId, youtubePoster } from '../src/lib/embed.ts'
+import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, type MediaFile } from './lib/media.ts'
+import { validateCoverEmbed, validateDir, validateLang, validateStyle } from './lib/validators.ts'
 
 interface PreparedArticle {
   meta: ArticleMeta
@@ -25,16 +23,6 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const blogRoot = path.join(projectRoot, 'content', 'blog')
 const publicContentRoot = path.join(projectRoot, 'public', 'content')
 const generatedRoot = path.join(projectRoot, 'src', 'generated')
-const imageExtensions = new Set([
-  '.avif', '.bmp', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp', '.tif', '.tiff',
-])
-const videoExtensions = new Set([
-  '.3gp', '.avi', '.m4v', '.mkv', '.mov', '.mp4', '.mpeg', '.mpg', '.ogv', '.webm',
-])
-const audioExtensions = new Set([
-  '.aac', '.flac', '.m4a', '.mid', '.midi', '.mp3', '.oga', '.ogg', '.opus', '.wav', '.weba',
-])
-
 function relativeFilePath(filePath: string): string {
   return path.relative(projectRoot, filePath).split(path.sep).join('/')
 }
@@ -51,14 +39,6 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9_-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
-}
-
-function coverTypeFor(filePath: string): CoverType | null {
-  const extension = path.extname(filePath).toLowerCase()
-  if (imageExtensions.has(extension)) return 'image'
-  if (videoExtensions.has(extension)) return 'video'
-  if (audioExtensions.has(extension)) return 'audio'
-  return null
 }
 
 function readStringArray(
@@ -106,40 +86,6 @@ function plainText(markdown: string): string {
 
 function excerptFrom(markdown: string): string {
   return Array.from(plainText(markdown)).slice(0, 160).join('')
-}
-
-function normalizeMediaPath(value: string): string {
-  let decoded = value
-  try {
-    decoded = decodeURIComponent(value)
-  } catch {
-    // Keep malformed percent-encoding as a literal filename.
-  }
-
-  const normalized = path.posix.normalize(decoded.replace(/\\/g, '/'))
-  return normalized.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '')
-}
-
-function encodeMediaPath(value: string): string {
-  return value.split('/').map(encodeURIComponent).join('/')
-}
-
-function isAbsoluteUrl(value: string): boolean {
-  return value.startsWith('/') || value.startsWith('#') || /^[a-z][a-z\d+.-]*:/i.test(value)
-}
-
-function rewriteMediaUrl(value: string, slug: string, mediaFiles: MediaFile[]): string {
-  const suffixIndex = value.search(/[?#]/)
-  const pathname = suffixIndex === -1 ? value : value.slice(0, suffixIndex)
-  const suffix = suffixIndex === -1 ? '' : value.slice(suffixIndex)
-
-  if (!pathname || isAbsoluteUrl(pathname)) return value
-
-  const normalizedPath = normalizeMediaPath(pathname)
-  if (!normalizedPath || normalizedPath === '.') return value
-  const isArticleMedia = mediaFiles.some((media) => media.relativePath.toLowerCase() === normalizedPath.toLowerCase())
-  if (!isArticleMedia && !coverTypeFor(pathname)) return value
-  return `/content/${slug}/${encodeMediaPath(normalizedPath)}${suffix}`
 }
 
 function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[]): string {
@@ -248,6 +194,17 @@ async function collectMediaFiles(directory: string): Promise<MediaFile[]> {
   return collected.sort((left, right) => left.relativePath.localeCompare(right.relativePath))
 }
 
+function embedCover(url: string): NonNullable<ArticleMeta['cover']> {
+  const provider = detectProvider(url)
+  const youtubeId = provider === 'youtube' ? parseYouTubeId(url) : null
+  return {
+    url,
+    type: 'embed',
+    embedProvider: provider,
+    ...(youtubeId ? { poster: youtubePoster(youtubeId) } : {}),
+  }
+}
+
 async function prepareArticle(articleDirectory: string): Promise<PreparedArticle> {
   const indexPath = path.join(articleDirectory, 'index.md')
   const source = await readFile(indexPath, 'utf8')
@@ -270,10 +227,11 @@ async function prepareArticle(articleDirectory: string): Promise<PreparedArticle
 
   const suggestions = readStringArray(data, 'suggestions', indexPath)
   const tags = readStringArray(data, 'tags', indexPath)
-  const style = data.style === undefined ? 1 : data.style
-  if (typeof style !== 'number' || !Number.isInteger(style) || style < 1 || style > 8) {
-    return fail(indexPath, '"style" must be an integer from 1 to 8')
-  }
+  const relativeIndex = relativeFilePath(indexPath)
+  const style = validateStyle(data.style, relativeIndex)
+  const coverEmbed = validateCoverEmbed(data.coverEmbed, relativeIndex)
+  const lang = validateLang(data.lang, relativeIndex)
+  const dir = validateDir(data.dir, relativeIndex)
   if (data.description !== undefined && typeof data.description !== 'string') {
     return fail(indexPath, '"description" must be a string')
   }
@@ -312,12 +270,84 @@ async function prepareArticle(articleDirectory: string): Promise<PreparedArticle
     suggestions,
     cover: coverFile?.type
       ? { url: `/content/${slug}/${encodeMediaPath(coverFile.relativePath)}`, type: coverFile.type }
-      : null,
+      : coverEmbed ? embedCover(coverEmbed) : null,
     style,
     readingTime: Math.max(1, Math.ceil(words / 200)),
+    ...(lang ? { lang } : {}),
+    ...(dir ? { dir } : {}),
   }
 
   return { meta, body, mediaFiles, articleDirectory }
+}
+
+function xmlEscape(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+}
+
+/** sitemap.xml, robots.txt, rss.xml and _headers (CSP frame-src). Needs `siteUrl` in src/site.config.ts. */
+async function writeSiteFiles(metadata: ArticleMeta[]): Promise<void> {
+  const publicRoot = path.join(projectRoot, 'public')
+  const base = siteConfig.siteUrl.replace(/\/+$/, '')
+  if (/example\.com/.test(base)) {
+    console.warn('! siteUrl in src/site.config.ts is still "example.com": set it before deploying (sitemap, RSS and canonical URLs use it).')
+  }
+
+  const urls = [
+    { loc: `${base}/`, lastmod: metadata[0]?.updated ?? metadata[0]?.date },
+    ...metadata.map((article) => ({ loc: `${base}/blog/${article.slug}`, lastmod: article.updated ?? article.date })),
+  ]
+  const sitemap = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...urls.map((url) => `  <url><loc>${xmlEscape(url.loc)}</loc>${url.lastmod ? `<lastmod>${url.lastmod}</lastmod>` : ''}</url>`),
+    '</urlset>',
+    '',
+  ].join('\n')
+
+  const items = metadata.slice(0, 50).map((article) => [
+    '    <item>',
+    `      <title>${xmlEscape(article.title)}</title>`,
+    `      <link>${xmlEscape(`${base}/blog/${article.slug}`)}</link>`,
+    `      <guid isPermaLink="true">${xmlEscape(`${base}/blog/${article.slug}`)}</guid>`,
+    `      <pubDate>${new Date(`${article.date}T12:00:00Z`).toUTCString()}</pubDate>`,
+    `      <description>${xmlEscape(article.description)}</description>`,
+    '    </item>',
+  ].join('\n'))
+  const rss = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0">',
+    '  <channel>',
+    `    <title>${xmlEscape(siteConfig.siteName)}</title>`,
+    `    <link>${xmlEscape(base)}</link>`,
+    `    <description>${xmlEscape(siteConfig.siteDescription)}</description>`,
+    '    <language>fa</language>',
+    ...items,
+    '  </channel>',
+    '</rss>',
+    '',
+  ].join('\n')
+
+  const robots = `User-agent: *\nAllow: /\n\nSitemap: ${base}/sitemap.xml\n`
+
+  const frameHosts = siteConfig.embedAllowlist
+    .flatMap((host) => [`https://${host}`, `https://*.${host}`])
+    .join(' ')
+  const headers = [
+    '# Generated by scripts/build-content.ts from src/site.config.ts → embedAllowlist. Do not edit by hand.',
+    '/*',
+    '  Referrer-Policy: strict-origin-when-cross-origin',
+    '  X-Content-Type-Options: nosniff',
+    `  Content-Security-Policy: frame-src 'self' ${frameHosts}`,
+    '',
+  ].join('\n')
+
+  await mkdir(publicRoot, { recursive: true })
+  await Promise.all([
+    writeFile(path.join(publicRoot, 'sitemap.xml'), sitemap, 'utf8'),
+    writeFile(path.join(publicRoot, 'rss.xml'), rss, 'utf8'),
+    writeFile(path.join(publicRoot, 'robots.txt'), robots, 'utf8'),
+    writeFile(path.join(publicRoot, '_headers'), headers, 'utf8'),
+  ])
 }
 
 async function buildContent(): Promise<void> {
@@ -406,6 +436,8 @@ async function buildContent(): Promise<void> {
     cover: article.cover?.type ?? 'none',
     suggestions: article.suggestions.length,
   })))
+
+  await writeSiteFiles(metadata)
 }
 
 buildContent().catch((error: unknown) => {

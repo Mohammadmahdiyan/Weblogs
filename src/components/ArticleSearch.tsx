@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Search, ArrowUp, ArrowDown, CornerDownLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { normalizeSearchText } from '../lib/normalize'
+import { decideSubmit } from '../lib/search'
 import type { ArticleMeta, SearchEntry } from '../lib/types'
 
 interface SearchResult {
@@ -19,10 +20,10 @@ function HighlightedPhrase({ text, query }: { text: string; query: string }) {
   return <>{text.slice(0, index)}<mark className="rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--brand)_18%,transparent)] text-[var(--text)]">{text.slice(index, index + normalizedQuery.length)}</mark>{text.slice(index + normalizedQuery.length)}</>
 }
 
-export function ArticleSearch({ articles, searchIndex }: { articles: ArticleMeta[]; searchIndex: SearchEntry[] }) {
+export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { articles: ArticleMeta[]; searchIndex: SearchEntry[]; initialQuery?: string }) {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<SearchResult[]>([])
   const [activeIndex, setActiveIndex] = useState(-1)
   const [open, setOpen] = useState(false)
@@ -60,24 +61,14 @@ export function ArticleSearch({ articles, searchIndex }: { articles: ArticleMeta
 
   const visibleResults = normalizeSearchText(query).length >= 2 ? results : []
 
-  function findExactMatches(value: string) {
-    const normalized = normalizeSearchText(value)
-    return articles.filter((article) => [article.title, ...article.suggestions].some((phrase) => normalizeSearchText(phrase) === normalized))
-  }
-
   function submit() {
-    const exactMatches = findExactMatches(query)
-    if (exactMatches.length === 1) {
-      navigate(`/blog/${exactMatches[0].slug}`)
+    // Activating a highlighted option always wins.
+    if (activeIndex >= 0 && visibleResults[activeIndex]) {
+      navigate(`/blog/${visibleResults[activeIndex].entry.slug}`)
       return
     }
-
-    // Only an unusually strong, unambiguous fuzzy result (Fuse score <= 0.08) auto-navigates.
-    if (exactMatches.length === 0 && visibleResults.length === 1 && visibleResults[0].score <= 0.08) {
-      navigate(`/blog/${visibleResults[0].entry.slug}`)
-      return
-    }
-    if (activeIndex >= 0 && visibleResults[activeIndex]) navigate(`/blog/${visibleResults[activeIndex].entry.slug}`)
+    const decision = decideSubmit(articles, query, visibleResults.map((result) => ({ slug: result.entry.slug, score: result.score })))
+    if (decision.action === 'navigate') navigate(`/blog/${decision.slug}`)
     else setOpen(true)
   }
 

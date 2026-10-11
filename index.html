@@ -5,23 +5,42 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/fonts/fonts.css" />
   <script>
+    // Runs before React: applies theme + font settings so nothing flashes or jumps.
     (() => {
-      const storedTheme = localStorage.theme
-      const theme = ['light', 'dark', 'system'].includes(storedTheme)
-        ? storedTheme
-        : 'system'
-      const useDarkTheme =
-        theme === 'dark' ||
-        (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
-      document.documentElement.classList.toggle('dark', useDarkTheme)
+      const root = document.documentElement
+      try {
+        const storedTheme = localStorage.getItem('theme')
+        const theme = ['light', 'dark', 'system'].includes(storedTheme) ? storedTheme : 'system'
+        const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+        root.classList.toggle('dark', dark)
+        root.style.colorScheme = theme === 'system' ? 'light dark' : theme
+
+        const stack = localStorage.getItem('fontStack')
+        if (stack) root.style.setProperty('--app-font-family', stack)
+        const size = Number(localStorage.getItem('fontSize'))
+        if (size >= 80 && size <= 150) root.style.setProperty('--app-font-scale', String(size / 100))
+      } catch (error) {
+        // localStorage can be blocked; defaults from CSS apply.
+      }
     })()
   </script>
+  <style>
+    /* Initial loader: pure HTML+CSS, visible before the JS bundle arrives. */
+    .boot-loader { display: grid; min-height: 100vh; place-items: center; background: #f7f7f7; color: #1eb35b; }
+    .dark .boot-loader { background: #141414; color: #1eb35b; }
+    .boot-loader span { width: 44px; height: 44px; border-radius: 50%; border: 4px solid currentColor; border-top-color: transparent; animation: boot-spin .8s linear infinite; }
+    @keyframes boot-spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .boot-loader span { animation: none; border-top-color: currentColor; opacity: .6; } }
+  </style>
   <title>وبلاگ اسلامی</title>
 </head>
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="boot-loader" role="status"><span></span><p style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">در حال بارگذاری…</p></div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

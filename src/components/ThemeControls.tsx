@@ -58,20 +58,3 @@ export function ThemeToggle() {
     </div>
   )
 }
-
-export function FontControls() {
-  const [size, setSize] = useState(() => Number(localStorage.getItem('font-size') ?? '16'))
-
-  useEffect(() => {
-    document.documentElement.style.setProperty('--prose-size', `${size}px`)
-    localStorage.setItem('font-size', String(size))
-  }, [size])
-
-  return (
-    <label className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-      <span>اندازه متن</span>
-      <input type="range" min="14" max="22" step="1" value={size} aria-label="اندازه متن مقاله" onChange={(event) => setSize(Number(event.currentTarget.value))} className="w-24 accent-[var(--brand)]" />
-      <output className="min-w-8 text-center tabular-nums">{size}</output>
-    </label>
-  )
-}

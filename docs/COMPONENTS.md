@@ -140,3 +140,111 @@ GFM tables receive a responsive wrapper, sticky header, and zebra rows:
 ```
 
 Raw HTML is supported, including `<details>`, `<video>`, `<audio>`, `<iframe>`, and Tailwind classes. Script elements and `on*` event attributes are removed. Unknown directives display a warning box in development only.
+---
+
+## Embeds and quotes (external content)
+
+Every iframe on the site goes through one component, `SafeEmbed`, so it always
+gets safe defaults: `sandbox`, `referrerpolicy="strict-origin-when-cross-origin"`,
+lazy loading, a required `title`, a responsive wrapper and a fallback. This also
+applies to a **raw `<iframe>`** written inside markdown/HTML (it is rewritten to
+`SafeEmbed`). Only `https:` sources and site-relative paths are allowed.
+
+### `::youtube`
+
+```md
+::youtube{id="dQw4w9WgXcQ" start="1m30s" title="عنوان" caption="توضیح"}
+::youtube{url="https://youtu.be/dQw4w9WgXcQ?t=90" title="عنوان"}
+```
+
+Loads `youtube-nocookie.com`. A poster + play button is shown first; the real
+player is mounted only after a click (nothing autoplays). `start` accepts
+seconds (`90`) or `1m30s`.
+
+### `::instagram`
+
+```md
+::instagram{url="https://www.instagram.com/p/XXXX/" caption="پست"}
+::instagram{url="https://www.instagram.com/reel/XXXX/"}
+```
+
+Supports `/p/`, `/reel/`, `/tv/`. Click-to-load like YouTube.
+
+### `::aparat`
+
+```md
+::aparat{id="VIDEO_HASH" title="عنوان"}
+```
+
+### `::embed` (any https page)
+
+```md
+::embed{src="https://example.org/page" height="500" title="عنوان" caption="توضیح" source="https://example.org/page"}
+```
+
+| Attribute | Meaning |
+|---|---|
+| `src` | https URL (or `/relative/path`) |
+| `height` | fixed height (`500`, `60vh`, `30rem`); the page scrolls inside the box. Best for **text pages** |
+| `ratio` | aspect ratio instead of a fixed height (default `16/9`) |
+| `title` | accessible title (falls back to the hostname) |
+| `caption` | text under the frame |
+| `source` | URL used by the «مشاهده در منبع» link |
+| `facade` | show a click-to-load button instead of loading when scrolled into view |
+| `fallback-only` | never use a frame; show only the link card (for sites known to block iframes) |
+| `allow-forms` | adds `allow-forms` to the sandbox |
+
+Hosts that are not in `embedAllowlist` (`src/site.config.ts`) still render, but
+show an «محتوای خارجی» notice above the frame.
+
+### `:::source` (quote card for hadith / references)
+
+```md
+:::source{site="نام سایت" title="عنوان" ref="کتاب، شماره" grade="daif" url="https://..."}
+متن نقل‌قول…
+:::
+```
+
+`grade`: `sahih` (صحیح), `hasan` (حسن), `daif` (ضعیف), `mawdu` (موضوع), `unknown`.
+Optional `lang="ar" dir="rtl"` for Arabic text.
+
+### Which one should I use?
+
+| I want to… | Use |
+|---|---|
+| show a YouTube video (optionally from a given second) | `::youtube` |
+| show an Instagram post / reel | `::instagram` |
+| show an Aparat video | `::aparat` |
+| show another web page (e.g. a hadith page) as visual proof | `::embed` with `height` |
+| cite the text of a hadith / reference **so it is searchable and printable** | `:::source` |
+| quote a site that I know blocks iframes | `:::source`, or `::embed{fallback-only}` |
+| paste existing embed code | a raw `<iframe>` (it becomes `SafeEmbed` automatically) |
+
+### Limitation: many sites block iframes
+
+Sites can forbid being shown inside another page (`X-Frame-Options`,
+`Content-Security-Policy: frame-ancestors`). Browsers do not report this error,
+so the site waits 8 seconds; if the frame did not load it replaces the empty
+box with a card containing the title, the host and a «مشاهده در منبع» button.
+This cannot be bypassed from the client. An iframe also cannot show only *part*
+of a page. For citing a passage, use `:::source`.
+
+### Other directives added from the reference design
+
+```md
+:::suggested{href="/blog/some-article" label="مقاله پیشنهادی:"}
+[عنوان مقاله](/blog/some-article)
+:::
+
+:::course{title="عنوان دوره" href="https://..." image="./cover.jpg" label="دوره پیشنهادی" cta="مشاهده دوره"}
+توضیح کوتاه.
+:::
+
+:::accordion{faq}
+:::item{title="سوال؟"}
+پاسخ.
+:::
+:::
+```
+
+`:::accordion{faq}` also emits `FAQPage` JSON-LD for SEO.

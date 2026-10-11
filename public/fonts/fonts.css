@@ -1,0 +1,44 @@
+/*
+  Font registry — CSS half. The JSON half is /public/fonts/fonts.json.
+  Adding another font later = 3 steps (see public/fonts/README.md):
+    1) copy the font files into /public/fonts/
+    2) add @font-face blocks here
+    3) add one object to fonts.json
+
+  Active font: Vazir (files already in /public/fonts/vazir/).
+  Weight mapping: each static file covers a weight RANGE so missing weights
+  (300, 600, 800, 900 …) fall back gracefully to the nearest available file.
+  If a file is missing the browser silently uses the fallback stack.
+*/
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('./vazir/Vazir-Thin-FD.woff2') format('woff2');
+  font-weight: 100 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('./vazir/Vazir-FD.woff2') format('woff2');
+  font-weight: 300 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('./vazir/Vazir-Medium-FD.woff2') format('woff2');
+  font-weight: 500 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazir';
+  src: url('./vazir/Vazir-Bold-FD.woff2') format('woff2');
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}

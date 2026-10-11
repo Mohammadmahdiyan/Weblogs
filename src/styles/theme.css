@@ -1,0 +1,103 @@
+/*
+  Design tokens — the shared contract used by every component (Parts 4–6) and
+  every blog style (Part 7). Components must use ONLY these tokens, so changing
+  `style:` restyles everything.
+
+  Global values below also drive the site shell (header/footer/home page) and
+  equal the defaults of blog style 1. Each `.blog-style-N` scope in
+  blog-styles.css overrides the whole set for the article page.
+
+  Typography rule: never hardcode a font family. Everything uses
+  `var(--app-font-family)`, supplied by the font system (public/fonts).
+*/
+
+:root {
+  --app-font-family: 'Vazir', Tahoma, system-ui, sans-serif;
+  --app-font-scale: 1;
+
+  --bg: #f7f7f7;
+  --surface: #ffffff;
+  --surface-alt: #f7f7f7;
+  --surface-strong: #f0f0f0;
+  --text: #242424;
+  --text-secondary: #575757;
+  --muted: #6b6b6b;
+  --border-light: #f0f0f0;
+  --border-strong: #e3e3e3;
+  --brand: #15803d;
+  --brand-bright: #1eb35b;
+  --brand-dark: #166534;
+  --brand-contrast: #ffffff;
+  --info: #0b72b5;
+  --warn: #a16207;
+  --danger: #c02126;
+  --success: #15803d;
+  --code-bg: #242424;
+  --code-text: #f0f0f0;
+  --footer-bg: #242424;
+  --footer-text: #f0f0f0;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+  --radius-card: 12px;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04);
+
+  --body-line-height: 2;
+  --prose-size: 1rem;
+  --heading-weight: 700;
+  --title-weight: 800;
+  --title-size: 1.875rem;
+  --card-pad: 1.25rem;
+
+  /* aliases kept for older components; also re-declared per style scope */
+  --text-muted: var(--text-secondary);
+  --brand-foreground: var(--brand-contrast);
+  --warning: var(--warn);
+}
+
+.dark {
+  --bg: #141414;
+  --surface: #1c1c1c;
+  --surface-alt: #242424;
+  --surface-strong: #2e2e2e;
+  --text: #f0f0f0;
+  --text-secondary: #c4c4c4;
+  --muted: #9a9a9a;
+  --border-light: #2a2a2a;
+  --border-strong: #3a3a3a;
+  --brand: #4ade80;
+  --brand-bright: #1eb35b;
+  --brand-dark: #86efac;
+  --brand-contrast: #052e16;
+  --info: #60c0f5;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --success: #4ade80;
+  --code-bg: #0f0f0f;
+  --code-text: #f0f0f0;
+  --footer-bg: #0f0f0f;
+  --footer-text: #e8e8e8;
+  --shadow-card: none;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-surface-strong: var(--surface-strong);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-muted: var(--muted);
+  --color-border-light: var(--border-light);
+  --color-border-strong: var(--border-strong);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-contrast: var(--brand-contrast);
+  --color-info: var(--info);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-code-bg: var(--code-bg);
+  --color-code-text: var(--code-text);
+}

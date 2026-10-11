@@ -38,7 +38,7 @@ const directiveNames = new Set([
   'accordion', 'item', 'alert', 'avatar', 'badge', 'breadcrumbs', 'button', 'buttons',
   'card', 'collapse', 'modal', 'gallery', 'iconbutton', 'list', 'pagination', 'popover',
   'rating', 'select', 'skeleton', 'spinner', 'switch', 'tooltip', 'lead', 'video',
-  'audio', 'suggested', 'course',
+  'audio', 'suggested', 'course', 'embed', 'youtube', 'instagram', 'aparat', 'source',
 ])
 
 function isDirectiveNode(node: Node): node is DirectiveNode {
@@ -49,6 +49,8 @@ function isDirectiveNode(node: Node): node is DirectiveNode {
 }
 
 function toReactProperty(name: string): string {
+  // `ref` is reserved by React, so the `:::source{ref=""}` attribute is exposed as `reference`.
+  if (name === 'ref') return 'reference'
   return name.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase())
 }
 
@@ -108,6 +110,22 @@ function collectFaqItems(node: Node): { question: string; answer: string }[] {
   return collected
 }
 
+/**
+ * The page's only <h1> is the frontmatter title. If (and only if) the body itself
+ * contains a `# Heading`, every body heading is demoted by one level (max h6) so
+ * the document outline stays valid. Bodies that start at `##` are left alone.
+ */
+export const remarkHeadingLevels: Plugin<[], MdastRoot> = () => (tree) => {
+  let hasLevelOne = false
+  visit(tree, 'heading', (node) => {
+    if (node.depth === 1) hasLevelOne = true
+  })
+  if (!hasLevelOne) return
+  visit(tree, 'heading', (node) => {
+    node.depth = Math.min(6, node.depth + 1) as 1 | 2 | 3 | 4 | 5 | 6
+  })
+}
+
 export const remarkComponents: Plugin<[], MdastRoot> = () => (tree) => {
   visit(tree, (node) => {
     if (isDirectiveNode(node)) setDirectiveElement(node)
@@ -130,6 +148,7 @@ export const remarkComponents: Plugin<[], MdastRoot> = () => (tree) => {
     'mdx-avatar', 'mdx-breadcrumbs', 'mdx-buttons', 'mdx-collapse', 'mdx-gallery',
     'mdx-iconbutton', 'mdx-list', 'mdx-modal', 'mdx-pagination', 'mdx-select',
     'mdx-skeleton', 'mdx-spinner', 'mdx-switch', 'mdx-video', 'mdx-audio',
+    'mdx-embed', 'mdx-youtube', 'mdx-instagram', 'mdx-aparat',
   ])
 
   visit(tree, 'paragraph', (node, index, parent) => {
@@ -169,13 +188,24 @@ export const remarkComponents: Plugin<[], MdastRoot> = () => (tree) => {
   })
 }
 
+const urlProperties = new Set(['href', 'src', 'xlinkhref', 'action', 'formaction', 'poster', 'data'])
+
+function isJavascriptUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false
+  // Browsers ignore control characters and whitespace inside the scheme.
+  // eslint-disable-next-line no-control-regex
+  return /^javascript:/i.test(value.replace(/[\u0000-\u0020]/g, ''))
+}
+
 function removeUnsafeMarkup(parent: Parent): void {
   parent.children = parent.children.filter((node) => {
     if (node.type === 'element') {
       if (node.tagName.toLowerCase() === 'script') return false
 
       for (const property of Object.keys(node.properties)) {
-        if (property.toLowerCase().startsWith('on')) delete node.properties[property]
+        const lower = property.toLowerCase()
+        if (lower.startsWith('on')) delete node.properties[property]
+        else if (urlProperties.has(lower) && isJavascriptUrl(node.properties[property])) delete node.properties[property]
       }
     }
 
@@ -191,6 +221,7 @@ export function createMarkdownProcessor(components: MarkdownComponents) {
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkDirective)
+    .use(remarkHeadingLevels)
     .use(remarkComponents)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)

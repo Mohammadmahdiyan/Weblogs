@@ -1,0 +1,11 @@
+{
+  "default": "vazir",
+  "fonts": [
+    {
+      "id": "vazir",
+      "label": "وزیر",
+      "family": "Vazir",
+      "fallback": "Tahoma, system-ui, sans-serif"
+    }
+  ]
+}

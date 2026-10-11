@@ -6,7 +6,7 @@ import siteConfig from '../site.config'
 
 function SidebarCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-5 text-[var(--text)] xl:p-7">
+    <section className="surface-card p-5 text-[var(--text)] xl:p-7">
       <h2 className="mb-4 flex items-center gap-2 text-start text-base font-bold"><span className="text-[var(--brand)]">{icon}</span>{title}</h2>
       {children}
     </section>

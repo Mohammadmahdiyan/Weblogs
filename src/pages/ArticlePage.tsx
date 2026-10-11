@@ -1,31 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
-import GithubSlugger from 'github-slugger'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, ChevronLeft } from 'lucide-react'
+import { clsx } from 'clsx'
 import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
+import { buildToc } from '../lib/toc'
 import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
-import { CoverMedia } from '../components/CoverMedia'
 import { ArticleSidebar } from '../components/ArticleSidebar'
+import { ArticleToc } from '../components/ArticleToc'
+import { CoverMedia } from '../components/CoverMedia'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
-import { ArticleLayout } from '../layouts'
+import { ArticleLayout, STYLE_IDS, getLayout, layouts, normalizeStyle } from '../layouts'
+import { NotFoundPage } from './NotFoundPage'
 
 const articles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
-
-interface TocItem { level: number; title: string; id: string }
-
-function buildToc(markdown: string): TocItem[] {
-  const slugger = new GithubSlugger()
-  const headings: TocItem[] = []
-  const expression = /^ {0,3}(#{2,3})\s+(.+?)\s*#*\s*$/gm
-  for (const match of markdown.matchAll(expression)) {
-    const title = match[2].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`~]/g, '').trim()
-    headings.push({ level: match[1].length, title, id: slugger.slug(title) })
-  }
-  return headings
-}
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(`${date}T12:00:00`))
@@ -46,28 +36,27 @@ function ReadingProgress() {
       window.removeEventListener('resize', update)
     }
   }, [])
-  return <div aria-hidden="true" className="fixed inset-x-0 top-0 z-50 h-1 bg-transparent"><div className="h-full bg-[var(--brand)] transition-[width]" style={{ width: `${progress}%` }} /></div>
+  return <div aria-hidden="true" className="fixed inset-x-0 top-0 z-50 h-1 bg-transparent"><div className="h-full bg-[var(--brand-bright)] transition-[width]" style={{ width: `${progress}%` }} /></div>
 }
 
-function ArticleToc({ items }: { items: TocItem[] }) {
-  if (!items.length) return null
+/** Dev-only floating panel to preview the 8 styles without editing frontmatter. */
+function StylePicker({ active, onPick }: { active: number; onPick: (style: number) => void }) {
+  if (!import.meta.env.DEV) return null
   return (
-    <details open className="my-6 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-[var(--surface)]">
-      <summary className="flex cursor-pointer list-none items-center gap-2 bg-[var(--surface-alt)] px-4 py-3 text-start text-sm font-bold text-[var(--text)]">
-        <BookOpen aria-hidden="true" className="size-4 text-[var(--brand)]" />
-        نگاه کلی به مطالب
-      </summary>
-      <nav aria-label="فهرست مطالب" className="px-4 py-3">
-        <ul className="m-0 grid list-none gap-2 p-0">
-          {items.map((item) => <li key={item.id} className={item.level === 3 ? 'ps-5' : ''}>
-            <a href={`#${item.id}`} className="flex items-center gap-3 text-start text-sm text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">
-              <span aria-hidden="true" className="h-1 w-2.5 shrink-0 rounded-[var(--radius-pill)] bg-[var(--brand)]" />
-              {item.title}
-            </a>
-          </li>)}
-        </ul>
-      </nav>
-    </details>
+    <div role="group" aria-label="پیش‌نمایش استایل مقاله (فقط توسعه)" className="fixed bottom-4 start-4 z-50 flex items-center gap-1 rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-[var(--surface)] p-1 text-[var(--text)] shadow-lg">
+      {STYLE_IDS.map((id) => (
+        <button
+          key={id}
+          type="button"
+          title={layouts[id].name}
+          aria-pressed={active === id}
+          onClick={() => onPick(id)}
+          className={clsx('size-8 rounded-[var(--radius-sm)] text-sm font-bold', active === id ? 'bg-[var(--brand)] text-[var(--brand-contrast)]' : 'hover:bg-[var(--surface-alt)]')}
+        >
+          {id}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -81,10 +70,10 @@ function RelatedArticles({ article }: { article: ArticleMeta }) {
   if (!items.length) return null
 
   return (
-    <section className="mt-6 rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-5 sm:p-7">
-      <h2 className="mb-4 flex items-center gap-2 text-start text-lg font-bold"><BookOpen aria-hidden="true" className="size-5 text-[var(--brand)]" />مقالات مرتبط</h2>
+    <section aria-labelledby="related-heading" className="surface-card mt-6 p-5 sm:p-7">
+      <h2 id="related-heading" className="mb-4 flex items-center gap-2 text-start text-lg font-bold"><BookOpen aria-hidden="true" className="size-5 text-[var(--brand)]" />مقالات مرتبط</h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        {items.map((item) => <Link key={item.slug} to={`/blog/${item.slug}`} className="line-clamp-2 rounded-[var(--radius-sm)] bg-[var(--surface-alt)] p-4 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border hover:border-[var(--border-strong)]">{item.title}</Link>)}
+        {items.map((item) => <Link key={item.slug} to={`/blog/${item.slug}`} className="line-clamp-2 rounded-[var(--radius-sm)] border border-transparent bg-[var(--surface-alt)] p-4 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.title}</Link>)}
       </div>
     </section>
   )
@@ -92,19 +81,53 @@ function RelatedArticles({ article }: { article: ArticleMeta }) {
 
 export function ArticlePage() {
   const { slug = '' } = useParams()
-  const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const article = articles.find((item) => item.slug === slug)
-  const requestedStyle = Number(new URLSearchParams(location.search).get('style'))
-  const activeStyle = Number.isInteger(requestedStyle) && requestedStyle >= 1 && requestedStyle <= 8
-    ? requestedStyle
-    : article?.style || siteConfig.defaultStyle
+  const requestedStyle = Number(searchParams.get('style'))
+  const activeStyle = normalizeStyle(requestedStyle >= 1 ? requestedStyle : article?.style ?? siteConfig.defaultStyle)
+  const layout = getLayout(activeStyle)
   const [bodyState, setBodyState] = useState<{ slug: string; markdown?: string; error?: boolean } | null>(null)
   const markdown = bodyState?.slug === slug ? bodyState.markdown ?? null : null
   const bodyError = (bodyState?.slug === slug && bodyState.error === true) || Boolean(article && !articleBodies[article.slug])
   const toc = useMemo(() => buildToc(markdown ?? ''), [markdown])
   const articleIndex = articles.findIndex((item) => item.slug === slug)
 
-  usePageMeta({ title: article?.title ?? 'مقاله پیدا نشد', description: article?.description ?? 'مقاله‌ی درخواستی پیدا نشد.', image: article?.cover?.type === 'image' ? article.cover.url : undefined })
+  const pageUrl = `${siteConfig.siteUrl}/blog/${slug}`
+  const imageUrl = article?.cover?.type === 'image'
+    ? article.cover.url
+    : article?.cover?.type === 'embed' ? article.cover.poster : undefined
+  const jsonLd = useMemo(() => {
+    if (!article) return undefined
+    return [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: article.title,
+        description: article.description,
+        datePublished: article.date,
+        dateModified: article.updated ?? article.date,
+        mainEntityOfPage: pageUrl,
+        ...(imageUrl ? { image: new URL(imageUrl, siteConfig.siteUrl).toString() } : {}),
+        publisher: { '@type': 'Organization', name: siteConfig.siteName },
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'خانه', item: siteConfig.siteUrl },
+          { '@type': 'ListItem', position: 2, name: article.title, item: pageUrl },
+        ],
+      },
+    ]
+  }, [article, imageUrl, pageUrl])
+
+  usePageMeta({
+    title: article?.title ?? 'مقاله پیدا نشد',
+    description: article?.description ?? 'مقاله‌ی درخواستی پیدا نشد.',
+    image: imageUrl,
+    type: 'article',
+    jsonLd,
+  })
 
   useEffect(() => {
     if (!article) return
@@ -119,48 +142,64 @@ export function ArticlePage() {
     return () => { cancelled = true }
   }, [article])
 
-  if (!article) return <NotFoundArticle />
+  if (!article) return <NotFoundPage />
 
   const previous = articleIndex > 0 ? articles[articleIndex - 1] : undefined
   const next = articleIndex >= 0 ? articles[articleIndex + 1] : undefined
+  const tocReady = markdown !== null && toc.length > 0
+
+  function pickStyle(style: number) {
+    const params = new URLSearchParams(searchParams)
+    params.set('style', String(style))
+    setSearchParams(params, { replace: true })
+  }
 
   return (
     <>
       <ReadingProgress />
-      <ArticleLayout style={activeStyle} sidebar={<ArticleSidebar articles={articles} article={article} />}>
-        <article className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-5 text-[var(--text)] shadow-[var(--shadow-card)] sm:p-7">
-          <CoverMedia cover={article.cover} title={article.title} />
+      <StylePicker active={activeStyle} onPick={pickStyle} />
+      <ArticleLayout
+        style={activeStyle}
+        sidebar={<ArticleSidebar articles={articles} article={article} />}
+        toc={layout.tocMode === 'side' && tocReady ? <ArticleToc items={toc} variant="side" /> : undefined}
+      >
+        <article className="article-card text-[var(--text)]">
           <nav aria-label="مسیر صفحه" className="mb-4 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
             <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>
-            <ChevronLeft aria-hidden="true" className="size-3 rtl:rotate-180" />
+            <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
             <Link to="/#articles" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">همه مقاله‌ها</Link>
-            <ChevronLeft aria-hidden="true" className="size-3 rtl:rotate-180" />
+            <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
             <span aria-current="page" className="max-w-full truncate">{article.title}</span>
           </nav>
 
-          <h1 className="mb-5 border-b border-[var(--border-light)] pb-5 text-start text-3xl font-extrabold leading-tight sm:text-4xl">{article.title}</h1>
-          <div className="mb-6 grid grid-cols-3 gap-3 border-b border-[var(--border-light)] pb-5 text-start sm:gap-8">
+          <h1 className="article-title mb-5">{article.title}</h1>
+          <div className="article-meta mb-6 grid grid-cols-3 gap-3 border-b border-[var(--border-light)] pb-5 text-start sm:gap-8">
             <MetaValue label="تاریخ انتشار" value={formatDate(article.date)} />
             {article.updated && <MetaValue label="به‌روزرسانی" value={formatDate(article.updated)} />}
             <MetaValue label="زمان مطالعه" value={`${article.readingTime} دقیقه`} />
           </div>
 
-          {markdown !== null && <ArticleToc items={toc} />}
-          {bodyError && <p role="alert" className="text-[var(--danger)]">بارگذاری متن مقاله ممکن نشد.</p>}
-          {markdown === null && !bodyError && <div aria-busy="true" className="my-6 grid gap-4"><div className="h-6 w-2/5 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 w-5/6 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /></div>}
-          {markdown !== null && <MarkdownRenderer markdown={markdown} className="[&_h2]:scroll-mt-20" />}
+          <div className="article-cover"><CoverMedia cover={article.cover} title={article.title} /></div>
 
-          {article.suggestions.length > 0 && <section className="mt-8 border-t border-[var(--border-light)] pt-5">
-            <h2 className="mb-3 text-start text-base font-bold">پرسش‌های مرتبط</h2>
-            <ul className="flex flex-wrap gap-2 p-0">
-              {article.suggestions.map((suggestion) => <li key={suggestion} className="list-none rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2 text-start text-sm text-[var(--text-secondary)]">{suggestion}</li>)}
+          {layout.tocMode === 'inline' && tocReady && <ArticleToc items={toc} variant="box" />}
+
+          <div className="article-lang" lang={article.lang} dir={article.dir}>
+            {bodyError && <p role="alert" className="text-[var(--danger)]">بارگذاری متن مقاله ممکن نشد.</p>}
+            {markdown === null && !bodyError && <div aria-busy="true" className="my-6 grid gap-4"><div className="h-6 w-2/5 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 w-5/6 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /></div>}
+            {markdown !== null && <MarkdownRenderer markdown={markdown} className="[&_h2]:scroll-mt-24" />}
+          </div>
+
+          {article.suggestions.length > 0 && <section aria-labelledby="questions-heading" className="mt-8 border-t border-[var(--border-light)] pt-5">
+            <h2 id="questions-heading" className="mb-3 text-start text-base font-bold">پرسش‌های مرتبط</h2>
+            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+              {article.suggestions.map((suggestion) => <li key={suggestion} className="rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2 text-start text-sm text-[var(--text-secondary)]">{suggestion}</li>)}
             </ul>
           </section>}
 
-          <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[var(--border-light)] pt-5">
+          {article.tags.length > 0 && <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[var(--border-light)] pt-5">
             <span className="text-sm font-semibold">برچسب‌ها:</span>
-            {article.tags.map((tag) => <span key={tag} className="rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-2.5 py-1 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--brand)] hover:text-[var(--brand-contrast)]">{tag}</span>)}
-          </div>
+            {article.tags.map((tag) => <span key={tag} className="article-tag px-2.5 py-1 text-xs transition-colors">{tag}</span>)}
+          </div>}
         </article>
 
         <RelatedArticles article={article} />
@@ -178,17 +217,13 @@ function MetaValue({ label, value }: { label: string; value: string }) {
 }
 
 function ArticleNavItem({ article, direction }: { article: ArticleMeta; direction: 'previous' | 'next' }) {
-  const Icon = direction === 'previous' ? ArrowLeft : ArrowLeft
-  const label = direction === 'previous' ? 'مقاله پیشین' : 'مقاله بعدی'
+  // The list is sorted newest → oldest, so "previous" is the newer article.
+  const label = direction === 'previous' ? 'مقاله جدیدتر' : 'مقاله قدیمی‌تر'
   return (
-    <Link to={`/blog/${article.slug}`} className="flex min-w-0 items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-4 text-start no-underline hover:border-[var(--brand)]">
-      {direction === 'next' && <Icon aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />}
+    <Link to={`/blog/${article.slug}`} className="surface-card flex min-w-0 items-center gap-3 p-4 text-start no-underline hover:border-[var(--brand)]">
+      {direction === 'previous' && <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />}
       <span className="min-w-0 flex-1"><span className="block text-xs text-[var(--muted)]">{label}</span><span className="mt-1 line-clamp-2 block text-sm font-semibold text-[var(--text)]">{article.title}</span></span>
-      {direction === 'previous' && <Icon aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />}
+      {direction === 'next' && <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rotate-180 rtl:rotate-0" />}
     </Link>
   )
-}
-
-function NotFoundArticle() {
-  return <main className="px-4 py-16 text-center"><h1 className="text-2xl font-bold">مقاله پیدا نشد</h1><Link to="/" className="text-[var(--info)]">بازگشت به خانه</Link></main>
 }

@@ -42,7 +42,7 @@ draft: false
 <div class="rounded bg-blue-100 p-4 text-start text-blue-900">HTML خام با کلاس‌های Tailwind v4</div>
 <details><summary>جزئیات HTML خام</summary><p>این بخش برای آزمون جزئیات و خلاصه است.</p></details>
 <audio controls></audio>
-<iframe src="about:blank" title="قاب نمونه" width="640" height="360"></iframe>
+<iframe src="https://example.com" title="قاب نمونه (iframe خام که به SafeEmbed تبدیل می‌شود)" width="640" height="360"></iframe>
 <a href="https://example.com">پیوند بیرونی نمونه</a>
 
 [فایل پیوست نمونه](../x)
@@ -136,3 +136,32 @@ console.log(message)
 :::course{title="دوره نمونه" href="/courses/sample" image="./cover.svg" label="دوره پیشنهادی" cta="مشاهده دوره"}
 توضیح کوتاه و خنثی دوره.
 :::
+
+## محتوای خارجی (iframe امن)
+
+ویدیوی یوتیوب؛ پخش‌کننده فقط بعد از کلیک بارگذاری می‌شود:
+
+::youtube{id="dQw4w9WgXcQ" start="1m30s" title="ویدیوی نمونه" caption="توضیح کوتاه دربارهٔ این ویدیو"}
+
+پست اینستاگرام (نشانی نمونه؛ برای نمایش واقعی نشانی پست خودتان را بگذارید):
+
+::instagram{url="https://www.instagram.com/p/EXAMPLE_CODE/" caption="پست نمونه"}
+
+ویدیوی آپارات (شناسهٔ نمونه):
+
+::aparat{id="abcd123" title="ویدیوی آپارات نمونه"}
+
+صفحهٔ متنی با ارتفاع ثابت و اسکرول داخلی. چون example.com اجازهٔ نمایش در قاب را نمی‌دهد (یا بارگذاری نمی‌شود)، پس از چند ثانیه کارت جایگزین نمایش داده می‌شود:
+
+::embed{src="https://example.com" height="320" title="صفحهٔ نمونه" caption="صفحهٔ اصلی در منبع"}
+
+برای سایت‌هایی که می‌دانید قاب را مسدود می‌کنند، مستقیم کارت پیوند بگیرید:
+
+::embed{src="https://example.com/blocked" title="منبع بدون قاب" fallback-only}
+
+نقل‌قول با منبع (برای حدیث و حکم آن؛ متن قابل جست‌وجو و چاپ است):
+
+:::source{site="سایت نمونه" title="عنوان نمونه" ref="کتاب نمونه، شمارهٔ ۱" grade="daif" url="https://example.com/hadith/1"}
+این یک متن نمونهٔ خنثی است که جای نقل‌قول از منبع دیگر را نشان می‌دهد.
+:::
+

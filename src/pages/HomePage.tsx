@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Grid2X2, Headphones, List, Play } from 'lucide-react'
 import { clsx } from 'clsx'
 import articlesJson from '../generated/articles.json'
@@ -8,7 +8,7 @@ import type { ArticleMeta, SearchEntry } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
 import { ArticleSearch } from '../components/ArticleSearch'
-import { FontControls } from '../components/ThemeControls'
+import { FontControls } from '../components/FontControls'
 
 const allArticles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
 const searchIndex = searchJson as SearchEntry[]
@@ -23,6 +23,11 @@ function ArticleCover({ article }: { article: ArticleMeta }) {
   }
   if (article.cover?.type === 'video') {
     return <div className="relative flex aspect-video items-center justify-center bg-[var(--surface-strong)] text-[var(--text-muted)]"><Play aria-hidden="true" className="size-9" /><span className="sr-only">ویدیو</span></div>
+  }
+  if (article.cover?.type === 'embed') {
+    return article.cover.poster
+      ? <div className="relative"><img src={article.cover.poster} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /><span aria-hidden="true" className="absolute inset-0 grid place-items-center"><span className="grid size-12 place-items-center rounded-full bg-black/60 text-white"><Play className="size-5" /></span></span><span className="sr-only">ویدیو</span></div>
+      : <div className="relative flex aspect-video items-center justify-center bg-[var(--surface-strong)] text-[var(--text-muted)]"><Play aria-hidden="true" className="size-9" /><span className="sr-only">محتوای جاسازی‌شده</span></div>
   }
   if (article.cover?.type === 'audio') {
     return <div className="flex aspect-video items-center justify-center bg-[var(--surface-alt)] text-[var(--brand)]"><Headphones aria-hidden="true" className="size-9" /><span className="sr-only">صوت</span></div>
@@ -57,7 +62,22 @@ function ArticleCard({ article, list }: { article: ArticleMeta; list: boolean })
 }
 
 export function HomePage() {
-  usePageMeta({ title: siteConfig.siteName, description: siteConfig.siteDescription })
+  const [searchParams] = useSearchParams()
+  usePageMeta({
+    title: siteConfig.siteName,
+    description: siteConfig.siteDescription,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: siteConfig.siteName,
+      url: siteConfig.siteUrl,
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${siteConfig.siteUrl}/?q={search_term_string}`,
+        'query-input': 'required name=search_term_string',
+      },
+    },
+  })
   const [view, setView] = useState<'grid' | 'list'>(() => localStorage.getItem('article-view') === 'list' ? 'list' : 'grid')
   const [visibleCount, setVisibleCount] = useState(12)
   const visibleArticles = useMemo(() => allArticles.slice(0, visibleCount), [visibleCount])
@@ -65,11 +85,11 @@ export function HomePage() {
   useEffect(() => localStorage.setItem('article-view', view), [view])
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+    <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
       <section className="mb-10 text-center sm:mb-14">
         <h1 className="mb-3 text-3xl font-extrabold leading-tight sm:text-4xl">{siteConfig.siteName}</h1>
         <p className="mx-auto mb-7 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">{siteConfig.siteDescription}</p>
-        <ArticleSearch articles={allArticles} searchIndex={searchIndex} />
+        <ArticleSearch articles={allArticles} searchIndex={searchIndex} initialQuery={searchParams.get('q') ?? ''} />
         <div className="mt-5 flex justify-center">
           <FontControls />
         </div>

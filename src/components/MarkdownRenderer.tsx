@@ -38,6 +38,9 @@ import {
 } from './mdx/ContentBlocks'
 import { AccordionItem as MdxAccordionItem, Accordion as MdxAccordion, Modal } from './mdx/InteractiveBlocks'
 import { AudioDirective, Gallery, MarkdownImage, MarkdownVideo, VideoDirective } from './mdx/MediaBlocks'
+import { RawIframe, SafeEmbed } from './mdx/SafeEmbed'
+import { Source } from './mdx/Source'
+import { highlightCode } from '../lib/highlight'
 
 type HeadingTag = 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
 type HeadingProps = ComponentPropsWithoutRef<'h2'> & { id?: string }
@@ -117,13 +120,23 @@ function textFromNode(node: ReactNode): string {
 
 function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
   const [copied, setCopied] = useState(false)
+  const [highlighted, setHighlighted] = useState<{ code: string; html: string } | null>(null)
   const codeElement = Children.toArray(children).find(
     (child): child is ReactElement<{ className?: string; children?: ReactNode }> =>
       isValidElement(child),
   )
   const languageClass = codeElement?.props.className
   const language = languageClass?.match(/(?:^|\s)language-([\w-]+)/)?.[1] ?? 'code'
-  const codeText = textFromNode(codeElement?.props.children ?? children)
+  const codeText = textFromNode(codeElement?.props.children ?? children).replace(/\n$/, '')
+
+  useEffect(() => {
+    let cancelled = false
+    highlightCode(codeText, language).then(
+      (html) => { if (!cancelled && html !== null) setHighlighted({ code: codeText, html }) },
+      () => undefined, // Highlighting is cosmetic; plain text stays.
+    )
+    return () => { cancelled = true }
+  }, [codeText, language])
 
   async function copyCode() {
     try {
@@ -135,23 +148,27 @@ function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
     }
   }
 
+  const html = highlighted?.code === codeText ? highlighted.html : null
+
   return (
-    <div className="not-prose my-6 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface-alt)] text-[var(--text)]">
-      <div className="flex items-center justify-between border-b border-[var(--border-light)] px-4 py-2 text-xs text-[var(--text-muted)]">
+    <div className="not-prose my-6 overflow-hidden rounded-[var(--radius-md)] bg-[var(--code-bg)] text-[var(--code-text)]">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2 text-xs text-white/70">
         <span dir="ltr" className="font-mono">{language}</span>
         <button
           type="button"
           onClick={() => void copyCode()}
           aria-label={copied ? 'کپی شد' : 'کپی کد'}
           title={copied ? 'کپی شد' : 'کپی کد'}
-          className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 hover:bg-[var(--surface-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]"
+          className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           <Copy aria-hidden="true" className="size-3.5" />
           <span>{copied ? 'کپی شد' : 'کپی'}</span>
         </button>
       </div>
-      <pre dir="ltr" className="m-0 overflow-x-auto p-4 text-start text-sm leading-6 text-[var(--text)]">
-        {children}
+      <pre dir="ltr" className="m-0 overflow-x-auto p-4 text-start text-sm leading-6">
+        {html !== null
+          ? <code className="hljs block bg-transparent p-0 text-inherit" dangerouslySetInnerHTML={{ __html: html }} />
+          : <code className="block bg-transparent p-0 text-inherit">{codeText}</code>}
       </pre>
     </div>
   )
@@ -200,19 +217,6 @@ function HorizontalRule(props: ComponentPropsWithoutRef<'hr'>) {
   return <hr {...props} className={clsx('my-8 border-0 border-t border-[var(--border-light)]', props.className)} />
 }
 
-function Iframe({ title, className, ...props }: ComponentPropsWithoutRef<'iframe'>) {
-  return (
-    <div className="not-prose my-6 aspect-video w-full overflow-hidden rounded-[var(--radius-md)] bg-[var(--surface-alt)]">
-      <iframe
-        {...props}
-        title={title || 'Embedded media'}
-        loading="lazy"
-        className={clsx('size-full border-0', className)}
-      />
-    </div>
-  )
-}
-
 function Details(props: ComponentPropsWithoutRef<'details'>) {
   return <details {...props} className={clsx('my-4 rounded-[var(--radius-sm)] border border-[var(--border-light)] px-4', props.className)} />
 }
@@ -249,15 +253,22 @@ const directiveComponents = {
   'mdx-audio': withMdxErrorBoundary('audio', AudioDirective),
   'mdx-suggested': withMdxErrorBoundary('suggested', Suggested),
   'mdx-course': withMdxErrorBoundary('course', Course),
+  'mdx-embed': withMdxErrorBoundary('embed', SafeEmbed),
+  'mdx-youtube': withMdxErrorBoundary('youtube', SafeEmbed),
+  'mdx-instagram': withMdxErrorBoundary('instagram', SafeEmbed),
+  'mdx-aparat': withMdxErrorBoundary('aparat', SafeEmbed),
+  'mdx-source': withMdxErrorBoundary('source', Source),
   'mdx-unknown': withMdxErrorBoundary('unknown', UnknownDirective),
 } as unknown as MarkdownComponents
 
 const markdownComponents: MarkdownComponents = {
+  // The page h1 is the article title: a raw <h1> in the body is rendered as h2.
+  // Markdown `#` demotion is handled by remarkHeadingLevels.
   h1: createHeading('h2'),
-  h2: createHeading('h3'),
-  h3: createHeading('h4'),
-  h4: createHeading('h5'),
-  h5: createHeading('h6'),
+  h2: createHeading('h2'),
+  h3: createHeading('h3'),
+  h4: createHeading('h4'),
+  h5: createHeading('h5'),
   h6: createHeading('h6'),
   p: Paragraph,
   a: Anchor,
@@ -276,7 +287,7 @@ const markdownComponents: MarkdownComponents = {
   img: MarkdownImage,
   video: MarkdownVideo,
   audio: AudioDirective,
-  iframe: Iframe,
+  iframe: RawIframe,
   details: Details,
   summary: Summary,
   ...directiveComponents,
@@ -336,16 +347,15 @@ export function MarkdownRenderer({ markdown, className }: MarkdownRendererProps)
   }
 
   return (
-    <article
-      dir="rtl"
+    <div
       className={clsx(
-        'prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-headings:var(--text)] [--tw-prose-links:var(--info)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-counters:var(--brand)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-hr:var(--border-light)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-th-borders:var(--border-strong)] [--tw-prose-td-borders:var(--border-light)]',
+        'article-body prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-headings:var(--text)] [--tw-prose-links:var(--info)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-counters:var(--brand)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-hr:var(--border-light)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-th-borders:var(--border-strong)] [--tw-prose-td-borders:var(--border-light)]',
         'prose-headings:text-start prose-p:text-start prose-ul:ps-6 prose-ol:ps-6',
         'prose-blockquote:border-s-4 prose-blockquote:ps-4 prose-li:ps-1',
         className,
       )}
     >
       {rendered.content}
-    </article>
+    </div>
   )
 }
