@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    "ms-vscode.vscode-json",
+    "davidanson.vscode-markdownlint",
+    "bierner.markdown-preview-github-styles",
+    "github.vscode-pull-request-github",
+    "ms-azuretools.vscode-docker",
+    "formulahendry.code-runner",
+    "ms-vscode.vscode-typescript-tslint-plugin"
+  ]
+}

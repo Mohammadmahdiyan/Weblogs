@@ -1,142 +1,261 @@
-# Markdown Components
+# کامپوننت‌های Markdown — راهنمای کاربری
 
-Markdown directives are converted into accessible React components. Attribute names accept kebab-case; boolean attributes such as `open`, `checked`, and `faq` need no value. All components inherit colors, surfaces, borders, and radii from the CSS theme tokens.
+> تمام کامپوننت‌ها با استفاده از [remark-directive](https://github.com/11ty/remark-directive) نوشته می‌شوند.
+> رنگ‌ها از متغیرهای تم (`--brand`، `--surface`، ...) استفاده می‌کنند و در تمام ۸ استایل کار می‌کنند.
 
-## Accordion and FAQ
+---
 
-```md
-::::accordion{faq}
-:::item{title="پرسش نخست" open}
-پاسخ نمونه.
+## 📋 فهرست مطالب
+
+- [آکوردئون](#آکوردئون)
+- [هشدار / Alert](#هشدار--alert)
+- [آواتار](#آواتار)
+- [نشان / Badge](#نشان--badge)
+- [راهنمای صفحه / Breadcrumbs](#راهنمای-صفحه--breadcrumbs)
+- [دکمه / Button](#دکمه--button)
+- [گروه دکمه / Button Group](#گروه-دکمه--button-group)
+- [کارت / Card](#کارت--card)
+- [COLLAPSE](#collapsecollaps)
+- [مودال / Modal](#مودال--modal)
+- [گالری / Gallery](#گالری--gallery)
+- [آیکون‌دار / Icon Button](#آیکون‌دار--icon-button)
+- [لیست / List](#لیست--list)
+- [صفحه‌بندی / Pagination](#صفحه‌بندی--pagination)
+- [پاپ‌اور / Popover](#پاپ‌اور--popover)
+- [امتیاز / Rating](#امتیاز--rating)
+- [منوی dropdowns / Select](#منوی-dropdowns--select)
+- [اسکلتون / Skeleton](#اسکلتون--skeleton)
+- [اسپینر / Spinner](#اسپینر--spinner)
+- [سوئیچ / Switch](#سوئیچ--switch)
+- [جدول / Table](#جدول--table)
+- [تولتیپ / Tooltip](#تولتیپ--tooltip)
+- [تراشی / Typography](#تراشی--typography)
+- [ویدیو / Video](#ویدیو--video)
+- [پیشنهادی / Suggested](#پیشنهادی--suggested)
+- [دوره / Course](#دوره--course)
+- [ناشناخته / Unknown Directive](#ناشناخته--unknown-directive)
+
+---
+
+## آکوردئون
+
+:::accordion
+:::item{title="سوال اول" open}
+پاسخ سوال اول
 :::
-:::item{title="پرسش دوم"}
-پاسخ دوم.
+:::item{title="سوال دوم"}
+پاسخ سوال دوم
 :::
-::::
-```
+:::
 
-Use `{faq}` or set the accordion title to `سوالات متداول` to emit FAQPage JSON-LD.
+---
 
-## Alerts and Identity
+## هشدار / Alert
 
-```md
 :::alert{type="info"}
-پیام اطلاع‌رسانی.
+این یک پیام اطلاعاتی است.
 :::
 
-::avatar{src="/content/article/author.webp" name="نام نویسنده" size="md"}
-:badge[ویژه]{color="blue"}
-```
+**انواع:** `info` | `success` | `warning` | `danger`
 
-Alert types are `info`, `success`, `warning`, and `danger`. Avatar sizes are `sm`, `md`, and `lg`. Badge colors are `blue`, `green`, `yellow`, `red`, and `brand`.
+---
 
-## Navigation and Actions
+## آواتار
 
-```md
+::avatar{src="https://example.com/avatar.png" name="علی" size="md"}
+
+**اندازه‌ها:** `sm` | `md` | `lg`
+
+---
+
+## نشان / Badge
+
+:badge[جدید]{color="green"}
+
+**رنگ‌ها:** `blue` | `green` | `yellow` | `red` | `brand`
+
+---
+
+## راهنمای صفحه / Breadcrumbs
+
 :::breadcrumbs
-- [خانه](/)
-- [مقاله‌ها](/blog)
+1. [خانه](/)
+2. [دسته](/category)
+3. [صفحه جاری](#)
 :::
 
-:button[مطالعه]{href="/blog/example" variant="filled" color="brand"}
+---
+
+## دکمه / Button
+
+:button[راحت بزن]{variant="filled" color="brand" href="/"}
+
+**ویژین‌ها:** `filled` | `outlined` | `text`  
+**رنگ‌ها:** `blue` | `green` | `yellow` | `red` | `brand`
+
+---
+
+## گروه دکمه / Button Group
 
 :::buttons
-:button[اصلی]{href="/start" variant="filled" color="brand"}
-:button[ثانویه]{href="/about" variant="outlined" color="blue"}
-:button[متنی]{href="/more" variant="text" color="green"}
+:button[گزینه 1]{}
+:button[گزینه 2]{}
+:button[گزینه 3]{}
 :::
 
-:iconbutton[جستجو]{icon-name="search" href="/search"}
-:::pagination{total="8" current="3"}
-:::
-```
+---
 
-Icon names include `search`, `home`, `book-open`, `heart`, `play`, `star`, `check`, `info`, `arrow-left`, `arrow-right`, `external-link`, `share-2`, `download`, `plus`, `minus`, `menu`, and `x`.
+## کارت / Card
 
-## Content Blocks
-
-```md
-:::card{title="عنوان کارت" image="./cover.webp"}
-متن کارت.
+:::card{title="عنوان کارت" image="https://example.com/img.jpg"}
+متن توضیحی کارت
 :::
 
-:::collapse{title="جزئیات بیشتر"}
-محتوای جمع‌شونده.
+---
+
+## Collapse
+
+:::collapse{title="نمایش جزئیات"}
+متن مخفی
 :::
 
-:::lead
-یک مقدمه‌ی برجسته برای مقاله.
+---
+
+## مودال / Modal
+
+:::modal{trigger="باز کردن" title="عنوان مودال"}
+محتوای مودال
 :::
+
+---
+
+## گالری / Gallery
+
+:::gallery
+![توضیح تصویر 1](photo1.jpg)
+![توضیح تصویر 2](photo2.jpg)
+:::
+
+---
+
+## آیکون‌دار / Icon Button
+
+:iconbutton[arrow-right]{href="/"}
+
+**آیکون‌ها (نام lucide-react):** `ArrowLeft`, `ArrowRight`, `BookOpen`, `Check`, `ChevronDown`, `CircleAlert`, `CircleCheck`, `Download`, `ExternalLink`, `Heart`, `Home`, `Info`, `Menu`, `Minus`, `Play`, `Plus`, `Search`, `Share2`, `Star`, `X`
+
+---
+
+## لیست / List
 
 :::list{variant="check"}
-- نکته‌ی نخست
-- نکته‌ی دوم
-:::
-```
-
-List variants are `check`, `number`, and `bullet`. Ordinary Markdown lists are styled automatically.
-
-## Dialog and Disclosure
-
-```md
-:::modal{trigger="نمایش" title="پنجره نمونه"}
-محتوای پنجره.
+- آیتم اول
+- آیتم دوم
+- آیتم سوم
 :::
 
-:popover[نمایش راهنما]{content="توضیح کوتاه"}
-:tooltip[واژه]{text="معنی یا توضیح واژه"}
-```
+**حالت‌ها:** `check` | `number` | `bullet`
 
-The modal uses a native dialog for focus trapping and Escape-to-close. Popovers use a keyboard-operable disclosure.
+---
 
-## Media
+## صفحه‌بندی / Pagination
 
-```md
-:::gallery
-![تصویر نخست](./one.webp)
-![تصویر دوم](./two.webp)
-:::
+:::pagination{total="10" current="3"}
 
-::video{src="./clip.mp4" poster="./cover.webp"}
-::audio{src="./audio.ogg"}
-```
+---
 
-Images inside a gallery are passed to the lightbox as one navigable set. Ordinary Markdown images ending in `.mp4` or `.webm` become video players; `.mp3`, `.ogg`, `.wav`, and `.m4a` become audio players. Images and videos call the Part 5 lightbox hook.
+## پاپ‌اور / Popover
 
-## Status and Inputs
+:popover[راهنمای من]{content="متن راهنما"}
 
-```md
+---
+
+## امتیاز / Rating
+
 ::rating{value="4.5" max="5"}
-::select{options="گزینه نخست,گزینه دوم,گزینه سوم"}
-::skeleton{lines="3"}
+
+---
+
+## منوی dropdowns / Select
+
+::select{options="گزینه 1, گزینه 2, گزینه 3"}
+
+---
+
+## اسکلتون / Skeleton
+
+::skeleton{lines="4"}
+
+---
+
+## اسپینر / Spinner
+
 ::spinner{size="md"}
-::switch{label="فعال‌سازی نمونه" checked}
-```
 
-Select is a disabled display-only example. Switch is interactive and keyboard accessible. Spinner sizes are `sm`, `md`, and `lg`.
+**اندازه‌ها:** `sm` | `md` | `lg`
 
-## Suggested Article and Course
+---
 
-```md
-:::suggested{href="/blog/related" label="مقاله پیشنهادی:"}
-[عنوان مقاله‌ی مرتبط](/blog/related)
+## سوئیچ / Switch
+
+::switch{label="فعال باشد" checked}
+
+---
+
+## جدول / Table
+
+| ستون 1 | ستون 2 | ستون 3 |
+|--------|--------|--------|
+| مقدار 1 | مقدار 2 | مقدار 3 |
+
+---
+
+## تولتیپ / Tooltip
+
+:tooltip[واژه ناشناخته]{text="توضیح این واژه"}
+
+---
+
+## تراشی / Typography
+
+### Lead
+
+:::lead
+این یک متن رهبری است که برای معرفی بخش استفاده می‌شود.
 :::
 
-:::course{title="عنوان دوره" href="/courses/example" image="./course.webp" label="دوره پیشنهادی" cta="مشاهده دوره"}
-توضیح کوتاه دوره.
+### Headings
+
+`# Heading 1` → <h2> (تبدیل به h2)
+`## Heading 2` → <h3>
+`### Heading 3` → <h4>
+
+---
+
+## ویدیو / Video
+
+::video{src="/video.mp4" poster="/poster.jpg"}
+
+**یا با تصویر:** `![](video.mp4)` — به‌صورت خودکار تشخیص داده می‌شود.
+
+---
+
+## پیشنهادی / Suggested
+
+:::suggested{href="/blog/related-post" label="مقاله پیشنهادی:"}
+متن پیشنهاد
 :::
-```
 
-Both callouts accept internal paths or external URLs. External links open in a new tab with `noopener noreferrer`. Course images are optional.
+---
 
-## Tables and Raw HTML
+## دوره / Course
 
-GFM tables receive a responsive wrapper, sticky header, and zebra rows:
+:::course{title="دوره PHP" href="/courses/php" image="/course.jpg" label="دوره پیشنهادی" cta="مشاهده دوره"}
+توضیح کوتاه درباره دوره
+:::
 
-```md
-| عنوان | توضیح |
-| --- | --- |
-| نمونه | متن |
-```
+---
 
-Raw HTML is supported, including `<details>`, `<video>`, `<audio>`, `<iframe>`, and Tailwind classes. Script elements and `on*` event attributes are removed. Unknown directives display a warning box in development only.
+## ناشناخته / Unknown Directive
+
+هر دایرکتیو ناشناخته‌ای فقط در حالت توسعه نمایش هشدار می‌دهد. در Production فقط محتوای داخلی نمایش داده می‌شود.
