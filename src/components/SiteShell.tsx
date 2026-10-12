@@ -83,7 +83,7 @@ function MobileDrawer({ onClose }: { onClose: () => void }) {
   )
 }
 
-function Header({ articles }: { articles: ArticleMeta[] }) {
+function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   return (
@@ -166,7 +166,7 @@ export function SiteShell({ children, articles }: { children: ReactNode; article
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[60] focus:rounded-[var(--radius-sm)] focus:bg-[var(--brand)] focus:px-4 focus:py-2 focus:text-[var(--brand-contrast)]">پرش به محتوای اصلی</a>
       <AnnouncementBar />
-      <Header articles={articles} />
+      <Header />
       {children}
       <Footer articles={articles} />
     </div>
