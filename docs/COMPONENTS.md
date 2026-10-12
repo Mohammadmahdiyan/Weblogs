@@ -101,7 +101,7 @@ The modal uses a native dialog for focus trapping and Escape-to-close. Popovers 
 ::audio{src="./audio.ogg"}
 ```
 
-Images inside a gallery are passed to the lightbox as one navigable set. Ordinary Markdown images ending in `.mp4` or `.webm` become video players; `.mp3`, `.ogg`, `.wav`, and `.m4a` become audio players. Images and videos call the Part 5 lightbox hook.
+A gallery accepts photos, GIFs and videos (`![](a.mp4)` or `::video`), one per line, in any mix. They go to the lightbox as one navigable set. Layout by count at 100% font size: 1 = plain media, 2 = side by side, 3 = 2 + 1 full width, 4 = 2 × 2, 5 = 3 + 2, 6 = 3 + 3, more continue with rows of up to 3; larger font size → fewer per row, smaller → more (`src/lib/gallery.ts`). Ordinary Markdown images ending in `.mp4` or `.webm` become video players; `.mp3`, `.ogg`, `.wav`, and `.m4a` become audio players. Images and videos call the Part 5 lightbox hook.
 
 ## Status and Inputs
 

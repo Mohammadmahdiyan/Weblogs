@@ -259,6 +259,35 @@ suggestions:
 - **امنیت:** `sandbox`، `referrerpolicy`، بارگذاری تنبل، بدون پخش خودکار، فقط https. در `public/_headers` (خودکار) CSP `frame-src` فقط برای میزبان‌های allowlist ساخته می‌شود.
 - **سئو:** محتوای iframe ایندکس نمی‌شود؛ وزن سئو با متن مقاله و `:::source` است.
 
+## ۱۹. گالری (مجموعهٔ عکس / گیف / ویدیو)
+
+```md
+:::gallery
+![توضیح عکس](./one.jpg)
+![گیف](./two.gif)
+![توضیح ویدیو](./clip.mp4)
+::video{src="./other.webm" poster="./poster.jpg"}
+:::
+```
+
+هر ترکیبی از عکس، گیف و ویدیو (به هر تعداد) داخل یک `:::gallery` قرار می‌گیرد؛ هر مورد را در یک خط جدا بنویسید. کلیک روی هر مورد پنجرهٔ بزرگ‌نمایی را باز می‌کند و با کلیدهای جهت‌دار می‌شود بین همهٔ موردهای همان گالری رفت.
+
+**چیدمان بر اساس تعداد** (در اندازهٔ فونت ۱۰۰٪):
+
+| تعداد | چیدمان |
+|---|---|
+| ۱ | گالری نیست؛ همان رسانه با اندازهٔ عادی |
+| ۲ | یکی راست، یکی چپ |
+| ۳ | دو تا بالا (راست و چپ)، یکی پایین با تمام عرض |
+| ۴ | مثل پنجره: دو تا بالا، دو تا پایین |
+| ۵ | سه تا بالا، دو تا پایین |
+| ۶ | سه تا بالا، سه تا پایین |
+| ۷ و بیشتر | به همین صورت: ردیف‌های حداکثر ۳تایی؛ باقی‌مانده بین ردیف‌ها مساوی پخش می‌شود (۷ = ۳+۲+۲، ۸ = ۳+۳+۲، ۹ = ۳+۳+۳ …) |
+
+**اندازهٔ فونت:** چیدمان بالا برای ۱۰۰٪ است. با بزرگ‌تر شدن متن (تا ۱۵۰٪) تعداد در هر ردیف کمتر می‌شود (مثلاً ۶ مورد در ۱۵۰٪ می‌شود ۲+۲+۲) و با کوچک‌تر شدن (تا ۸۰٪) بیشتر (مثلاً ۸ مورد می‌شود ۴+۴). در صفحهٔ باریک (موبایل) هم تعداد در ردیف خودکار طوری کم می‌شود که هر کاشی کوچک‌تر از حدود ۷rem نشود.
+
+منطق چیدمان در `src/lib/gallery.ts` (با تست در `tests/gallery.test.ts`) و کامپوننت در `src/components/mdx/MediaBlocks.tsx` است. عدد پایهٔ هر ردیف (۲ تا ۴ مورد، ۳ از ۵ مورد به بالا) در تابع `baseColumns` تغییر می‌کند.
+
 ---
 
 # English
@@ -324,6 +353,10 @@ Eight styles (`.blog-style-1 … 8`) share one token contract; themes are light 
 ## SEO & deployment
 
 Set `siteUrl` in `src/site.config.ts`. Generated: `sitemap.xml`, `robots.txt`, `rss.xml`, `_headers`; JSON-LD, canonical, Open Graph, Twitter tags; meta prerender per article. Deploy `dist/` with an SPA fallback (`_redirects` is included; see the Persian section for Vercel / GitHub Pages / Nginx).
+
+## Gallery
+
+`:::gallery` takes any mix of photos, GIFs and videos (`![](a.jpg)`, `![](b.gif)`, `![](c.mp4)`, `::video{src="…"}`), one per line; click opens a lightbox that steps through the whole set. Layout by count at 100% font size: 1 = plain media (no gallery), 2 = side by side, 3 = 2 + 1 full width, 4 = 2 × 2, 5 = 3 + 2, 6 = 3 + 3, more continue with rows of up to 3 (7 = 3+2+2, 8 = 3+3+2, …). Items per row follow the reader's font size: larger text → fewer per row (6 items at 150% = 2+2+2), smaller → more (8 items at 80% = 4+4); narrow screens also reduce it so tiles never get tiny. Logic: `src/lib/gallery.ts`.
 
 ## Troubleshooting
 

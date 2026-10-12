@@ -1,5 +1,7 @@
-import { Children, isValidElement, useEffect, useId, useRef, type ComponentPropsWithoutRef, type ReactNode } from 'react'
+import { Children, isValidElement, useEffect, useId, useRef, useState, type ComponentPropsWithoutRef, type ReactElement, type ReactNode } from 'react'
 import { clsx } from 'clsx'
+import { useFont } from '../../lib/font'
+import { galleryRows } from '../../lib/gallery'
 import { LightboxContext, useLightbox, useLightboxRegistration, type LightboxMedia, type OpenLightbox } from '../../lib/lightbox'
 
 export function MarkdownImage({
@@ -79,24 +81,101 @@ export function AudioDirective({ src = '', title, alt }: { src?: string; title?:
   return <audio src={src} controls preload="none" aria-label={alt ?? title ?? 'صوت'} className="not-prose my-4 w-full" />
 }
 
-function collectGalleryImages(node: ReactNode): LightboxMedia[] {
-  if (Array.isArray(node)) return node.flatMap(collectGalleryImages)
-  if (!isValidElement<{ src?: string; alt?: string; children?: ReactNode }>(node)) return []
-  if (node.type === MarkdownImage && typeof node.props.src === 'string') {
-    return [{ url: node.props.src, type: 'image', alt: node.props.alt }]
-  }
-  return Children.toArray(node.props.children).flatMap(collectGalleryImages)
+const videoExtension = /\.(mp4|webm|ogv|mov|m4v)$/i
+
+function pathnameOf(url: string): string {
+  return url.split(/[?#]/, 1)[0]
 }
 
+interface GalleryItem {
+  element: ReactElement
+  media: LightboxMedia
+}
+
+/**
+ * Finds every photo, GIF and video inside a gallery, however it was written
+ * (`![](a.jpg)`, `![](a.mp4)`, `::video{src=…}`, raw <img>/<video>) and whether or not
+ * Markdown wrapped adjacent lines in a paragraph.
+ */
+function collectGalleryItems(node: ReactNode): GalleryItem[] {
+  if (Array.isArray(node)) return node.flatMap(collectGalleryItems)
+  if (!isValidElement<{ src?: string; alt?: string; title?: string; poster?: string; children?: ReactNode }>(node)) return []
+  const { src, alt, title, poster } = node.props
+
+  if (node.type === MarkdownImage && typeof src === 'string') {
+    return [{ element: node, media: { url: src, type: 'image', alt, title } }]
+  }
+  if (typeof src === 'string' && (node.type === MarkdownVideo || videoExtension.test(pathnameOf(src)))) {
+    return [{ element: node, media: { url: src, type: 'video', alt: alt ?? title, title, poster } }]
+  }
+  return Children.toArray(node.props.children).flatMap(collectGalleryItems)
+}
+
+/** The page's rem scale is `fontPercent / 100`, so a "7rem" tile is 112px at 100%. */
+const MIN_TILE_REM = 7
+
+/**
+ * Photo / GIF / video collection. Layout by count (see src/lib/gallery.ts): 1 item = plain media,
+ * 2 = side by side, 3 = 2 + 1 full width, 4 = 2 × 2, 5 = 3 + 2, 6 = 3 + 3, more continue the same way.
+ * The number per row shrinks as the reader raises the font size and grows as they lower it.
+ */
 export function Gallery({ children }: { children?: ReactNode }) {
   const openLightbox = useLightbox()
-  const images = collectGalleryImages(children)
-  const openGalleryItem: OpenLightbox = (item) => openLightbox(item, images)
+  const { size } = useFont()
+  const items = collectGalleryItems(children)
+  const lightboxItems = items.map((item) => item.media)
+  const openGalleryItem: OpenLightbox = (item) => openLightbox(item, lightboxItems)
+
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const element = containerRef.current
+    if (!element || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  if (items.length === 0) return null
+
+  // 1 item: not a gallery, just the media at normal size.
+  if (items.length === 1) {
+    return <LightboxContext.Provider value={openGalleryItem}>{items[0].element}</LightboxContext.Provider>
+  }
+
+  // Never squeeze tiles below ~7rem (the rem already follows the font size).
+  const tilePx = MIN_TILE_REM * 16 * (size / 100)
+  const rows = galleryRows(items.length, size, width > 0 ? Math.max(1, Math.floor(width / tilePx)) : Number.POSITIVE_INFINITY)
+  let cursor = 0
 
   return (
     <LightboxContext.Provider value={openGalleryItem}>
-      <div className="not-prose my-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&_p]:m-0">
-        {children}
+      <div ref={containerRef} data-gallery-rows={rows.join(',')} className="not-prose my-5 grid gap-3">
+        {rows.map((columns, rowIndex) => {
+          const rowItems = items.slice(cursor, cursor + columns)
+          cursor += columns
+          return (
+            <div
+              key={rowIndex}
+              className="grid gap-3"
+              style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+            >
+              {rowItems.map((item, index) => (
+                <div
+                  key={index}
+                  className={clsx(
+                    'overflow-hidden rounded-[var(--radius-sm)] bg-[var(--surface-strong)]',
+                    '[&_button]:my-0 [&_button]:h-full [&_img]:h-full [&_img]:object-cover',
+                    '[&_video]:my-0 [&_video]:h-full [&_video]:max-h-none [&_video]:object-cover',
+                    columns === 1 ? 'aspect-[16/9]' : columns <= 3 ? 'aspect-[4/3]' : 'aspect-square',
+                  )}
+                >
+                  {item.element}
+                </div>
+              ))}
+            </div>
+          )
+        })}
       </div>
     </LightboxContext.Provider>
   )
