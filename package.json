@@ -14,7 +14,11 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "new": "tsx scripts/new-article.ts",
-    "createNewBlog": "tsx scripts/mdtonewblog.ts"
+    "createNewBlog": "tsx scripts/blog-cli.ts create",
+    "updateBlog": "tsx scripts/blog-cli.ts update",
+    "deleteBlog": "tsx scripts/blog-cli.ts delete",
+    "createTest": "tsx scripts/blog-cli.ts create-test",
+    "deleteTest": "tsx scripts/blog-cli.ts delete-test"
   },
   "dependencies": {
     "clsx": "^2.1.1",

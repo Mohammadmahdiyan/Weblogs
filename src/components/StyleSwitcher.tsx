@@ -2,26 +2,23 @@ import { useRef } from 'react'
 import { useMatch, useSearchParams } from 'react-router-dom'
 import { Check, Palette } from 'lucide-react'
 import { clsx } from 'clsx'
-import siteConfig from '../site.config'
-import type { ArticleMeta } from '../lib/types'
-import { STYLE_IDS, layouts, normalizeStyle } from '../layouts'
+import { STYLE_IDS, layouts } from '../layouts'
+import { rememberStyle, useArticleStyle } from '../lib/useArticleStyle'
 
 /**
  * Header button that switches the blog style of the article being read.
- * It only appears on /blog/:slug and works through the `?style=N` query parameter
- * (the same override documented in the README), so the choice is shareable by link.
+ * It only appears on /blog/:slug. The choice goes into `?style=N` (shareable by link)
+ * and is remembered in this browser, so every article then opens with the reader's style.
  */
-export function StyleSwitcher({ articles }: { articles: ArticleMeta[] }) {
+export function StyleSwitcher() {
   const match = useMatch('/blog/:slug')
   const [searchParams, setSearchParams] = useSearchParams()
   const detailsRef = useRef<HTMLDetailsElement>(null)
+  const active = useArticleStyle()
   if (!match) return null
 
-  const article = articles.find((item) => item.slug === match.params.slug)
-  const requested = Number(searchParams.get('style'))
-  const active = normalizeStyle(requested >= 1 ? requested : article?.style ?? siteConfig.defaultStyle)
-
   function pick(style: number) {
+    rememberStyle(style)
     const params = new URLSearchParams(searchParams)
     params.set('style', String(style))
     setSearchParams(params, { replace: true })

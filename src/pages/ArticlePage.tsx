@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, ChevronLeft } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
@@ -11,7 +11,8 @@ import { ArticleSidebar } from '../components/ArticleSidebar'
 import { ArticleToc } from '../components/ArticleToc'
 import { CoverMedia } from '../components/CoverMedia'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
-import { ArticleLayout, getLayout, normalizeStyle } from '../layouts'
+import { ArticleLayout, getLayout } from '../layouts'
+import { useArticleStyle } from '../lib/useArticleStyle'
 import { NotFoundPage } from './NotFoundPage'
 
 const articles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
@@ -59,10 +60,8 @@ function RelatedArticles({ article }: { article: ArticleMeta }) {
 
 export function ArticlePage() {
   const { slug = '' } = useParams()
-  const [searchParams] = useSearchParams()
   const article = articles.find((item) => item.slug === slug)
-  const requestedStyle = Number(searchParams.get('style'))
-  const activeStyle = normalizeStyle(requestedStyle >= 1 ? requestedStyle : article?.style ?? siteConfig.defaultStyle)
+  const activeStyle = useArticleStyle()
   const layout = getLayout(activeStyle)
   const [bodyState, setBodyState] = useState<{ slug: string; markdown?: string; error?: boolean } | null>(null)
   const markdown = bodyState?.slug === slug ? bodyState.markdown ?? null : null
@@ -83,7 +82,7 @@ export function ArticlePage() {
         headline: article.title,
         description: article.description,
         datePublished: article.date,
-        dateModified: article.updated ?? article.date,
+        dateModified: article.updated,
         mainEntityOfPage: pageUrl,
         ...(imageUrl ? { image: new URL(imageUrl, siteConfig.siteUrl).toString() } : {}),
         publisher: { '@type': 'Organization', name: siteConfig.siteName },
@@ -146,7 +145,7 @@ export function ArticlePage() {
           <h1 className="article-title mb-5">{article.title}</h1>
           <div className="article-meta mb-6 grid grid-cols-3 gap-3 border-b border-[var(--border-light)] pb-5 text-start sm:gap-8">
             <MetaValue label="تاریخ انتشار" value={formatDate(article.date)} />
-            {article.updated && <MetaValue label="به‌روزرسانی" value={formatDate(article.updated)} />}
+            {article.updated !== article.date && <MetaValue label="به‌روزرسانی" value={formatDate(article.updated)} />}
             <MetaValue label="زمان مطالعه" value={`${article.readingTime} دقیقه`} />
           </div>
 

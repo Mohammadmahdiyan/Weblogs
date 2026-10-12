@@ -17,15 +17,21 @@ describe('pickMarkdownFile', () => {
 })
 
 describe('resolveSlug', () => {
-  it('uses the frontmatter name when present', () => {
-    expect(resolveSlug('Married-Prophet with Ayesha', 'folder')).toBe('married-prophet-with-ayesha')
+  it('uses the folder name as the slug', () => {
+    expect(resolveSlug('married-prophet', 'blog')).toBe('married-prophet')
   })
 
-  it('falls back to the folder name', () => {
-    expect(resolveSlug(undefined, 'My Folder')).toBe('my-folder')
+  it('tests always get a leading underscore', () => {
+    expect(resolveSlug('demo', 'test')).toBe('_demo')
+    expect(resolveSlug('_demo', 'test')).toBe('_demo')
   })
 
-  it('throws when nothing URL-safe remains', () => {
-    expect(() => resolveSlug(undefined, 'مقاله')).toThrow(/name/)
+  it('a normal blog cannot start with an underscore (it would never be published)', () => {
+    expect(() => resolveSlug('_demo', 'blog')).toThrow(/createTest/)
+  })
+
+  it('rejects folder names that are not URL-safe', () => {
+    expect(() => resolveSlug('مقاله', 'blog')).toThrow(/URL-safe/)
+    expect(() => resolveSlug('My Folder', 'blog')).toThrow(/URL-safe/)
   })
 })

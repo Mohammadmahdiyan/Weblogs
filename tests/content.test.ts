@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { rewriteMediaUrl, type MediaFile } from '../scripts/lib/media.ts'
-import { validateCoverEmbed, validateDir, validateLang, validateStyle } from '../scripts/lib/validators.ts'
+import { validateCoverEmbed, validateDir, validateLang } from '../scripts/lib/validators.ts'
 
 const media: MediaFile[] = [{ sourcePath: '/x/pic.png', relativePath: 'pic.png', type: 'image' }]
 
@@ -25,13 +25,6 @@ describe('frontmatter validators', () => {
     expect(() => validateCoverEmbed('http://example.com', 'a.md')).toThrow(/a\.md/)
     expect(() => validateCoverEmbed('', 'a.md')).toThrow()
     expect(() => validateCoverEmbed(5, 'a.md')).toThrow()
-  })
-
-  it('style must be an integer from 1 to 8 (default 1)', () => {
-    expect(validateStyle(undefined, 'a.md')).toBe(1)
-    expect(validateStyle(8, 'a.md')).toBe(8)
-    expect(() => validateStyle(9, 'a.md')).toThrow()
-    expect(() => validateStyle('2', 'a.md')).toThrow()
   })
 
   it('lang and dir', () => {

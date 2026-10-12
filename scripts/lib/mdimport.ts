@@ -1,4 +1,4 @@
-import { slugify } from './slug.ts'
+import { validateFolderName } from './blog.ts'
 
 /**
  * Chooses the markdown file of a source folder:
@@ -13,9 +13,13 @@ export function pickMarkdownFile(fileNames: readonly string[]): { file: string }
   return { error: `more than one .md file found (${markdown.join(', ')}); rename the article to index.md` }
 }
 
-/** Slug = frontmatter `name` (slugified) or, when absent, the source folder name. */
-export function resolveSlug(name: unknown, folderName: string): string {
-  const slug = slugify(typeof name === 'string' && name.trim() ? name : folderName)
-  if (!slug) throw new Error('could not build a URL-safe slug; set "name:" in the frontmatter (a-z, 0-9, - and _)')
-  return slug
+/**
+ * The URL slug is the folder name. Test blogs get a leading `_`; normal blogs must not have one.
+ */
+export function resolveSlug(folderName: string, kind: 'blog' | 'test'): string {
+  const name = validateFolderName(folderName)
+  if (kind === 'blog' && name.startsWith('_')) {
+    throw new Error(`"${name}" starts with "_", which marks a test blog (never published). Use "npm run createTest" or rename the folder.`)
+  }
+  return kind === 'test' && !name.startsWith('_') ? `_${name}` : name
 }

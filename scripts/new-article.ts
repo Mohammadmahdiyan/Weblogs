@@ -1,6 +1,6 @@
 /*
   Usage:  npm run new -- my-slug "عنوان مقاله"
-  Creates content/blog/<slug>/index.md from a template.
+  Creates content/blog/<slug>/index.md from a template (then run `npm run createNewBlog <slug>` to register it).
 */
 import { mkdir, writeFile, access } from 'node:fs/promises'
 import path from 'node:path'
@@ -20,19 +20,14 @@ if (!title) usage('A title is required.')
 
 const directory = path.join(projectRoot, 'content', 'blog', slug)
 const file = path.join(directory, 'index.md')
-const today = new Date().toISOString().slice(0, 10)
 
 const template = `---
-title: ${JSON.stringify(title)}
-description: خلاصهٔ کوتاه مقاله (اختیاری؛ اگر خالی باشد از متن ساخته می‌شود)
-date: ${today}
 tags: []
 suggestions:
   - عبارتی که کاربر جست‌وجو می‌کند و باید به این مقاله برسد
-# style: 1            # 1..8
-# coverEmbed: "https://www.youtube.com/watch?v=VIDEO_ID"   # فقط اگر فایل cover.* ندارید
-# draft: true
 ---
+
+# ${title}
 
 یک پاراگراف مقدمه.
 
@@ -58,4 +53,4 @@ try {
 
 await mkdir(directory, { recursive: true })
 await writeFile(file, template, 'utf8')
-console.log(`Created ${path.relative(projectRoot, file)}\nAdd images / videos next to it (a file named cover.jpg becomes the cover), then run npm run dev.`)
+console.log(`Created ${path.relative(projectRoot, file)}\nAdd images / videos next to it (a file named cover.jpg becomes the cover), then run: npm run createNewBlog ${slug}`)

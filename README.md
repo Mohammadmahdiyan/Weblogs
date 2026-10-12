@@ -10,7 +10,7 @@
 
 موتور وبلاگ استاتیک (RTL، فارسی‌محور). برای افزودن مقاله فقط یک پوشه می‌سازید؛ لیست مقاله‌ها، جست‌وجو، سایدبار، سئو، sitemap و RSS خودکار ساخته می‌شوند.
 
-ویژگی‌ها: ۸ استایل مقاله، حالت روشن/تیره/سیستم، فونت قابل‌تعویض و تنظیم اندازهٔ متن، جست‌وجوی هوشمند با `suggestions`، بزرگ‌نمایی عکس/گیف/ویدیو، کامپوننت‌های آماده در مارک‌داون، iframe امن (یوتیوب، اینستاگرام، آپارات، صفحهٔ دلخواه)، کارت نقل‌قول منبع (`:::source`)، HTML خام با Tailwind.
+ویژگی‌ها: ۸ استایل مقاله (انتخاب با خواننده)، حالت روشن/تیره/سیستم، فونت قابل‌تعویض و تنظیم اندازهٔ متن، جست‌وجوی هوشمند با `suggestions`، بزرگ‌نمایی عکس/گیف/ویدیو، کامپوننت‌های آماده در مارک‌داون، iframe امن (یوتیوب، اینستاگرام، آپارات، صفحهٔ دلخواه)، کارت نقل‌قول منبع (`:::source`)، HTML خام با Tailwind.
 
 ## ۲. فناوری‌ها
 
@@ -27,54 +27,117 @@ npm test           # تست‌های واحد
 npm run lint
 ```
 
-## ۴. افزودن مقالهٔ جدید در ۳۰ ثانیه
+## ۴. افزودن، ویرایش و حذف وبلاگ (آموزش کامل)
 
-```bash
-npm run new -- my-slug "عنوان مقاله"
-```
-
-یا دستی:
+هر وبلاگ یک **پوشه** است. نام پوشه همان آدرس وبلاگ است (`content/blog/my-post` → `/blog/my-post`) و فقط می‌تواند `a-z`، `0-9`، `-` و `_` داشته باشد.
 
 ```
-content/blog/my-slug/
-├── index.md        ← متن و frontmatter
-├── cover.jpg       ← (اختیاری) کاور؛ عکس/گیف/ویدیو/صدا
+my-post/
+├── index.md        ← متن (هر نام .md هم قبول است؛ اگر فقط یک فایل md باشد)
+├── cover.jpg       ← (اختیاری) کاور؛ عکس / گیف / ویدیو / صدا. نامش همیشه cover.*
 └── diagram.png     ← هر فایل دیگر
 ```
 
-کپی‌کردن `content/blog/_example-article` و تغییر نام آن هم کافی است.
+### فایل md دقیقاً این‌طور نوشته می‌شود
 
-### تبدیل یک پوشهٔ آمادهٔ md به وبلاگ
+```md
+---
+tags: [دفاع از اسلام, شبهه اسلام‌ستیزان]
+suggestions:
+  - آیا پیامبر ص با دختر 6 ساله ازدواج کرد
+  - ازدواج پیامبر ص با دختر 6 ساله
+---
 
-اگر پوشه‌ای دارید که یک فایل `.md` (با frontmatter) و عکس/ویدیوهایش داخل آن است:
+# ازدواج پیامبر ص با مادر عایشه رض
 
-```bash
-npm run mdtonewblog -- مسیر/پوشه
-npm run mdtonewblog -- مسیر/پوشه --move    # بعد از کپی، پوشهٔ مبدأ پاک شود
-npm run mdtonewblog -- مسیر/پوشه --force   # اگر مقاله از قبل هست، جایگزین شود
-npm run mdtonewblog -- مسیر/پوشه --no-build # بدون اجرای مرحلهٔ content
+متن وبلاگ…
 ```
 
-اطلاعات صفحه از frontmatter خوانده می‌شود (`name` آدرس مقاله است، `title` الزامی است)؛ پوشه در `content/blog/<name>/` ساخته و فایل md به `index.md` تغییر نام می‌دهد. فرمت‌های اشتباه (مثلاً `style: 12`) با پیام خوانا رد می‌شوند.
+- **نام (عنوان) وبلاگ** = اولین خطی که با `# ` شروع می‌شود. همین خط عنوان صفحه است و از متن حذف می‌شود (عنوان دوبار نمایش داده نمی‌شود).
+- `tags` اختیاری است؛ اگر ننویسید هیچ برچسبی ثبت نمی‌شود.
+- `suggestions` اختیاری است؛ اگر ننویسید فقط خود عنوان پیشنهاد جست‌وجو می‌شود.
+- چیز دیگری لازم نیست. `date` و `updated` را دستورهای زیر خودکار می‌گذارند؛ `style` را خودِ خواننده از دکمهٔ «استایل» انتخاب می‌کند؛ `draft` وجود ندارد (برای وبلاگ آزمایشی از «تست» استفاده کنید). کلیدهای قدیمی (`title`، `name`، `date`، `style`، `draft`) خوانده نمی‌شوند و فقط یک هشدار می‌گیرید.
+- کلیدهای اختیاری پیشرفته: `description` (خلاصهٔ سئو؛ پیش‌فرض ۱۶۰ نویسهٔ اول متن)، `readingTime` (دقیقه؛ پیش‌فرض خودکار از تعداد کلمه‌ها)، `coverEmbed` (کاور از یوتیوب/آپارات/اینستاگرام اگر `cover.*` ندارید)، `cover` (مسیر کاور با نامی غیر از `cover.*`)، `lang`، `dir`.
 
-ثبت مقاله خودکار است: `content/blog` تنها منبع واقعی است و همهٔ خروجی‌ها (فهرست مقاله‌ها، جست‌وجو، کپی رسانه‌ها، sitemap، RSS، `_headers`) از آن ساخته می‌شوند. دستور بلافاصله `npm run content` را اجرا می‌کند (slug تکراری و بقیهٔ خطاها همان‌جا معلوم می‌شود و در صورت خطا تغییر برگردانده می‌شود). بعد از آن فقط `npm run build` می‌ماند. هیچ JSON یا کدی را ویرایش نمی‌کنید. پوشه‌هایی که با `_` شروع می‌شوند فقط در حالت توسعه نمایش داده می‌شوند.
+### دستورها
 
-## ۵. مرجع frontmatter
+| دستور | کار |
+|---|---|
+| `npm run createNewBlog <پوشه>` | ساخت وبلاگ جدید و پر کردن خودکار اطلاعات از md و پوشه |
+| `npm run updateBlog <نام‌پوشه>` | به‌روزرسانی؛ `updated` را امروز می‌کند |
+| `npm run deleteBlog <نام‌پوشه>` | حذف وبلاگ (پوشه + تاریخ‌ها + خروجی‌ها) |
+| `npm run createTest <پوشه>` | ساخت وبلاگ **آزمایشی** (فقط در توسعه دیده می‌شود) |
+| `npm run deleteTest <نام>` | حذف وبلاگ آزمایشی |
+
+`<پوشه>` می‌تواند پوشه‌ای باشد که از قبل در `content/blog` هست، یا هر پوشهٔ دلخواه روی سیستم (شامل یک فایل md و عکس/ویدیوهایش): در حالت دوم کپی می‌شود به `content/blog/<نام‌پوشه>/` و فایل md به `index.md` تغییر نام می‌دهد. بعد از هر دستور خودکار `npm run content` اجرا می‌شود (اعتبارسنجی کل سایت، slug تکراری، ساخت `articles.json`، جست‌وجو، sitemap، RSS)؛ اگر خطایی باشد همهٔ تغییرها **برگردانده می‌شود**. بعد از آن فقط `npm run build` می‌ماند.
+
+گزینه‌ها را بعد از `--` بنویسید (npm بدون آن گزینه‌ها را خودش می‌خورد):
+
+```bash
+npm run createNewBlog -- مسیر/پوشه --move       # بعد از کپی، پوشهٔ مبدأ پاک شود
+npm run createNewBlog -- مسیر/پوشه --force      # اگر وبلاگ از قبل هست جایگزین شود (تاریخ ساخت حفظ می‌شود)
+npm run updateBlog -- my-post --from مسیر/پوشه  # محتوای تازه را از یک پوشهٔ دیگر جایگزین کن
+npm run deleteBlog -- my-post --yes             # بدون پرسیدن تأیید
+npm run createNewBlog -- مسیر/پوشه --no-build   # بدون اجرای npm run content
+```
+
+**روال معمول**
+
+```bash
+# ساخت: پوشه‌ای با md و عکس‌ها آماده کنید
+npm run createNewBlog -- ~/Desktop/my-post --move
+
+# ویرایش: فایل content/blog/my-post/index.md را عوض کنید، بعد:
+npm run updateBlog my-post
+
+# حذف:
+npm run deleteBlog my-post
+```
+
+`deleteBlog` بدون `--yes` تأیید می‌گیرد. اگر قالب خالی می‌خواهید: `npm run new -- my-post "عنوان"` فایل `index.md` می‌سازد؛ بعد `npm run createNewBlog my-post` ثبتش می‌کند.
+
+### تاریخ‌ها (`date` و `updated`)
+
+تاریخ‌ها داخل md نیستند؛ در `content/blog-dates.json` نگه داشته می‌شوند (این فایل را دستورها می‌نویسند و **باید در گیت commit شود** تا نسخهٔ آنلاین هم همین تاریخ‌ها را بسازد).
+
+- `createNewBlog`: `date` = امروز و `updated` = همان `date`.
+- `updateBlog`: `updated` = امروز (`date` ثابت می‌ماند). تا وقتی به‌روزرسانی نشده، `updated` برابر `date` است و در صفحه فقط «تاریخ انتشار» دیده می‌شود.
+- اگر پوشه‌ای را دستی در `content/blog` بگذارید و ثبت نکنید، تاریخ از زمان فایل گرفته می‌شود و هشدار می‌بینید؛ `npm run createNewBlog <نام>` آن را ثبت می‌کند.
+
+### وبلاگ آزمایشی (تست)
+
+`createTest` همان کار `createNewBlog` را می‌کند ولی پوشه را `content/blog/_<نام>` می‌سازد. پوشه‌های `_…` در `npm run dev` دیده می‌شوند و در `npm run build` / سایت آنلاین / sitemap / RSS **هرگز نمی‌آیند**. تست‌ها تاریخ ثبت‌شده ندارند. حذف: `npm run deleteTest <نام>` (با یا بدون `_`). مقالهٔ نمونهٔ پروژه (`_example-article`) هم یک تست است. `deleteBlog` روی تست و `deleteTest` روی وبلاگ عادی جواب نمی‌دهد (پیام راهنما می‌دهد)، تا چیزی اشتباهی پاک نشود.
+
+### خروجی ساخته‌شده برای هر وبلاگ (`src/generated/articles.json`)
+
+```json
+{
+  "slug": "my-post",
+  "title": "ازدواج پیامبر ص با مادر عایشه رض",
+  "description": "۱۶۰ نویسهٔ اول متن (یا description دستی)",
+  "date": "2026-10-12",
+  "updated": "2026-10-12",
+  "tags": ["دفاع از اسلام", "شبهه اسلام‌ستیزان"],
+  "suggestions": ["آیا پیامبر ص با دختر 6 ساله ازدواج کرد"],
+  "cover": { "url": "/content/my-post/cover.jpg", "type": "image" },
+  "readingTime": 3
+}
+```
+
+`cover.type` خودکار از پسوند فایل `cover.*` تشخیص داده می‌شود (`image` / `video` / `audio`). `readingTime` اگر در md ننوشته باشید خودکار (۲۰۰ کلمه در دقیقه) حساب می‌شود. این فایل ساخته‌شده است و ویرایش دستی ندارد.
+
+## ۵. مرجع md
 
 | کلید | نوع | پیش‌فرض | توضیح |
 |---|---|---|---|
-| `title` | string | **الزامی** | همان `<h1>` صفحه |
-| `name` | string | نام پوشه | آدرس مقاله (`a-z 0-9 - _`) |
-| `description` | string | ۱۶۰ نویسهٔ اول متن | توضیح سئو و کارت‌ها |
-| `date` | تاریخ | زمان تغییر فایل | `2025-01-31` |
-| `updated` | تاریخ | — | تاریخ به‌روزرسانی |
+| `# عنوان` (اولین) | متن | **الزامی** | نام/عنوان وبلاگ و `<h1>` صفحه |
 | `tags` | string[] | `[]` | برچسب‌ها |
-| `suggestions` | string[] | `[]` | عبارت‌هایی که جست‌وجوی دقیقشان به این مقاله می‌رسد |
-| `cover` | مسیر | `cover.*` خودکار | کاور محلی |
+| `suggestions` | string[] | `[عنوان]` | عبارت‌هایی که جست‌وجوی دقیقشان به این وبلاگ می‌رسد |
+| `description` | string | ۱۶۰ نویسهٔ اول | توضیح سئو و کارت‌ها (اختیاری) |
+| `readingTime` | عدد | خودکار | دقیقهٔ مطالعه (اختیاری) |
 | `coverEmbed` | URL https | — | کاور از یوتیوب/اینستاگرام/آپارات؛ اگر فایل کاور هست، فایل برنده است |
-| `style` | 1..8 | `defaultStyle` | استایل مقاله |
-| `lang`, `dir` | string | — | زبان/جهت این مقاله (مثلاً `en` / `ltr`) |
-| `draft` | boolean | `false` | پیش‌نویس در build نهایی نمی‌آید |
+| `cover` | مسیر | `cover.*` | فقط اگر کاور نامی غیر از `cover.*` دارد |
+| `lang`, `dir` | string | — | زبان/جهت این وبلاگ (مثلاً `en` / `ltr`) |
 
 ## ۶. کاور (رسانهٔ اول)
 
@@ -82,12 +145,17 @@ npm run mdtonewblog -- مسیر/پوشه --no-build # بدون اجرای مرح
 
 ## ۷. پیشنهادهای جست‌وجو (suggestions)
 
-```yaml
-title: ازدواج پیامبر ص با مادر عایشه رض
+```md
+---
 suggestions:
   - آیا پیامبر ص با دختر 6 ساله ازدواج کرد
   - دلیل ازدواج پیامبر ص با مادر عایشه رض
+---
+
+# ازدواج پیامبر ص با مادر عایشه رض
 ```
+
+اگر `suggestions` ننویسید، فقط عنوان پیشنهاد جست‌وجو است.
 
 اگر کاربر دقیقاً یکی از این عبارت‌ها (یا عنوان) را جست‌وجو و Enter بزند، مستقیم به مقاله می‌رود. مقایسه پس از نرمال‌سازی است: یکسان‌سازی «ي/ی» و «ك/ک»، حذف اعراب و نیم‌فاصله، تبدیل ارقام فارسی/عربی به لاتین، حروف کوچک و فاصله‌های اضافه. تطبیق تقریبی فقط لیست نتایج را نشان می‌دهد.
 
@@ -97,7 +165,7 @@ suggestions:
 
 اگر کلاس Tailwind را به‌صورت پویا می‌سازید، آن را در `src/index.css` با `@source inline("...")` اضافه کنید.
 
-نکته: `# عنوان` (h1) داخل متن، یک سطح پایین‌تر رندر می‌شود چون h1 صفحه فقط عنوان مقاله است؛ در این حالت سایر سرتیتر‌ها هم یک سطح پایین می‌روند.
+نکته: اولین `# عنوان` همان نام وبلاگ است و از متن حذف می‌شود. اگر بعدتر باز هم `# ` (h1) در متن بیاورید، چون h1 صفحه فقط عنوان است، سرتیتر‌های متن یک سطح پایین‌تر رندر می‌شوند؛ بهتر است بخش‌ها را با `##` شروع کنید.
 
 ## ۹. عکس، گیف و ویدیو
 
@@ -133,9 +201,9 @@ suggestions:
 | 7 | شیشه‌ای (Glass): گرادیان و blur | صفحهٔ ویژه |
 | 8 | کنتراست بالا (WCAG AAA) | دسترس‌پذیری |
 
-انتخاب: `style: 3` در frontmatter، یا برای پیش‌نمایش `?style=3` به آدرس اضافه کنید ؛ در صفحهٔ هر مقاله دکمهٔ «استایل» در هدر هم هست که همین کار را با لیست نام استایل‌ها می‌کند.
+انتخاب استایل با **خوانندهٔ سایت** است، نه با فایل md: در صفحهٔ هر وبلاگ دکمهٔ «استایل» در هدر هست. انتخاب او در مرورگرش ذخیره می‌شود و همهٔ وبلاگ‌ها با همان استایل باز می‌شوند. اگر چیزی انتخاب نکرده باشد، `defaultStyle` در `src/site.config.ts` استفاده می‌شود. برای اشتراک‌گذاری یک استایل مشخص `?style=3` را به آدرس اضافه کنید (روی انتخاب ذخیره‌شده اولویت دارد).
 
-همهٔ استایل‌ها یک قرارداد توکن مشترک دارند (`--bg --surface --surface-alt --surface-strong --text --text-secondary --muted --border-light --border-strong --brand --brand-dark --brand-contrast --info --warn --danger --code-bg --code-text --radius-card --radius-sm --shadow-card --body-line-height --prose-size --heading-weight`). استایل ۱ شبیه بلاگ آموزشی کارت‌محور با تأکید سبز است. **ساخت استایل نهم:** یک بلاک `.blog-style-N` را در `src/styles/blog-styles.css` کپی کنید، فقط توکن‌ها (روشن و تیره) را عوض کنید، آن را در `src/layouts/config.ts` ثبت کنید و در `validateStyle` (`scripts/lib/validators.ts`) سقف ۸ را بالا ببرید.
+همهٔ استایل‌ها یک قرارداد توکن مشترک دارند (`--bg --surface --surface-alt --surface-strong --text --text-secondary --muted --border-light --border-strong --brand --brand-dark --brand-contrast --info --warn --danger --code-bg --code-text --radius-card --radius-sm --shadow-card --body-line-height --prose-size --heading-weight`). استایل ۱ شبیه بلاگ آموزشی کارت‌محور با تأکید سبز است. **ساخت استایل نهم:** یک بلاک `.blog-style-N` را در `src/styles/blog-styles.css` کپی کنید، فقط توکن‌ها (روشن و تیره) را عوض کنید، و آن را در `src/layouts/config.ts` ثبت کنید (دکمهٔ «استایل» لیست را از همان‌جا می‌سازد).
 
 ## ۱۲. تم روشن/تیره/سیستم و رنگ‌ها
 
@@ -165,7 +233,9 @@ suggestions:
 - **عکس نمایش داده نمی‌شود:** فایل باید کنار `index.md` باشد و مسیر نسبی (`./a.png`) داشته باشد.
 - **تگ جدیدم استایل ندارد:** نام آن در `directiveNames` و نقشهٔ کامپوننت‌ها ثبت شده؟ (بخش ۱۰)
 - **فونت بارگذاری نمی‌شود:** نام فایل‌ها در `fonts.css` را بررسی کنید.
-- **تعارض slug:** دو مقاله همنام هستند؛ `name` را در یکی تغییر دهید.
+- **تعارض / نام پوشه نامعتبر:** نام پوشه همان آدرس است؛ پوشه را تغییر نام دهید (فقط `a-z 0-9 - _`).
+- **خطای «no title found»:** فایل md باید یک خط `# عنوان` داشته باشد.
+- **وبلاگ آزمایشی در سایت آنلاین نیست:** درست است؛ پوشه‌های `_…` عمداً در build نهایی نمی‌آیند.
 - **iframe خالی است:** سایت مبدأ قاب را مسدود کرده؛ از `:::source` یا `fallback-only` استفاده کنید.
 
 ## ۱۷. ساختار پروژه
@@ -209,19 +279,31 @@ npm run preview
 npm test
 ```
 
-## Add an article
+## Add, update and delete a blog
 
-```bash
-npm run new -- my-slug "Article title"
+A blog is a **folder**; the folder name is the URL (`content/blog/my-post` → `/blog/my-post`; `a-z 0-9 - _` only). The markdown file contains only this:
+
+```md
+---
+tags: [tag one, tag two]      # optional, default: none
+suggestions:                  # optional, default: the title
+  - a phrase people search for
+---
+
+# Blog title                  # the first "# " line = the title (removed from the body)
+
+Text…
 ```
 
-Have a folder with a ready markdown file (+ media)? `npm run mdtonewblog -- path/to/folder [--move] [--force]` validates its frontmatter and creates `content/blog/<name>/index.md` (+ media) from it.
+| Command | What it does |
+|---|---|
+| `npm run createNewBlog <folder>` | Create a blog from a folder (md + media). Fills everything from the md and the folder; `date` = `updated` = today. |
+| `npm run updateBlog <name>` | Re-validate and set `updated` = today (`date` stays). |
+| `npm run deleteBlog <name>` | Delete the blog folder, its dates and generated output. Asks to confirm (`-- --yes` skips). |
+| `npm run createTest <folder>` | Same as createNewBlog but the folder becomes `content/blog/_<name>`: development only, never built for production. |
+| `npm run deleteTest <name>` | Delete a test blog. |
 
-Or copy `content/blog/_example-article`, rename it, edit `index.md`, drop media files into the folder. No JSON or code to edit. A file called `cover.*` becomes the cover (shown first).
-
-## Frontmatter
-
-`title` (required, becomes the page `<h1>`), `name`, `description`, `date`, `updated`, `tags`, `suggestions`, `cover`, `coverEmbed` (https URL; a local cover file wins), `style` (1–8), `lang`, `dir`, `draft`. See the Persian table above for details.
+Options go after `--`: `--move`, `--force`, `--no-build`, `--yes`, and `updateBlog -- <name> --from <folder>`. Every command runs `npm run content` and undoes its change if that fails. Dates live in `content/blog-dates.json` (commit it). The reader's style choice (header button, saved in the browser; `?style=N` wins) decides the style: there is no `style` or `draft` key. `npm run new -- my-post "Title"` writes an empty template.
 
 ## Search suggestions
 
@@ -245,4 +327,4 @@ Set `siteUrl` in `src/site.config.ts`. Generated: `sitemap.xml`, `robots.txt`, `
 
 ## Troubleshooting
 
-Image missing → keep it beside `index.md` and use `./file`. New tag unstyled → register it in `directiveNames` and the component map. Empty iframe → the source blocks framing, use `:::source`. Slug conflict → set `name:` on one article.
+Image missing → keep it beside `index.md` and use `./file`. New tag unstyled → register it in `directiveNames` and the component map. Empty iframe → the source blocks framing, use `:::source`. Invalid folder name / slug conflict → rename the folder (it is the URL). "no title found" → add a `# Title` line.

@@ -33,11 +33,3 @@ export function validateDir(value: unknown, filePath: string): 'ltr' | 'rtl' | u
   }
   return value
 }
-
-export function validateStyle(value: unknown, filePath: string): number {
-  const style = value === undefined ? 1 : value
-  if (typeof style !== 'number' || !Number.isInteger(style) || style < 1 || style > 8) {
-    throw validationError(filePath, '"style" must be an integer from 1 to 8')
-  }
-  return style
-}

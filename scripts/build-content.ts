@@ -2,7 +2,6 @@ import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs
 import type { Dirent } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import matter from 'gray-matter'
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import { visit } from 'unist-util-visit'
@@ -10,8 +9,7 @@ import type { ArticleMeta, SearchEntry } from '../src/lib/types.ts'
 import siteConfig from '../src/site.config.ts'
 import { detectProvider, parseYouTubeId, youtubePoster } from '../src/lib/embed.ts'
 import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, type MediaFile } from './lib/media.ts'
-import { slugify } from './lib/slug.ts'
-import { validateCoverEmbed, validateDir, validateLang, validateStyle } from './lib/validators.ts'
+import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
 
 interface PreparedArticle {
   meta: ArticleMeta
@@ -30,34 +28,6 @@ function relativeFilePath(filePath: string): string {
 
 function fail(filePath: string, message: string): never {
   throw new Error(`${relativeFilePath(filePath)}: ${message}`)
-}
-
-function readStringArray(
-  data: Record<string, unknown>,
-  field: 'tags' | 'suggestions',
-  filePath: string,
-): string[] {
-  const value = data[field]
-  if (value === undefined) return []
-  if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
-    return fail(filePath, `"${field}" must be an array of strings`)
-  }
-  return value.map((item) => item.trim()).filter(Boolean)
-}
-
-function readOptionalDate(
-  value: unknown,
-  field: 'date' | 'updated',
-  filePath: string,
-): string | null {
-  if (value === undefined || value === null || value === '') return null
-  if (typeof value !== 'string' && !(value instanceof Date)) {
-    return fail(filePath, `"${field}" must be a valid date`)
-  }
-
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return fail(filePath, `"${field}" must be a valid date`)
-  return date.toISOString().slice(0, 10)
 }
 
 function plainText(markdown: string): string {
@@ -196,76 +166,66 @@ function embedCover(url: string): NonNullable<ArticleMeta['cover']> {
   }
 }
 
-async function prepareArticle(articleDirectory: string): Promise<PreparedArticle> {
+async function prepareArticle(articleDirectory: string, dates: DatesRegistry): Promise<PreparedArticle> {
   const indexPath = path.join(articleDirectory, 'index.md')
-  const source = await readFile(indexPath, 'utf8')
-  const parsed = matter(source)
-  const data = parsed.data as Record<string, unknown>
-
-  if (typeof data.title !== 'string' || !data.title.trim()) {
-    return fail(indexPath, '"title" is required and must be a non-empty string')
-  }
-
-  const name = data.name
-  if (name !== undefined && typeof name !== 'string') {
-    return fail(indexPath, '"name" must be a string')
-  }
+  const label = relativeFilePath(indexPath)
   const folderName = path.basename(articleDirectory)
-  const slug = slugify(typeof name === 'string' ? name : folderName)
-  if (!slug || !/^[a-z0-9_-]+$/.test(slug)) {
-    return fail(indexPath, 'slug must contain only lowercase letters, numbers, hyphens, and underscores')
+
+  // The folder name is the slug (the URL).
+  try {
+    validateFolderName(folderName)
+  } catch (error) {
+    return fail(indexPath, error instanceof Error ? error.message : String(error))
+  }
+  const slug = folderName
+
+  const blog = parseBlog(await readFile(indexPath, 'utf8'), label)
+  if (blog.ignoredKeys.length > 0) {
+    console.warn(
+      `! ${label}: ignored frontmatter key(s) ${blog.ignoredKeys.map((key) => `"${key}"`).join(', ')}. ` +
+        'Only "tags" and "suggestions" are used: the title is the first "# " line, dates are managed by the blog commands.',
+    )
   }
 
-  const suggestions = readStringArray(data, 'suggestions', indexPath)
-  const tags = readStringArray(data, 'tags', indexPath)
-  const relativeIndex = relativeFilePath(indexPath)
-  const style = validateStyle(data.style, relativeIndex)
-  const coverEmbed = validateCoverEmbed(data.coverEmbed, relativeIndex)
-  const lang = validateLang(data.lang, relativeIndex)
-  const dir = validateDir(data.dir, relativeIndex)
-  if (data.description !== undefined && typeof data.description !== 'string') {
-    return fail(indexPath, '"description" must be a string')
+  // date / updated come from content/blog-dates.json (written by createNewBlog / updateBlog).
+  const registered = dates[slug]
+  const fileDay = (await stat(indexPath)).mtime.toISOString().slice(0, 10)
+  if (!registered && !isTestFolder(slug)) {
+    console.warn(`! ${label}: no creation date registered; using the file date. Run "npm run createNewBlog ${slug}" to register it.`)
   }
-  if (data.cover !== undefined && typeof data.cover !== 'string') {
-    return fail(indexPath, '"cover" must be a relative media path string')
-  }
-  if (data.draft !== undefined && typeof data.draft !== 'boolean') {
-    return fail(indexPath, '"draft" must be a boolean')
-  }
+  const date = registered?.date ?? fileDay
+  const updated = registered?.updated ?? date
 
-  const date = readOptionalDate(data.date, 'date', indexPath) ?? (await stat(indexPath)).mtime.toISOString().slice(0, 10)
-  const updated = readOptionalDate(data.updated, 'updated', indexPath)
   const mediaFiles = await collectMediaFiles(articleDirectory)
   let coverFile: MediaFile | undefined
 
-  if (typeof data.cover === 'string') {
-    const requestedCover = normalizeMediaPath(data.cover)
+  if (blog.cover !== undefined) {
+    const requestedCover = normalizeMediaPath(blog.cover)
     coverFile = mediaFiles.find((media) => media.relativePath === requestedCover && media.type !== null)
-    if (!coverFile) return fail(indexPath, `cover file "${data.cover}" was not found or has an unsupported media extension`)
+    if (!coverFile) return fail(indexPath, `cover file "${blog.cover}" was not found or has an unsupported media extension`)
   } else {
+    // The cover is always a file called cover.<any image / video / audio extension>.
     coverFile = mediaFiles.find((media) =>
       media.type !== null && path.posix.basename(media.relativePath).toLowerCase().startsWith('cover.'),
     )
   }
 
-  const body = rewriteMarkdownMedia(parsed.content, slug, mediaFiles)
-  const words = parsed.content.trim().split(/\s+/).filter(Boolean).length
-  const explicitDescription = typeof data.description === 'string' ? data.description.trim() : ''
+  const body = rewriteMarkdownMedia(blog.body, slug, mediaFiles)
+  const words = blog.body.trim().split(/\s+/).filter(Boolean).length
   const meta: ArticleMeta = {
     slug,
-    title: data.title.trim(),
-    description: explicitDescription || excerptFrom(parsed.content),
+    title: blog.title,
+    description: blog.description ?? excerptFrom(blog.body),
     date,
     updated,
-    tags,
-    suggestions,
+    tags: blog.tags,
+    suggestions: blog.suggestions,
     cover: coverFile?.type
       ? { url: `/content/${slug}/${encodeMediaPath(coverFile.relativePath)}`, type: coverFile.type }
-      : coverEmbed ? embedCover(coverEmbed) : null,
-    style,
-    readingTime: Math.max(1, Math.ceil(words / 200)),
-    ...(lang ? { lang } : {}),
-    ...(dir ? { dir } : {}),
+      : blog.coverEmbed ? embedCover(blog.coverEmbed) : null,
+    readingTime: blog.readingTime ?? Math.max(1, Math.ceil(words / 200)),
+    ...(blog.lang ? { lang: blog.lang } : {}),
+    ...(blog.dir ? { dir: blog.dir } : {}),
   }
 
   return { meta, body, mediaFiles, articleDirectory }
@@ -284,8 +244,8 @@ async function writeSiteFiles(metadata: ArticleMeta[]): Promise<void> {
   }
 
   const urls = [
-    { loc: `${base}/`, lastmod: metadata[0]?.updated ?? metadata[0]?.date },
-    ...metadata.map((article) => ({ loc: `${base}/blog/${article.slug}`, lastmod: article.updated ?? article.date })),
+    { loc: `${base}/`, lastmod: metadata[0]?.updated },
+    ...metadata.map((article) => ({ loc: `${base}/blog/${article.slug}`, lastmod: article.updated })),
   ]
   const sitemap = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -356,6 +316,7 @@ async function buildContent(): Promise<void> {
     .filter((entry) => !isProduction || !entry.name.startsWith('_'))
     .sort((left, right) => left.name.localeCompare(right.name))
   const articles: PreparedArticle[] = []
+  const dates = await readDates()
   const seenSlugs = new Map<string, string>()
 
   for (const directory of directories) {
@@ -368,8 +329,7 @@ async function buildContent(): Promise<void> {
       throw error
     }
 
-    const article = await prepareArticle(articleDirectory)
-    if (isProduction && matter(await readFile(indexPath, 'utf8')).data.draft === true) continue
+    const article = await prepareArticle(articleDirectory, dates)
 
     const duplicatePath = seenSlugs.get(article.meta.slug)
     if (duplicatePath) {
@@ -385,7 +345,7 @@ async function buildContent(): Promise<void> {
   const searchIndex: SearchEntry[] = metadata.map((article) => ({
     slug: article.slug,
     title: article.title,
-    phrases: [article.title, ...article.suggestions, ...article.tags],
+    phrases: [...new Set([article.title, ...article.suggestions, ...article.tags])],
   }))
 
   await rm(publicContentRoot, { recursive: true, force: true })
@@ -423,7 +383,8 @@ async function buildContent(): Promise<void> {
   console.table(metadata.map((article) => ({
     slug: article.slug,
     title: article.title,
-    style: article.style,
+    date: article.date,
+    updated: article.updated,
     cover: article.cover?.type ?? 'none',
     suggestions: article.suggestions.length,
   })))

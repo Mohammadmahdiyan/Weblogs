@@ -17,11 +17,11 @@ export interface ArticleMeta {
   title: string
   description: string
   date: string
-  updated: string | null
+  /** Equals `date` until `npm run updateBlog` is used. */
+  updated: string
   tags: string[]
   suggestions: string[]
   cover: ArticleCover | null
-  style: number
   readingTime: number
   /** Optional per-article language / direction override (frontmatter `lang`, `dir`). */
   lang?: string

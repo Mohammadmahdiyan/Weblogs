@@ -42,7 +42,7 @@ async function main(): Promise<void> {
       headline: article.title,
       description: article.description,
       datePublished: article.date,
-      dateModified: article.updated ?? article.date,
+      dateModified: article.updated,
       mainEntityOfPage: url,
       ...(image ? { image } : {}),
       publisher: { '@type': 'Organization', name: siteConfig.siteName },

@@ -40,7 +40,12 @@ const siteConfig: SiteConfig = {
     { label: 'خانه', href: '/' },
     { label: 'همه مقاله‌ها', href: '/#articles' },
   ],
-  social: [],
+  social: [
+    {
+      href: "https://t.me/Rasoolallah_s_is_best",
+      label: "تلگرام من"
+    }
+  ],
   sidebarCards: [],
   embedAllowlist: [
     'youtube.com',

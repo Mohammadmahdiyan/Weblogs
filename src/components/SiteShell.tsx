@@ -104,7 +104,7 @@ function Header({ articles }: { articles: ArticleMeta[] }) {
                 </div>
               </details>
             </div>
-            <StyleSwitcher articles={articles} />
+            <StyleSwitcher />
             <button type="button" onClick={() => setDrawerOpen(true)} aria-label="بازکردن فهرست" className="inline-flex size-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] text-[var(--text)] hover:bg-[var(--surface-alt)] md:hidden">
               <Menu aria-hidden="true" className="size-5" />
             </button>
