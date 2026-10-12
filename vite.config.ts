@@ -81,6 +81,7 @@ function contentBuilder(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/Weblogs/',
   plugins: [tailwindcss(), contentBuilder(), react()],
   resolve: {
     alias: {

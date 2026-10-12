@@ -47,7 +47,11 @@ export function FontProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch('/fonts/fonts.json', { cache: 'no-cache', signal: controller.signal })
+    fetch(`${import.meta.env.BASE_URL}fonts/fonts.json`, {
+      cache: 'no-cache',
+      signal: controller.signal,
+    })
+
       .then((response) => (response.ok ? response.json() as Promise<unknown> : null))
       .then((json) => {
         const parsed = parseFontRegistry(json)
