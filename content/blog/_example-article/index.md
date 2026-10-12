@@ -1,6 +1,5 @@
 ---
-name: married-prophet-with-ayesha
-title: ازدواج پیامبر ص با مادر عایشه رض
+name: ازدواج پیامبر ص با مادر عایشه رض
 date: 2025-01-31
 updated: 2025-02-10
 tags: [history, family]
