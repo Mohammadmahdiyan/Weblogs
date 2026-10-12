@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, ChevronLeft } from 'lucide-react'
-import { clsx } from 'clsx'
 import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
@@ -12,7 +11,7 @@ import { ArticleSidebar } from '../components/ArticleSidebar'
 import { ArticleToc } from '../components/ArticleToc'
 import { CoverMedia } from '../components/CoverMedia'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
-import { ArticleLayout, STYLE_IDS, getLayout, layouts, normalizeStyle } from '../layouts'
+import { ArticleLayout, getLayout, normalizeStyle } from '../layouts'
 import { NotFoundPage } from './NotFoundPage'
 
 const articles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
@@ -39,27 +38,6 @@ function ReadingProgress() {
   return <div aria-hidden="true" className="fixed inset-x-0 top-0 z-50 h-1 bg-transparent"><div className="h-full bg-[var(--brand-bright)] transition-[width]" style={{ width: `${progress}%` }} /></div>
 }
 
-/** Dev-only floating panel to preview the 8 styles without editing frontmatter. */
-function StylePicker({ active, onPick }: { active: number; onPick: (style: number) => void }) {
-  if (!import.meta.env.DEV) return null
-  return (
-    <div role="group" aria-label="پیش‌نمایش استایل مقاله (فقط توسعه)" className="fixed bottom-4 start-4 z-50 flex items-center gap-1 rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-[var(--surface)] p-1 text-[var(--text)] shadow-lg">
-      {STYLE_IDS.map((id) => (
-        <button
-          key={id}
-          type="button"
-          title={layouts[id].name}
-          aria-pressed={active === id}
-          onClick={() => onPick(id)}
-          className={clsx('size-8 rounded-[var(--radius-sm)] text-sm font-bold', active === id ? 'bg-[var(--brand)] text-[var(--brand-contrast)]' : 'hover:bg-[var(--surface-alt)]')}
-        >
-          {id}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 function RelatedArticles({ article }: { article: ArticleMeta }) {
   const related = articles
     .filter((item) => item.slug !== article.slug)
@@ -81,7 +59,7 @@ function RelatedArticles({ article }: { article: ArticleMeta }) {
 
 export function ArticlePage() {
   const { slug = '' } = useParams()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const article = articles.find((item) => item.slug === slug)
   const requestedStyle = Number(searchParams.get('style'))
   const activeStyle = normalizeStyle(requestedStyle >= 1 ? requestedStyle : article?.style ?? siteConfig.defaultStyle)
@@ -148,16 +126,9 @@ export function ArticlePage() {
   const next = articleIndex >= 0 ? articles[articleIndex + 1] : undefined
   const tocReady = markdown !== null && toc.length > 0
 
-  function pickStyle(style: number) {
-    const params = new URLSearchParams(searchParams)
-    params.set('style', String(style))
-    setSearchParams(params, { replace: true })
-  }
-
   return (
     <>
       <ReadingProgress />
-      <StylePicker active={activeStyle} onPick={pickStyle} />
       <ArticleLayout
         style={activeStyle}
         sidebar={<ArticleSidebar articles={articles} article={article} />}

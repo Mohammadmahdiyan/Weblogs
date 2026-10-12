@@ -42,7 +42,22 @@ content/blog/my-slug/
 └── diagram.png     ← هر فایل دیگر
 ```
 
-کپی‌کردن `content/blog/_example-article` و تغییر نام آن هم کافی است. هیچ JSON یا کدی را ویرایش نمی‌کنید. پوشه‌هایی که با `_` شروع می‌شوند فقط در حالت توسعه نمایش داده می‌شوند.
+کپی‌کردن `content/blog/_example-article` و تغییر نام آن هم کافی است.
+
+### تبدیل یک پوشهٔ آمادهٔ md به وبلاگ
+
+اگر پوشه‌ای دارید که یک فایل `.md` (با frontmatter) و عکس/ویدیوهایش داخل آن است:
+
+```bash
+npm run mdtonewblog -- مسیر/پوشه
+npm run mdtonewblog -- مسیر/پوشه --move    # بعد از کپی، پوشهٔ مبدأ پاک شود
+npm run mdtonewblog -- مسیر/پوشه --force   # اگر مقاله از قبل هست، جایگزین شود
+npm run mdtonewblog -- مسیر/پوشه --no-build # بدون اجرای مرحلهٔ content
+```
+
+اطلاعات صفحه از frontmatter خوانده می‌شود (`name` آدرس مقاله است، `title` الزامی است)؛ پوشه در `content/blog/<name>/` ساخته و فایل md به `index.md` تغییر نام می‌دهد. فرمت‌های اشتباه (مثلاً `style: 12`) با پیام خوانا رد می‌شوند.
+
+ثبت مقاله خودکار است: `content/blog` تنها منبع واقعی است و همهٔ خروجی‌ها (فهرست مقاله‌ها، جست‌وجو، کپی رسانه‌ها، sitemap، RSS، `_headers`) از آن ساخته می‌شوند. دستور بلافاصله `npm run content` را اجرا می‌کند (slug تکراری و بقیهٔ خطاها همان‌جا معلوم می‌شود و در صورت خطا تغییر برگردانده می‌شود). بعد از آن فقط `npm run build` می‌ماند. هیچ JSON یا کدی را ویرایش نمی‌کنید. پوشه‌هایی که با `_` شروع می‌شوند فقط در حالت توسعه نمایش داده می‌شوند.
 
 ## ۵. مرجع frontmatter
 
@@ -118,7 +133,7 @@ suggestions:
 | 7 | شیشه‌ای (Glass): گرادیان و blur | صفحهٔ ویژه |
 | 8 | کنتراست بالا (WCAG AAA) | دسترس‌پذیری |
 
-انتخاب: `style: 3` در frontmatter، یا برای پیش‌نمایش `?style=3` به آدرس اضافه کنید (در حالت توسعه یک پنل شناور هم هست).
+انتخاب: `style: 3` در frontmatter، یا برای پیش‌نمایش `?style=3` به آدرس اضافه کنید ؛ در صفحهٔ هر مقاله دکمهٔ «استایل» در هدر هم هست که همین کار را با لیست نام استایل‌ها می‌کند.
 
 همهٔ استایل‌ها یک قرارداد توکن مشترک دارند (`--bg --surface --surface-alt --surface-strong --text --text-secondary --muted --border-light --border-strong --brand --brand-dark --brand-contrast --info --warn --danger --code-bg --code-text --radius-card --radius-sm --shadow-card --body-line-height --prose-size --heading-weight`). استایل ۱ شبیه بلاگ آموزشی کارت‌محور با تأکید سبز است. **ساخت استایل نهم:** یک بلاک `.blog-style-N` را در `src/styles/blog-styles.css` کپی کنید، فقط توکن‌ها (روشن و تیره) را عوض کنید، آن را در `src/layouts/config.ts` ثبت کنید و در `validateStyle` (`scripts/lib/validators.ts`) سقف ۸ را بالا ببرید.
 
@@ -199,6 +214,8 @@ npm test
 ```bash
 npm run new -- my-slug "Article title"
 ```
+
+Have a folder with a ready markdown file (+ media)? `npm run mdtonewblog -- path/to/folder [--move] [--force]` validates its frontmatter and creates `content/blog/<name>/index.md` (+ media) from it.
 
 Or copy `content/blog/_example-article`, rename it, edit `index.md`, drop media files into the folder. No JSON or code to edit. A file called `cover.*` becomes the cover (shown first).
 

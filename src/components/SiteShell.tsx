@@ -5,6 +5,7 @@ import { clsx } from 'clsx'
 import siteConfig from '../site.config'
 import { ThemeToggle } from './ThemeControls'
 import { FontControls } from './FontControls'
+import { StyleSwitcher } from './StyleSwitcher'
 import type { ArticleMeta } from '../lib/types'
 
 function SiteLink({ href, children, className, onClick }: { href: string; children: ReactNode; className?: string; onClick?: () => void }) {
@@ -82,7 +83,7 @@ function MobileDrawer({ onClose }: { onClose: () => void }) {
   )
 }
 
-function Header() {
+function Header({ articles }: { articles: ArticleMeta[] }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   return (
@@ -103,6 +104,7 @@ function Header() {
                 </div>
               </details>
             </div>
+            <StyleSwitcher articles={articles} />
             <button type="button" onClick={() => setDrawerOpen(true)} aria-label="بازکردن فهرست" className="inline-flex size-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] text-[var(--text)] hover:bg-[var(--surface-alt)] md:hidden">
               <Menu aria-hidden="true" className="size-5" />
             </button>
@@ -119,7 +121,13 @@ function Footer({ articles }: { articles: ArticleMeta[] }) {
   return (
     <footer className="mx-auto my-8 w-full max-w-7xl px-4 sm:px-6">
       <div className="relative rounded-[var(--radius-lg)] bg-[var(--footer-bg,var(--text))] p-6 text-[var(--footer-text,var(--surface))] sm:p-8">
-        <span aria-hidden="true" className="absolute -top-2 end-5 hidden size-7 translate-x-1/2 -translate-y-1/2 rotate-6 rounded-[var(--radius-sm)] bg-[var(--brand)] sm:block" />
+        <span aria-hidden="true" className="absolute -top-2 end-5 hidden size-10 translate-x-1/2 -translate-y-1/2 rotate-6 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)] text-[var(--brand-contrast)] sm:flex">
+          {/* open book: knowledge / reading */}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-6 -rotate-6">
+            <path d="M12 6.5C10.4 5.3 8.2 4.7 5.5 4.7c-.9 0-1.7.1-2.5.3v13.2c.8-.2 1.6-.3 2.5-.3 2.7 0 4.9.6 6.5 1.8 1.6-1.2 3.8-1.8 6.5-1.8.9 0 1.7.1 2.5.3V5c-.8-.2-1.6-.3-2.5-.3-2.7 0-4.9.6-6.5 1.8Z" />
+            <path d="M12 6.5V20" />
+          </svg>
+        </span>
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <section>
             <h2 className="mb-3 text-base font-bold">{siteConfig.siteName}</h2>
@@ -158,7 +166,7 @@ export function SiteShell({ children, articles }: { children: ReactNode; article
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[60] focus:rounded-[var(--radius-sm)] focus:bg-[var(--brand)] focus:px-4 focus:py-2 focus:text-[var(--brand-contrast)]">پرش به محتوای اصلی</a>
       <AnnouncementBar />
-      <Header />
+      <Header articles={articles} />
       {children}
       <Footer articles={articles} />
     </div>

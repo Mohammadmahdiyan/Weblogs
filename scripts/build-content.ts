@@ -10,6 +10,7 @@ import type { ArticleMeta, SearchEntry } from '../src/lib/types.ts'
 import siteConfig from '../src/site.config.ts'
 import { detectProvider, parseYouTubeId, youtubePoster } from '../src/lib/embed.ts'
 import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, type MediaFile } from './lib/media.ts'
+import { slugify } from './lib/slug.ts'
 import { validateCoverEmbed, validateDir, validateLang, validateStyle } from './lib/validators.ts'
 
 interface PreparedArticle {
@@ -29,16 +30,6 @@ function relativeFilePath(filePath: string): string {
 
 function fail(filePath: string, message: string): never {
   throw new Error(`${relativeFilePath(filePath)}: ${message}`)
-}
-
-function slugify(value: string): string {
-  return value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '')
 }
 
 function readStringArray(

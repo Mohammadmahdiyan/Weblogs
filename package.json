@@ -13,7 +13,8 @@
     "typecheck": "tsc -b",
     "format": "prettier --write .",
     "test": "vitest run",
-    "new": "tsx scripts/new-article.ts"
+    "new": "tsx scripts/new-article.ts",
+    "mdtonewblog": "tsx scripts/mdtonewblog.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",
