@@ -23,7 +23,7 @@ export interface SiteConfig {
 const siteConfig: SiteConfig = {
   siteName: 'وبلاگ اسلامی',
   siteDescription: 'مقاله‌ها و یادداشت‌های آموزشی',
-  siteUrl: 'https://example.com',
+  siteUrl: 'https://mohammadmahdiyan.github.io/Weblogs',
   defaultFont: 'Vazirmatn',
   defaultStyle: 1,
   announcement: {
