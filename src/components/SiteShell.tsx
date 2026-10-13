@@ -7,6 +7,7 @@ import { ThemeToggle } from './ThemeControls'
 import { FontControls } from './FontControls'
 import { StyleSwitcher } from './StyleSwitcher'
 import type { ArticleMeta } from '../lib/types'
+import { useAdultAccess } from '../lib/adultAccess'
 
 function SiteLink({ href, children, className, onClick }: { href: string; children: ReactNode; className?: string; onClick?: () => void }) {
   return href.startsWith('/')
@@ -118,6 +119,7 @@ function Header() {
 
 function Footer({ articles }: { articles: ArticleMeta[] }) {
   const latest = articles.slice(0, 4)
+  const adultConfirmed = useAdultAccess()
   return (
     <footer className="mx-auto my-8 w-full max-w-7xl px-4 sm:px-6">
       <div className="relative rounded-[var(--radius-lg)] bg-[var(--footer-bg,var(--text))] p-6 text-[var(--footer-text,var(--surface))] sm:p-8">
@@ -142,7 +144,7 @@ function Footer({ articles }: { articles: ArticleMeta[] }) {
           <section>
             <h2 className="mb-3 text-sm font-bold">نوشته‌های پیشنهادی</h2>
             <ul className="m-0 grid list-none gap-2 p-0">
-              {latest.map((article) => <li key={article.slug}><Link to={`/blog/${article.slug}`} className="line-clamp-2 text-sm opacity-75 no-underline hover:opacity-100">{article.title}</Link></li>)}
+              {latest.map((article) => <li key={article.slug}><Link to={`/blog/${article.slug}`} aria-label={article.adult && !adultConfirmed ? 'مشاهده مقاله +۱۸' : article.title} className="line-clamp-2 text-sm opacity-75 no-underline hover:opacity-100">{article.adult && !adultConfirmed ? <span className="relative block"><span className="block select-none blur-sm">{article.title}</span><span className="absolute inset-0 flex items-center justify-center text-xs font-semibold">حاوی جملات +۱۸</span></span> : article.title}</Link></li>)}
             </ul>
           </section>
           <section>

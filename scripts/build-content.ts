@@ -183,7 +183,7 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
   if (blog.ignoredKeys.length > 0) {
     console.warn(
       `! ${label}: ignored frontmatter key(s) ${blog.ignoredKeys.map((key) => `"${key}"`).join(', ')}. ` +
-        'Only "tags" and "suggestions" are used: the title is the first "# " line, dates are managed by the blog commands.',
+        'The title is the first "# " line, dates are managed by the blog commands.',
     )
   }
 
@@ -226,6 +226,7 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     readingTime: blog.readingTime ?? Math.max(1, Math.ceil(words / 200)),
     ...(blog.lang ? { lang: blog.lang } : {}),
     ...(blog.dir ? { dir: blog.dir } : {}),
+    ...(blog.adult === true ? { adult: true } : {}),
   }
 
   return { meta, body, mediaFiles, articleDirectory }

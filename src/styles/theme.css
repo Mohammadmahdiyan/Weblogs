@@ -55,6 +55,11 @@
   --text-muted: var(--text-secondary);
   --brand-foreground: var(--brand-contrast);
   --warning: var(--warn);
+
+  /* No Image SVG Theme */
+  --no-image-bg: #E8EFE9;
+  --no-image-mountain: #75927D;
+  --no-image-sun_or_moon: #D4AA68;
 }
 
 .dark {
@@ -80,6 +85,11 @@
   --footer-bg: #0f0f0f;
   --footer-text: #e8e8e8;
   --shadow-card: none;
+
+  /* No Image SVG Theme */
+  --no-image-bg: #141C2B;
+  --no-image-mountain: #536D82;
+  --no-image-sun_or_moon: #FFFFFF;
 }
 
 @theme inline {

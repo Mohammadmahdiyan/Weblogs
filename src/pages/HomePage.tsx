@@ -9,6 +9,9 @@ import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
 import { ArticleSearch } from '../components/ArticleSearch'
 import { FontControls } from '../components/FontControls'
+import { AdultArticleNotice } from '../components/AdultArticleNotice'
+import { useAdultAccess } from '../lib/adultAccess'
+import { NoImage } from '../components/NoImage'
 
 const allArticles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
 const searchIndex = searchJson as SearchEntry[]
@@ -32,30 +35,32 @@ function ArticleCover({ article }: { article: ArticleMeta }) {
   if (article.cover?.type === 'audio') {
     return <div className="flex aspect-video items-center justify-center bg-[var(--surface-alt)] text-[var(--brand)]"><Headphones aria-hidden="true" className="size-9" /><span className="sr-only">صوت</span></div>
   }
-  return null
+  return <NoImage/>
 }
 
-function ArticleCard({ article, list }: { article: ArticleMeta; list: boolean }) {
-  const hasCover = article.cover !== null
+function ArticleCard({ article, list, adultConfirmed }: { article: ArticleMeta; list: boolean; adultConfirmed: boolean }) {
+  const censored = article.adult === true && !adultConfirmed
+  const hasCover = true
   return (
     <article className={clsx('overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5', list && 'sm:flex')}>
       {hasCover && (
-        <Link to={`/blog/${article.slug}`} aria-label={`خواندن ${article.title}`} className={clsx('block overflow-hidden bg-[var(--surface-alt)]', list && 'sm:w-56 sm:shrink-0')}>
-          <ArticleCover article={article} />
+        <Link to={`/blog/${article.slug}`} aria-label={censored ? 'مشاهده مقاله +۱۸' : `خواندن ${article.title}`} className={clsx('relative block overflow-hidden bg-[var(--surface-alt)]', list && 'sm:w-56 sm:shrink-0')}>
+          {censored ? <div className="relative aspect-video overflow-hidden"><div className="pointer-events-none scale-110 blur-xl" aria-hidden="true"><ArticleCover article={article} /></div><div className="absolute inset-0 grid place-items-center bg-[var(--surface)]/75"><AdultArticleNotice compact /></div></div> : <ArticleCover article={article} />}
         </Link>
       )}
+      {censored && !hasCover && <Link to={`/blog/${article.slug}`} aria-label="مشاهده مقاله +۱۸" className="block border-b border-[var(--border-light)] bg-[var(--surface-alt)] no-underline"><AdultArticleNotice /></Link>}
       <div className="min-w-0 flex-1 p-4 sm:p-5">
         <h2 className="mb-2 text-start text-lg font-bold leading-8">
-          <Link to={`/blog/${article.slug}`} className="text-[var(--text)] no-underline hover:text-[var(--brand)]">{article.title}</Link>
+          <Link to={`/blog/${article.slug}`} className="text-[var(--text)] no-underline hover:text-[var(--brand)]">{censored ? <span className="relative block"><span className="block select-none blur-sm">{article.title}</span><span className="absolute inset-0 flex items-center justify-center"><AdultArticleNotice compact /></span></span> : article.title}</Link>
         </h2>
-        <p className="mb-4 line-clamp-3 text-start text-sm leading-7 text-[var(--text-secondary)]">{article.description}</p>
+        <p className="mb-4 line-clamp-3 text-start text-sm leading-7 text-[var(--text-secondary)]">{censored ? <span className="relative block"><span className="block select-none blur-sm">{article.description}</span><span className="absolute inset-0 flex items-center justify-center"><span className="rounded bg-[var(--surface)]/90 px-2 py-1 text-xs font-semibold">حاوی جملات +۱۸</span></span></span> : article.description}</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted)]">
           <time dateTime={article.date}>{formatDate(article.date)}</time>
-          <span>{article.readingTime} دقیقه مطالعه</span>
+          {!censored && <span>{article.readingTime} دقیقه مطالعه</span>}
         </div>
-        <ul className="mt-4 flex flex-wrap gap-2 p-0">
+        {!censored && <ul className="mt-4 flex flex-wrap gap-2 p-0">
           {article.tags.map((tag) => <li key={tag} className="list-none rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-2.5 py-1 text-xs text-[var(--text-secondary)]">{tag}</li>)}
-        </ul>
+        </ul>}
       </div>
     </article>
   )
@@ -63,6 +68,7 @@ function ArticleCard({ article, list }: { article: ArticleMeta; list: boolean })
 
 export function HomePage() {
   const [searchParams] = useSearchParams()
+  const adultConfirmed = useAdultAccess()
   usePageMeta({
     title: siteConfig.siteName,
     description: siteConfig.siteDescription,
@@ -105,7 +111,7 @@ export function HomePage() {
         </div>
         {visibleArticles.length ? (
           <div className={clsx('grid gap-4 sm:gap-5', view === 'grid' ? 'sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1')}>
-            {visibleArticles.map((article) => <ArticleCard key={article.slug} article={article} list={view === 'list'} />)}
+            {visibleArticles.map((article) => <ArticleCard key={article.slug} article={article} list={view === 'list'} adultConfirmed={adultConfirmed} />)}
           </div>
         ) : (
           <p className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-6 text-center text-[var(--text-secondary)]">هنوز مقاله‌ای منتشر نشده است.</p>

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BookOpen, Copy, Link2, Send, Share2, X } from 'lucide-react'
 import type { ArticleMeta } from '../lib/types'
 import siteConfig from '../site.config'
+import { AdultArticleNotice } from './AdultArticleNotice'
+import { useAdultAccess } from '../lib/adultAccess'
 
 function SidebarCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -15,6 +17,7 @@ function SidebarCard({ title, icon, children }: { title: string; icon: React.Rea
 
 export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[]; article: ArticleMeta }) {
   const [copied, setCopied] = useState(false)
+  const adultConfirmed = useAdultAccess()
   const articleIndex = articles.findIndex((item) => item.slug === article.slug)
   const previous = articles.slice(Math.max(0, articleIndex - 5), articleIndex).reverse()
   const next = articles.slice(articleIndex + 1, articleIndex + 6)
@@ -33,7 +36,7 @@ export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[];
     <aside aria-label="اطلاعات تکمیلی مقاله" className="grid content-start gap-4">
       <SidebarCard title="جدیدترین نوشته‌ها" icon={<BookOpen aria-hidden="true" className="size-4" />}>
         <ul className="m-0 grid list-none gap-2 p-0">
-          {latest.map((item) => <li key={item.slug}><Link to={`/blog/${item.slug}`} className="block rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2.5 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.title}</Link></li>)}
+          {latest.map((item) => <li key={item.slug}><Link to={`/blog/${item.slug}`} aria-label={item.adult && !adultConfirmed ? 'مشاهده مقاله +۱۸' : item.title} className="block rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2.5 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.adult && !adultConfirmed ? <span className="relative block"><span className="block select-none blur-sm">{item.title}</span><span className="absolute inset-0 flex items-center justify-center"><AdultArticleNotice compact /></span></span> : item.title}</Link></li>)}
         </ul>
       </SidebarCard>
 
@@ -71,10 +74,12 @@ export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[];
 }
 
 function ArticleNeighbor({ article, current }: { article: ArticleMeta; current: boolean }) {
+  const adultConfirmed = useAdultAccess()
+  const censored = article.adult === true && !adultConfirmed
   return (
     <Link to={`/blog/${article.slug}`} aria-current={current ? 'page' : undefined} className="flex items-center gap-3 rounded-[var(--radius-sm)] bg-[var(--surface-alt)] p-2.5 text-start no-underline hover:bg-[var(--surface-strong)]">
-      {article.cover?.type === 'image' && <img src={article.cover.url} alt="" loading="lazy" decoding="async" className="size-12 shrink-0 rounded-[var(--radius-sm)] object-cover" />}
-      <span className="line-clamp-2 text-sm leading-6 text-[var(--text)]">{article.title}</span>
+      {article.cover?.type === 'image' && <img src={article.cover.url} alt="" loading="lazy" decoding="async" className={`size-12 shrink-0 rounded-[var(--radius-sm)] object-cover ${censored ? 'blur-md' : ''}`} />}
+      <span className="relative line-clamp-2 text-sm leading-6 text-[var(--text)]">{censored ? <><span className="block select-none blur-sm">{article.title}</span><span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold">حاوی جملات +۱۸</span></> : article.title}</span>
     </Link>
   )
 }

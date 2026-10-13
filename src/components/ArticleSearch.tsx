@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { normalizeSearchText } from '../lib/normalize'
 import { decideSubmit } from '../lib/search'
 import type { ArticleMeta, SearchEntry } from '../lib/types'
+import { useAdultAccess } from '../lib/adultAccess'
 
 interface SearchResult {
   entry: SearchEntry
@@ -22,6 +23,9 @@ function HighlightedPhrase({ text, query }: { text: string; query: string }) {
 
 export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { articles: ArticleMeta[]; searchIndex: SearchEntry[]; initialQuery?: string }) {
   const navigate = useNavigate()
+  const adultConfirmed = useAdultAccess()
+  const safeArticles = articles
+  const safeSearchIndex = searchIndex
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<SearchResult[]>([])
@@ -29,10 +33,10 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
   const [open, setOpen] = useState(false)
   const listboxId = 'article-search-results'
 
-  const normalizedEntries = useMemo(() => searchIndex.map((entry) => ({
+  const normalizedEntries = useMemo(() => safeSearchIndex.map((entry) => ({
     ...entry,
     phrases: entry.phrases.map(normalizeSearchText),
-  })), [searchIndex])
+  })), [safeSearchIndex])
   const fuse = useMemo(() => new Fuse(normalizedEntries, {
     keys: ['phrases', 'title'],
     includeScore: true,
@@ -48,7 +52,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
 
     const timer = window.setTimeout(() => {
       const hits = fuse.search(normalizedQuery, { limit: 8 }).map((hit) => ({
-        entry: searchIndex.find((entry) => entry.slug === hit.item.slug) ?? hit.item,
+        entry: safeSearchIndex.find((entry) => entry.slug === hit.item.slug) ?? hit.item,
         score: hit.score ?? 1,
         matchedPhrase: hit.item.phrases[hit.matches?.[0]?.refIndex ?? 0] ?? hit.item.title,
       }))
@@ -57,7 +61,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
       setOpen(true)
     }, 70)
     return () => window.clearTimeout(timer)
-  }, [fuse, query, searchIndex])
+  }, [fuse, query, safeSearchIndex])
 
   const visibleResults = normalizeSearchText(query).length >= 2 ? results : []
 
@@ -67,7 +71,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
       navigate(`/blog/${visibleResults[activeIndex].entry.slug}`)
       return
     }
-    const decision = decideSubmit(articles, query, visibleResults.map((result) => ({ slug: result.entry.slug, score: result.score })))
+    const decision = decideSubmit(safeArticles, query, visibleResults.map((result) => ({ slug: result.entry.slug, score: result.score })))
     if (decision.action === 'navigate') navigate(`/blog/${decision.slug}`)
     else setOpen(true)
   }
@@ -132,8 +136,23 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
                     onMouseEnter={() => setActiveIndex(index)}
                     className="grid w-full gap-1 rounded-[var(--radius-sm)] px-4 py-3 text-start hover:bg-[var(--surface-alt)] aria-selected:bg-[var(--surface-alt)]"
                   >
-                    <span className="text-sm font-semibold text-[var(--text)]">{entry.title}</span>
-                    <span className="text-xs text-[var(--text-secondary)]"><HighlightedPhrase text={matchedPhrase} query={query} /></span>
+                    {(() => {
+                      const restricted = !adultConfirmed && articles.some((article) => article.slug === entry.slug && article.adult === true)
+                      return restricted ? (
+                        <span className="relative block rounded-[var(--radius-sm)] py-1">
+                          <span className="block select-none blur-sm" aria-hidden="true">
+                            <span className="block text-sm font-semibold">{entry.title}</span>
+                            <span className="block text-xs"><HighlightedPhrase text={matchedPhrase} query={query} /></span>
+                          </span>
+                          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold">حاوی جملات +۱۸</span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="text-sm font-semibold text-[var(--text)]">{entry.title}</span>
+                          <span className="text-xs text-[var(--text-secondary)]"><HighlightedPhrase text={matchedPhrase} query={query} /></span>
+                        </>
+                      )
+                    })()}
                   </button>
                 </li>
               ))}

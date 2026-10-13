@@ -26,6 +26,8 @@ export interface ArticleMeta {
   /** Optional per-article language / direction override (frontmatter `lang`, `dir`). */
   lang?: string
   dir?: 'ltr' | 'rtl'
+  /** Whether the article requires an 18+ confirmation gate. */
+  adult?: boolean
 }
 
 export interface SearchEntry {

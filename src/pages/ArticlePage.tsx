@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, BookOpen, ChevronLeft } from 'lucide-react'
+import { ArrowLeft, BookOpen, ChevronLeft, ShieldAlert } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
@@ -14,8 +14,55 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer'
 import { ArticleLayout, getLayout } from '../layouts'
 import { useArticleStyle } from '../lib/useArticleStyle'
 import { NotFoundPage } from './NotFoundPage'
+import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
 
 const articles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
+
+
+function AdultContentGate({ onYes }: { onYes: () => void }) {
+  return (
+    <main
+      dir="rtl"
+      lang="fa"
+      className="fixed inset-0 z-[100] flex min-h-screen items-center justify-center overflow-y-auto bg-[var(--bg)] px-4 py-8 text-[var(--text)]"
+    >
+      <section className="surface-card w-full max-w-lg p-6 text-center sm:p-9">
+        <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-[var(--surface-alt)]">
+          <ShieldAlert aria-hidden="true" className="size-9 text-[var(--brand)]" />
+        </div>
+
+        <p className="mb-3 text-sm font-bold text-[var(--brand)]">هشدار محتوای +۱۸</p>
+        <h1 className="mb-4 text-2xl font-extrabold">
+          این مقاله برای افراد زیر ۱۸ سال مناسب نیست
+        </h1>
+        <p className="text-sm leading-8 text-[var(--text-secondary)]">
+          اگر زیر ۱۸ سال هستید، لطفاً «خیر» را انتخاب کنید تا به صفحهٔ اصلی برگردید.
+          با انتخاب «بله» تأیید می‌کنید که ۱۸ سال یا بیشتر دارید.
+        </p>
+
+        <div className="mt-7 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={onYes}
+            className="rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-[var(--brand-contrast)] transition-opacity hover:opacity-90"
+          >
+            بله، ۱۸ سال یا بیشتر دارم
+          </button>
+          <Link
+            to="/"
+            className="rounded-xl border border-[var(--border-strong)] bg-[var(--surface-alt)] px-5 py-3 font-semibold text-[var(--text)] no-underline transition-colors hover:bg-[var(--surface-strong)]"
+          >
+            خیر، بازگشت به خانه
+          </Link>
+        </div>
+
+        <p className="mt-5 text-xs text-[var(--muted)]">
+          انتخاب شما در این مرورگر ذخیره می‌شود. این تأیید، سن واقعی را احراز نمی‌کند.
+        </p>
+      </section>
+    </main>
+  )
+}
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(`${date}T12:00:00`))
@@ -40,6 +87,7 @@ function ReadingProgress() {
 }
 
 function RelatedArticles({ article }: { article: ArticleMeta }) {
+  const adultConfirmed = useAdultAccess()
   const related = articles
     .filter((item) => item.slug !== article.slug)
     .map((item) => ({ article: item, score: item.tags.filter((tag) => article.tags.includes(tag)).length }))
@@ -52,7 +100,7 @@ function RelatedArticles({ article }: { article: ArticleMeta }) {
     <section aria-labelledby="related-heading" className="surface-card mt-6 p-5 sm:p-7">
       <h2 id="related-heading" className="mb-4 flex items-center gap-2 text-start text-lg font-bold"><BookOpen aria-hidden="true" className="size-5 text-[var(--brand)]" />مقالات مرتبط</h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        {items.map((item) => <Link key={item.slug} to={`/blog/${item.slug}`} className="line-clamp-2 rounded-[var(--radius-sm)] border border-transparent bg-[var(--surface-alt)] p-4 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.title}</Link>)}
+        {items.map((item) => <Link key={item.slug} to={`/blog/${item.slug}`} className="line-clamp-2 rounded-[var(--radius-sm)] border border-transparent bg-[var(--surface-alt)] p-4 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : item.title}</Link>)}
       </div>
     </section>
   )
@@ -61,6 +109,7 @@ function RelatedArticles({ article }: { article: ArticleMeta }) {
 export function ArticlePage() {
   const { slug = '' } = useParams()
   const article = articles.find((item) => item.slug === slug)
+  const adultConfirmed = useAdultAccess()
   const activeStyle = useArticleStyle()
   const layout = getLayout(activeStyle)
   const [bodyState, setBodyState] = useState<{ slug: string; markdown?: string; error?: boolean } | null>(null)
@@ -107,7 +156,7 @@ export function ArticlePage() {
   })
 
   useEffect(() => {
-    if (!article) return
+    if (!article || (article.adult === true && !adultConfirmed)) return
     let cancelled = false
     const loadBody = articleBodies[article.slug]
     if (!loadBody) return
@@ -117,9 +166,17 @@ export function ArticlePage() {
       if (!cancelled) setBodyState({ slug: article.slug, error: true })
     })
     return () => { cancelled = true }
-  }, [article])
+  }, [article, adultConfirmed])
 
   if (!article) return <NotFoundPage />
+
+  if (article.adult === true && !adultConfirmed) {
+    return (
+      <AdultContentGate
+        onYes={confirmAdultAccess}
+      />
+    )
+  }
 
   const previous = articleIndex > 0 ? articles[articleIndex - 1] : undefined
   const next = articleIndex >= 0 ? articles[articleIndex + 1] : undefined
@@ -189,10 +246,11 @@ function MetaValue({ label, value }: { label: string; value: string }) {
 function ArticleNavItem({ article, direction }: { article: ArticleMeta; direction: 'previous' | 'next' }) {
   // The list is sorted newest → oldest, so "previous" is the newer article.
   const label = direction === 'previous' ? 'مقاله جدیدتر' : 'مقاله قدیمی‌تر'
+  const adultConfirmed = useAdultAccess()
   return (
     <Link to={`/blog/${article.slug}`} className="surface-card flex min-w-0 items-center gap-3 p-4 text-start no-underline hover:border-[var(--brand)]">
       {direction === 'previous' && <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />}
-      <span className="min-w-0 flex-1"><span className="block text-xs text-[var(--muted)]">{label}</span><span className="mt-1 line-clamp-2 block text-sm font-semibold text-[var(--text)]">{article.title}</span></span>
+      <span className="min-w-0 flex-1"><span className="block text-xs text-[var(--muted)]">{label}</span><span className="mt-1 line-clamp-2 block text-sm font-semibold text-[var(--text)]">{article.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : article.title}</span></span>
       {direction === 'next' && <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rotate-180 rtl:rotate-0" />}
     </Link>
   )

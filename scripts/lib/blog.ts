@@ -168,11 +168,13 @@ export interface ParsedBlog {
   coverEmbed?: string
   lang?: string
   dir?: 'ltr' | 'rtl'
+  /** Whether the article requires an 18+ confirmation gate. */
+  adult?: boolean
   /** Frontmatter keys that this engine no longer reads (e.g. `draft`, `style`, `title`, `date`). */
   ignoredKeys: string[]
 }
 
-const knownKeys = new Set(['tags', 'suggestions', 'description', 'readingTime', 'cover', 'coverEmbed', 'lang', 'dir'])
+const knownKeys = new Set(['tags', 'suggestions', 'description', 'readingTime', 'cover', 'coverEmbed', 'lang', 'dir', 'adult'])
 
 /** Parses and validates one article file. Throws an Error whose message starts with `label`. */
 export function parseBlog(source: string, label: string): ParsedBlog {
@@ -195,6 +197,9 @@ export function parseBlog(source: string, label: string): ParsedBlog {
   if (data.description !== undefined && typeof data.description !== 'string') {
     throw new Error(`${label}: "description" must be a string`)
   }
+  if (data.adult !== undefined && typeof data.adult !== 'boolean') {
+    throw new Error(`${label}: \"adult\" must be true or false`)
+  }
   if (data.cover !== undefined && typeof data.cover !== 'string') {
     throw new Error(`${label}: "cover" must be a relative media path string`)
   }
@@ -216,6 +221,7 @@ export function parseBlog(source: string, label: string): ParsedBlog {
     ...optional('coverEmbed', validateCoverEmbed(data.coverEmbed, label)),
     ...optional('lang', validateLang(data.lang, label)),
     ...optional('dir', validateDir(data.dir, label)),
+    ...(data.adult === true ? { adult: true } : {}),
     ignoredKeys: Object.keys(data).filter((key) => !knownKeys.has(key)),
   }
 }
