@@ -57,9 +57,15 @@
   --warning: var(--warn);
 
   /* No Image SVG Theme */
-  --no-image-bg: #E8EFE9;
-  --no-image-mountain: #75927D;
-  --no-image-sun_or_moon: #D4AA68;
+  --no-image-sky: #E8F0EA;
+  --no-image-bg: #F5F1E8;
+  --no-image-sun: #E5B96C;
+  --no-image-hill-back: #A9BDAA;
+  --no-image-mountain: #789482;
+  --no-image-foreground: #587866;
+  --no-image-snow: #F5F1E8;
+  --no-image-cloud: #FFFFFF;
+  --no-image-star: #FFFFFF;
 }
 
 .dark {
@@ -87,9 +93,15 @@
   --shadow-card: none;
 
   /* No Image SVG Theme */
-  --no-image-bg: #141C2B;
-  --no-image-mountain: #536D82;
-  --no-image-sun_or_moon: #FFFFFF;
+  --no-image-sky: #182536;
+  --no-image-bg: #101923;
+  --no-image-sun: #F1F3F5;
+  --no-image-hill-back: #455B70;
+  --no-image-mountain: #344B61;
+  --no-image-foreground: #25384A;
+  --no-image-snow: #DCE6EF;
+  --no-image-cloud: #AFC1D2;
+  --no-image-star: #FFFFFF;
 }
 
 @theme inline {

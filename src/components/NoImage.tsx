@@ -1,4 +1,4 @@
-import noImageSvg from "../../content/blog/noImage.svg"
+import noImageSvg from "../../content/blog/noImage.svg?raw"
 
 export function NoImage({ className = ''}: { className?: string }){
     return (

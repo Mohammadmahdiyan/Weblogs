@@ -1,6 +1,104 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title">
-  <title id="title">Sample article image</title>
-  <rect width="640" height="360" fill="#e8efe9" />
-  <path d="M0 270 160 120l115 110 100-90 265 220H0Z" fill="#75927d" />
-  <circle cx="490" cy="95" r="42" fill="#d4aa68" />
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 640 360"
+     width="640"
+     height="360"
+     role="img"
+     aria-labelledby="no-image-title">
+
+  <title id="no-image-title">تصویر پیش‌فرض مقاله</title>
+
+  <defs>
+    <linearGradient id="sky-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--no-image-sky, #E8F0EA)"/>
+      <stop offset="100%" stop-color="var(--no-image-bg, #F5F1E8)"/>
+    </linearGradient>
+
+    <clipPath id="image-frame">
+      <rect width="640" height="360"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#image-frame)">
+    <!-- آسمان -->
+    <rect width="640" height="360" fill="url(#sky-gradient)"/>
+
+    <!-- خورشید؛ در حالت تاریک می‌تواند ماه شود -->
+    <circle cx="480" cy="100" r="53"
+            fill="var(--no-image-sun, #E5B96C)" opacity=".18"/>
+    <circle cx="480" cy="100" r="37"
+            fill="var(--no-image-sun, #E5B96C)"/>
+
+    <!-- تپه‌های دوردست -->
+    <path d="M0 215
+             Q38 185 75 208
+             T155 201 T235 210 T315 196
+             T395 208 T475 192 T560 205 T640 190
+             V360 H0Z"
+          fill="var(--no-image-hill-back, #A9BDAA)"/>
+
+    <!-- کوه اصلی -->
+    <path d="M-30 287
+             L105 142
+             L177 218
+             L263 112
+             L390 270
+             L466 190
+             L565 276
+             L670 218
+             V380 H-30Z"
+          fill="var(--no-image-mountain, #789482)"/>
+
+    <!-- برف قله اصلی؛ پهن‌تر و هماهنگ با شیب دو طرف کوه -->
+<!-- برف قله اصلی -->
+    <path
+      d="M229 154
+        L263 112
+        L298 154
+        L285 149
+        L275 160
+        L263 147
+        L250 163
+        L240 154
+        Z"
+      fill="var(--no-image-snow, #F5F1E8)"
+    />
+
+    <!-- سایه ظریف روی دامنه -->
+    <path d="M263 112 L314 196 L292 177 L279 181 L267 164 L253 179 L245 163Z"
+          fill="var(--no-image-mountain, #789482)" opacity=".24"/>
+
+    <!-- پیش‌زمینه -->
+    <path d="M-20 320
+             Q90 266 185 310
+             T370 302 T550 293 T670 320
+             V380 H-20Z"
+          fill="var(--no-image-foreground, #587866)"/>
+
+    <!-- درختان ساده -->
+    <g fill="var(--no-image-foreground, #587866)" opacity=".8">
+      <path d="M70 284 L88 244 L106 284Z"/>
+      <path d="M77 301 L101 253 L125 301Z"/>
+      <path d="M535 281 L552 243 L569 281Z"/>
+      <path d="M544 300 L567 252 L590 300Z"/>
+    </g>
+
+    <!-- ابرهای مینیمال -->
+    <g stroke="var(--no-image-cloud, #FFFFFF)"
+       stroke-width="3"
+       stroke-linecap="round"
+       opacity=".7">
+      <path d="M80 85 H125"/>
+      <path d="M96 75 H114"/>
+      <path d="M350 72 H389"/>
+      <path d="M364 62 H380"/>
+    </g>
+
+    <!-- نقاط تزئینی آسمان -->
+    <g fill="var(--no-image-star, #FFFFFF)" opacity=".85">
+      <circle cx="175" cy="74" r="2.5"/>
+      <circle cx="220" cy="53" r="2"/>
+      <circle cx="410" cy="145" r="2"/>
+      <circle cx="555" cy="55" r="2.5"/>
+    </g>
+  </g>
 </svg>
