@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import { ImageWithFallback } from '../ImageWithFallback'
 
 const surfaceCallout = 'not-prose rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[color-mix(in_srgb,var(--text)_2%,transparent)] transition-colors hover:bg-[color-mix(in_srgb,var(--text)_4%,transparent)]'
 
@@ -106,7 +107,7 @@ export function Avatar({ src, name = '', size = 'md' }: { src?: string; name?: s
   const initials = Array.from(name.trim())[0] ?? '?'
   return (
     <span className={clsx('inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-pill)] bg-[var(--surface-strong)] font-semibold text-[var(--text)]', sizeClass)}>
-      {src ? <img src={src} alt={name} loading="lazy" decoding="async" className="size-full object-cover" /> : initials}
+      {src ? <ImageWithFallback src={src} alt={name} loading="lazy" decoding="async" className="size-full object-cover" fallbackClassName="!aspect-auto size-full" /> : initials}
     </span>
   )
 }
@@ -155,7 +156,7 @@ export function Buttons({ children }: { children?: ReactNode }) {
 export function Card({ title, image, children }: { title?: string; image?: string; children?: ReactNode }) {
   return (
     <section className={clsx('not-prose my-5 overflow-hidden border text-[var(--text)]', surfaceCallout)}>
-      {image && <img src={image} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />}
+      {image && <ImageWithFallback src={image} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />}
       <div className="p-4 sm:p-5">
         {title && <h3 className="mb-2 text-start text-base font-semibold text-[var(--text)]">{title}</h3>}
         <div className="text-start text-sm leading-7 text-[var(--text-muted)]">{children}</div>
@@ -289,7 +290,7 @@ export function Course({
 }) {
   return (
     <aside className={clsx(surfaceCallout, 'my-5 flex flex-col items-center gap-4 p-3 text-center sm:flex-row sm:p-4 sm:text-start')}>
-      {image && <img src={image} alt="" loading="lazy" decoding="async" className="aspect-video w-full shrink-0 rounded-[var(--radius-sm)] object-cover sm:w-40" />}
+      {image && <ImageWithFallback src={image} alt="" loading="lazy" decoding="async" className="aspect-video w-full shrink-0 rounded-[var(--radius-sm)] object-cover sm:w-40" fallbackClassName="aspect-video w-full shrink-0 rounded-[var(--radius-sm)] sm:w-40" />}
       <div className="min-w-0 flex-1">
         <span className="mb-2 inline-flex rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--brand)_10%,transparent)] px-2 py-1 text-xs font-semibold text-[var(--brand)]">{label}</span>
         <LinkOrAnchor href={href} className="block text-sm font-semibold text-[var(--text)] no-underline hover:text-[var(--brand)]">{title || children}</LinkOrAnchor>

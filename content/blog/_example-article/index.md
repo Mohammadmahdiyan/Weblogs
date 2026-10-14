@@ -91,10 +91,9 @@ console.log(message)
 محتوای کوتاه پنجره برای بررسی دیالوگ بومی.
 :::
 
-:::gallery
-![نمای نمونه نخست](./cover.svg)
-![نمای نمونه دوم](./cover.svg)
-:::
+سلام دنیا
+
+![عکس پروژه](./Spider%20House.png)
 
 :iconbutton[جستجو]{icon-name="search" href="/search"}
 

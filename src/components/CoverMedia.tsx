@@ -3,6 +3,7 @@ import type { ArticleMeta } from '../lib/types'
 import { useLightbox, useLightboxRegistration } from '../lib/lightbox'
 import { AudioPlayer } from './AudioPlayer'
 import { SafeEmbed } from './mdx/SafeEmbed'
+import { ImageWithFallback } from './ImageWithFallback'
 
 interface CoverMediaProps {
   cover: ArticleMeta['cover']
@@ -80,8 +81,7 @@ export function CoverMedia({ cover, title }: CoverMediaProps) {
       aria-label={`نمایش تصویر اصلی: ${title}`}
       className="not-prose my-5 block aspect-video w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-md)] bg-[var(--surface-alt)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--info)]"
     >
-      <img
-        ref={(element) => element?.setAttribute('fetchpriority', 'high')}
+      <ImageWithFallback
         src={cover.url}
         alt={title}
         width="1280"
@@ -89,6 +89,7 @@ export function CoverMedia({ cover, title }: CoverMediaProps) {
         loading="eager"
         decoding="async"
         className="size-full object-contain"
+        fallbackClassName="!aspect-auto size-full"
       />
     </button>
   )

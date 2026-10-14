@@ -12,6 +12,7 @@ import { FontControls } from '../components/FontControls'
 import { AdultArticleNotice } from '../components/AdultArticleNotice'
 import { useAdultAccess } from '../lib/adultAccess'
 import { NoImage } from '../components/NoImage'
+import { ImageWithFallback } from '../components/ImageWithFallback'
 
 const allArticles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
 const searchIndex = searchJson as SearchEntry[]
@@ -22,14 +23,14 @@ function formatDate(date: string) {
 
 function ArticleCover({ article }: { article: ArticleMeta }) {
   if (article.cover?.type === 'image') {
-    return <img src={article.cover.url} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />
+    return <ImageWithFallback src={article.cover.url} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" />
   }
   if (article.cover?.type === 'video') {
     return <div className="relative flex aspect-video items-center justify-center bg-[var(--surface-strong)] text-[var(--text-muted)]"><Play aria-hidden="true" className="size-9" /><span className="sr-only">ویدیو</span></div>
   }
   if (article.cover?.type === 'embed') {
     return article.cover.poster
-      ? <div className="relative"><img src={article.cover.poster} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /><span aria-hidden="true" className="absolute inset-0 grid place-items-center"><span className="grid size-12 place-items-center rounded-full bg-black/60 text-white"><Play className="size-5" /></span></span><span className="sr-only">ویدیو</span></div>
+      ? <div className="relative"><ImageWithFallback src={article.cover.poster} alt="" loading="lazy" decoding="async" className="aspect-video w-full object-cover" /><span aria-hidden="true" className="absolute inset-0 grid place-items-center"><span className="grid size-12 place-items-center rounded-full bg-black/60 text-white"><Play className="size-5" /></span></span><span className="sr-only">ویدیو</span></div>
       : <div className="relative flex aspect-video items-center justify-center bg-[var(--surface-strong)] text-[var(--text-muted)]"><Play aria-hidden="true" className="size-9" /><span className="sr-only">محتوای جاسازی‌شده</span></div>
   }
   if (article.cover?.type === 'audio') {

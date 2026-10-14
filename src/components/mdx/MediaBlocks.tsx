@@ -2,6 +2,7 @@ import { Children, isValidElement, useEffect, useId, useRef, useState, type Comp
 import { clsx } from 'clsx'
 import { useFont } from '../../lib/font'
 import { galleryRows } from '../../lib/gallery'
+import { ImageWithFallback } from '../ImageWithFallback'
 import { LightboxContext, useLightbox, useLightboxRegistration, type LightboxMedia, type OpenLightbox } from '../../lib/lightbox'
 
 export function MarkdownImage({
@@ -26,7 +27,7 @@ export function MarkdownImage({
       aria-label={alt ? `نمایش تصویر: ${alt}` : 'نمایش تصویر'}
       className="not-prose my-4 flex h-auto w-full max-w-full cursor-zoom-in overflow-hidden rounded-[var(--radius-sm)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--info)]"
     >
-      <img
+      <ImageWithFallback
         {...props}
         src={src}
         alt={alt}
@@ -37,6 +38,7 @@ export function MarkdownImage({
         decoding="async"
         style={{ ...style, ...dimensions }}
         className={clsx('block h-auto w-full max-w-full', className)}
+        fallbackClassName="aspect-video w-full max-w-full"
       />
     </button>
   )
@@ -145,15 +147,22 @@ export function Gallery({ children }: { children?: ReactNode }) {
 
   // Never squeeze tiles below ~7rem (the rem already follows the font size).
   const tilePx = MIN_TILE_REM * 16 * (size / 100)
-  const rows = galleryRows(items.length, size, width > 0 ? Math.max(1, Math.floor(width / tilePx)) : Number.POSITIVE_INFINITY)
-  let cursor = 0
+  const rows = galleryRows(
+    items.length,
+    size,
+    width > 0 ? Math.max(1, Math.floor(width / tilePx)) : Number.POSITIVE_INFINITY
+  )
 
   return (
     <LightboxContext.Provider value={openGalleryItem}>
       <div ref={containerRef} data-gallery-rows={rows.join(',')} className="not-prose my-5 grid gap-3">
         {rows.map((columns, rowIndex) => {
-          const rowItems = items.slice(cursor, cursor + columns)
-          cursor += columns
+          const start = rows
+            .slice(0, rowIndex)
+            .reduce((total, count) => total + count, 0)
+
+          const rowItems = items.slice(start, start + columns)
+
           return (
             <div
               key={rowIndex}

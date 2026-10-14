@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, BookOpen, Copy, Link2, Send, Share2, X } from 'l
 import type { ArticleMeta } from '../lib/types'
 import siteConfig from '../site.config'
 import { AdultArticleNotice } from './AdultArticleNotice'
+import { ImageWithFallback } from './ImageWithFallback'
 import { useAdultAccess } from '../lib/adultAccess'
 
 function SidebarCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
@@ -78,7 +79,7 @@ function ArticleNeighbor({ article, current }: { article: ArticleMeta; current: 
   const censored = article.adult === true && !adultConfirmed
   return (
     <Link to={`/blog/${article.slug}`} aria-current={current ? 'page' : undefined} className="flex items-center gap-3 rounded-[var(--radius-sm)] bg-[var(--surface-alt)] p-2.5 text-start no-underline hover:bg-[var(--surface-strong)]">
-      {article.cover?.type === 'image' && <img src={article.cover.url} alt="" loading="lazy" decoding="async" className={`size-12 shrink-0 rounded-[var(--radius-sm)] object-cover ${censored ? 'blur-md' : ''}`} />}
+      {article.cover?.type === 'image' && <ImageWithFallback src={article.cover.url} alt="" loading="lazy" decoding="async" className={`size-12 shrink-0 rounded-[var(--radius-sm)] object-cover ${censored ? 'blur-md' : ''}`} fallbackClassName={`!aspect-square size-12 shrink-0 rounded-[var(--radius-sm)] ${censored ? 'blur-md' : ''}`} />}
       <span className="relative line-clamp-2 text-sm leading-6 text-[var(--text)]">{censored ? <><span className="block select-none blur-sm">{article.title}</span><span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold">حاوی جملات +۱۸</span></> : article.title}</span>
     </Link>
   )
