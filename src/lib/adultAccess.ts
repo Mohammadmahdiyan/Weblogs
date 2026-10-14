@@ -11,6 +11,15 @@ export function isAdultConfirmed(): boolean {
   }
 }
 
+export function rejectAdultAccess(): void {
+  try {
+    window.localStorage.setItem(ADULT_CONFIRMATION_KEY, 'under18')
+  } catch {
+    // The current visit remains restricted if browser storage is unavailable.
+  }
+  window.dispatchEvent(new Event(ADULT_ACCESS_EVENT))
+}
+
 export function confirmAdultAccess(): void {
   try {
     window.localStorage.setItem(ADULT_CONFIRMATION_KEY, 'true')

@@ -102,3 +102,24 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   }
 }
+
+/* Telegram-style inline Markdown spoiler: ||hidden text|| */
+.spoiler-wrap { position: relative; display: inline; }
+.spoiler-cover { display: inline; max-width: 100%; padding: 0 .28em; border: 0; border-radius: .3em; background: var(--surface-strong); color: var(--text); cursor: pointer; vertical-align: baseline; }
+.spoiler-hidden-text { display: inline; filter: blur(.42em); opacity: .68; user-select: none; transition: filter 180ms ease, opacity 180ms ease; }
+.spoiler-cover:hover .spoiler-hidden-text, .spoiler-cover:focus-visible .spoiler-hidden-text { filter: blur(.22em); opacity: .85; }
+.spoiler-revealed { animation: spoiler-reveal 260ms ease-out both; }
+@keyframes spoiler-reveal { from { opacity: .25; filter: blur(.3em); } to { opacity: 1; filter: blur(0); } }
+.spoiler-apology { position: absolute; z-index: 2; inset-inline-start: 50%; top: 0; pointer-events: none; white-space: nowrap; color: var(--text-muted); font-size: .68em; animation: spoiler-apology-float 950ms ease-out both; }
+@keyframes spoiler-apology-float { from { opacity: .95; transform: translate(-50%, 0) scale(1); } to { opacity: 0; transform: translate(-50%, -2.6em) scale(.88); } }
+.spoiler-dialog-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgb(0 0 0 / .58); animation: spoiler-backdrop-in 160ms ease-out both; }
+.spoiler-dialog { display: flex; width: min(100%, 23rem); flex-direction: column; align-items: center; gap: .8rem; padding: 1.6rem; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--surface); color: var(--text); text-align: center; box-shadow: var(--shadow-card); animation: spoiler-dialog-in 200ms ease-out both; }
+.spoiler-dialog-icon { display: grid; width: 3.2rem; height: 3.2rem; place-items: center; border-radius: 999px; background: var(--surface-alt); color: var(--brand); font-weight: 800; }
+.spoiler-dialog-description { color: var(--text-secondary); font-size: .875rem; line-height: 1.8; }
+.spoiler-dialog-actions { display: flex; width: 100%; gap: .6rem; margin-top: .3rem; }
+.spoiler-dialog-actions button { flex: 1; border-radius: var(--radius-sm); padding: .65rem 1rem; font-weight: 700; cursor: pointer; }
+.spoiler-yes { background: var(--brand); color: var(--brand-contrast); }
+.spoiler-no { border: 1px solid var(--border-light); background: var(--surface-alt); color: var(--text); }
+@keyframes spoiler-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes spoiler-dialog-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .spoiler-hidden-text, .spoiler-revealed, .spoiler-apology, .spoiler-dialog-backdrop, .spoiler-dialog { animation: none; transition: none; } }

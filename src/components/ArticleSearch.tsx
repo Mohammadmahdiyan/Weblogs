@@ -46,24 +46,43 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
     minMatchCharLength: 2,
   }), [normalizedEntries])
 
+  const contentSearch = /^\s*محتوا\s*::/u.test(query)
+  const contentQuery = contentSearch ? query.replace(/^\s*محتوا\s*::/u, '').trim() : ''
+
   useEffect(() => {
-    const normalizedQuery = normalizeSearchText(query)
-    if (normalizedQuery.length < 2) return
+    const normalizedQuery = normalizeSearchText(contentSearch ? contentQuery : query)
+    if (normalizedQuery.length < 2) {
+      setResults([])
+      return
+    }
 
     const timer = window.setTimeout(() => {
-      const hits = fuse.search(normalizedQuery, { limit: 8 }).map((hit) => ({
-        entry: safeSearchIndex.find((entry) => entry.slug === hit.item.slug) ?? hit.item,
-        score: hit.score ?? 1,
-        matchedPhrase: hit.item.phrases[hit.matches?.[0]?.refIndex ?? 0] ?? hit.item.title,
-      }))
-      setResults(hits)
+      if (contentSearch) {
+        const hits: SearchResult[] = safeSearchIndex.flatMap((entry) => {
+          const body = normalizeSearchText(entry.content ?? '')
+          const index = body.indexOf(normalizedQuery)
+          if (index < 0) return []
+          const originalBody = entry.content ?? ''
+          const start = Math.max(0, index - 55)
+          const end = Math.min(originalBody.length, index + normalizedQuery.length + 85)
+          return [{ entry, score: 0, matchedPhrase: `${start > 0 ? '…' : ''}${originalBody.slice(start, end)}${end < originalBody.length ? '…' : ''}` }]
+        }).slice(0, 8)
+        setResults(hits)
+      } else {
+        const hits = fuse.search(normalizedQuery, { limit: 8 }).map((hit) => ({
+          entry: safeSearchIndex.find((entry) => entry.slug === hit.item.slug) ?? hit.item,
+          score: hit.score ?? 1,
+          matchedPhrase: hit.item.phrases[hit.matches?.[0]?.refIndex ?? 0] ?? hit.item.title,
+        }))
+        setResults(hits)
+      }
       setActiveIndex(-1)
       setOpen(true)
     }, 70)
     return () => window.clearTimeout(timer)
-  }, [fuse, query, safeSearchIndex])
+  }, [contentSearch, contentQuery, fuse, query, safeSearchIndex])
 
-  const visibleResults = normalizeSearchText(query).length >= 2 ? results : []
+  const visibleResults = normalizeSearchText(contentSearch ? contentQuery : query).length >= 2 ? results : []
 
   function submit() {
     // Activating a highlighted option always wins.
@@ -71,8 +90,12 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
       navigate(`/blog/${visibleResults[activeIndex].entry.slug}`)
       return
     }
+    if (contentSearch && visibleResults.length === 1) {
+      navigate(`/blog/${visibleResults[0].entry.slug}`)
+      return
+    }
     const decision = decideSubmit(safeArticles, query, visibleResults.map((result) => ({ slug: result.entry.slug, score: result.score })))
-    if (decision.action === 'navigate') navigate(`/blog/${decision.slug}`)
+    if (decision.action === 'navigate' && !contentSearch) navigate(`/blog/${decision.slug}`)
     else setOpen(true)
   }
 
@@ -112,7 +135,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
           onFocus={() => setOpen(true)}
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
           onKeyDown={onKeyDown}
-          placeholder="عنوان یا پرسش خود را جست‌وجو کنید…"
+          placeholder="عنوان را جست‌وجو کنید؛ برای متن: محتوا::عبارت"
           className="min-w-0 flex-1 bg-transparent py-3 text-start text-base text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
         />
         <button type="button" onClick={submit} aria-label="جست‌وجو" className="inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)] text-[var(--brand-contrast)] hover:bg-[var(--brand-dark)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]">
@@ -142,14 +165,14 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
                         <span className="relative block rounded-[var(--radius-sm)] py-1">
                           <span className="block select-none blur-sm" aria-hidden="true">
                             <span className="block text-sm font-semibold">{entry.title}</span>
-                            <span className="block text-xs"><HighlightedPhrase text={matchedPhrase} query={query} /></span>
+                            <span className="block text-xs"><HighlightedPhrase text={matchedPhrase} query={contentSearch ? contentQuery : query} /></span>
                           </span>
                           <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold">حاوی جملات +۱۸</span>
                         </span>
                       ) : (
                         <>
                           <span className="text-sm font-semibold text-[var(--text)]">{entry.title}</span>
-                          <span className="text-xs text-[var(--text-secondary)]"><HighlightedPhrase text={matchedPhrase} query={query} /></span>
+                          <span className="text-xs text-[var(--text-secondary)]"><HighlightedPhrase text={matchedPhrase} query={contentSearch ? contentQuery : query} /></span>
                         </>
                       )
                     })()}

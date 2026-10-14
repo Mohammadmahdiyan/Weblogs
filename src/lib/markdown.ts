@@ -216,11 +216,45 @@ function removeUnsafeMarkup(parent: Parent): void {
 
 const rehypeStripUnsafe = () => (tree: Root) => removeUnsafeMarkup(tree)
 
+/** Turns Telegram-style ||spoilers|| into a safe React component in Markdown text. */
+const remarkSpoilers: Plugin<[], MdastRoot> = () => (tree) => {
+  visit(tree, 'text', (node, index, parent) => {
+    if (index === undefined || !parent || !('children' in parent) || !Array.isArray(parent.children)) return
+    const value = node.value
+    const pattern = /\|\|([^|\n]+)\|\|/g
+    if (!pattern.test(value)) return
+    pattern.lastIndex = 0
+    // Keep replacements valid Markdown phrasing nodes. A link node is used as
+    // the inline wrapper, then remark-rehype honors data.hName and emits
+    // <mdx-spoiler> instead of a real link.
+    const replacement: typeof parent.children = []
+    let cursor = 0
+    for (const match of value.matchAll(pattern)) {
+      const start = match.index ?? 0
+      if (start > cursor) {
+        replacement.push({ type: 'text', value: value.slice(cursor, start) })
+      }
+      replacement.push({
+        type: 'link',
+        url: '',
+        title: null,
+        data: { hName: 'mdx-spoiler', hProperties: {} },
+        children: [{ type: 'text', value: match[1] ?? '' }],
+      })
+      cursor = start + match[0].length
+    }
+    if (cursor < value.length) replacement.push({ type: 'text', value: value.slice(cursor) })
+    parent.children.splice(index, 1, ...replacement)
+    return index + replacement.length - 1
+  })
+}
+
 export function createMarkdownProcessor(components: MarkdownComponents) {
   return unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkDirective)
+    .use(remarkSpoilers)
     .use(remarkHeadingLevels)
     .use(remarkComponents)
     .use(remarkRehype, { allowDangerousHtml: true })

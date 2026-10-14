@@ -41,6 +41,7 @@ import { AudioDirective, Gallery, MarkdownImage, MarkdownVideo, VideoDirective }
 import { RawIframe, SafeEmbed } from './mdx/SafeEmbed'
 import { Source } from './mdx/Source'
 import { highlightCode } from '../lib/highlight'
+import { confirmAdultAccess, isAdultConfirmed, rejectAdultAccess } from '../lib/adultAccess'
 
 type HeadingTag = 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
 type HeadingProps = ComponentPropsWithoutRef<'h2'> & { id?: string }
@@ -261,6 +262,60 @@ const directiveComponents = {
   'mdx-unknown': withMdxErrorBoundary('unknown', UnknownDirective),
 } as unknown as MarkdownComponents
 
+function Spoiler({ children }: { children?: ReactNode }) {
+  const [revealed, setRevealed] = useState(false)
+  const [askAge, setAskAge] = useState(false)
+  const [showApology, setShowApology] = useState(false)
+
+  function reveal() {
+    if (isAdultConfirmed()) {
+      setRevealed(true)
+      setShowApology(true)
+      window.setTimeout(() => setShowApology(false), 1000)
+    } else {
+      setAskAge(true)
+    }
+  }
+
+  function acceptAge() {
+    confirmAdultAccess()
+    setAskAge(false)
+    setRevealed(true)
+    setShowApology(true)
+    window.setTimeout(() => setShowApology(false), 1000)
+  }
+
+  function declineAge() {
+    rejectAdultAccess()
+    setAskAge(false)
+  }
+
+  return (
+    <span className="spoiler-wrap">
+      {revealed ? <span className="spoiler-revealed">{children}</span> : (
+        <button type="button" className="spoiler-cover" onClick={reveal} aria-label="نمایش متن سانسورشده">
+          <span aria-hidden="true" className="spoiler-hidden-text">{children}</span>
+          <span className="sr-only">برای نمایش متن کلیک کنید</span>
+        </button>
+      )}
+      {showApology && <span key="apology" className="spoiler-apology" aria-hidden="true">معذرت می‌خوام</span>}
+      {askAge && (
+        <span className="spoiler-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAskAge(false) }}>
+          <span className="spoiler-dialog" role="dialog" aria-modal="true" aria-labelledby="spoiler-age-title">
+            <span className="spoiler-dialog-icon" aria-hidden="true">18+</span>
+            <strong id="spoiler-age-title">آیا ۱۸ سالت هست؟</strong>
+            <span className="spoiler-dialog-description">برای نمایش این متن باید ۱۸ سال یا بیشتر داشته باشی.</span>
+            <span className="spoiler-dialog-actions">
+              <button type="button" className="spoiler-yes" onClick={acceptAge}>بله</button>
+              <button type="button" className="spoiler-no" onClick={declineAge}>خیر</button>
+            </span>
+          </span>
+        </span>
+      )}
+    </span>
+  )
+}
+
 const markdownComponents: MarkdownComponents = {
   // The page h1 is the article title: a raw <h1> in the body is rendered as h2.
   // Markdown `#` demotion is handled by remarkHeadingLevels.
@@ -271,6 +326,7 @@ const markdownComponents: MarkdownComponents = {
   h5: createHeading('h5'),
   h6: createHeading('h6'),
   p: Paragraph,
+  'mdx-spoiler': Spoiler,
   a: Anchor,
   ul: UnorderedList,
   ol: OrderedList,

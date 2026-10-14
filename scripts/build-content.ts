@@ -30,7 +30,8 @@ function fail(filePath: string, message: string): never {
   throw new Error(`${relativeFilePath(filePath)}: ${message}`)
 }
 
-function plainText(markdown: string): string {
+function plainText(markdown: string | undefined): string {
+  if (typeof markdown !== 'string') return ''
   return markdown
     .replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, ' ')
     .replace(/<[^>]*>/g, ' ')
@@ -239,7 +240,8 @@ function xmlEscape(value: string): string {
 /** sitemap.xml, robots.txt, rss.xml and _headers (CSP frame-src). Needs `siteUrl` in src/site.config.ts. */
 async function writeSiteFiles(metadata: ArticleMeta[]): Promise<void> {
   const publicRoot = path.join(projectRoot, 'public')
-  const base = siteConfig.siteUrl.replace(/\/+$/, '')
+  const base = (typeof siteConfig.siteUrl === 'string' ? siteConfig.siteUrl : '').replace(/\/+$/, '')
+  if (!base) throw new Error('src/site.config.ts: siteUrl must be a non-empty URL string.')
   if (/example\.com/.test(base)) {
     console.warn('! siteUrl in src/site.config.ts is still "example.com": set it before deploying (sitemap, RSS and canonical URLs use it).')
   }
@@ -347,6 +349,7 @@ async function buildContent(): Promise<void> {
     slug: article.slug,
     title: article.title,
     phrases: [...new Set([article.title, ...article.suggestions, ...article.tags])],
+    content: plainText(article.body).replace(/\|/g, ' '),
   }))
 
   await rm(publicContentRoot, { recursive: true, force: true })

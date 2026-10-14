@@ -34,4 +34,6 @@ export interface SearchEntry {
   slug: string
   title: string
   phrases: string[]
+  /** Plain searchable article body, used only by the explicit content:: search mode. */
+  content?: string
 }
