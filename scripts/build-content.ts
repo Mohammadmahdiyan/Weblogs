@@ -22,6 +22,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const blogRoot = path.join(projectRoot, 'content', 'blog')
 const publicContentRoot = path.join(projectRoot, 'public', 'content')
 const generatedRoot = path.join(projectRoot, 'src', 'generated')
+const baseUrl = '/Weblogs/'
 function relativeFilePath(filePath: string): string {
   return path.relative(projectRoot, filePath).split(path.sep).join('/')
 }
@@ -59,7 +60,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
     const { start, end } = node.position
     if (start.offset === undefined || end.offset === undefined) return
 
-    const replacement = rewriteMediaUrl(node.url, slug, mediaFiles)
+    const replacement = rewriteMediaUrl(node.url, slug, mediaFiles, baseUrl)
     if (replacement === node.url) return
 
     const rawNode = body.slice(start.offset, end.offset)
@@ -82,7 +83,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
     /\b(src|href|poster|image)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
     (match, attribute: string, _whole: string, doubleQuoted: string, singleQuoted: string, unquoted: string) => {
       const original = doubleQuoted ?? singleQuoted ?? unquoted ?? ''
-      const next = rewriteMediaUrl(original, slug, mediaFiles)
+      const next = rewriteMediaUrl(original, slug, mediaFiles, baseUrl)
       if (next === original) return match
       const quote = doubleQuoted !== undefined ? '"' : singleQuoted !== undefined ? "'" : ''
       return `${attribute}=${quote}${next}${quote}`
@@ -93,7 +94,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
     /\b(srcset)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
     (match, attribute: string, _whole: string, doubleQuoted: string, singleQuoted: string, unquoted: string) => {
       const original = doubleQuoted ?? singleQuoted ?? unquoted ?? ''
-      const next = rewriteSrcset(original, slug, mediaFiles)
+      const next = rewriteSrcset(original, slug, mediaFiles, baseUrl)
       if (next === original) return match
       const quote = doubleQuoted !== undefined ? '"' : singleQuoted !== undefined ? "'" : ''
       return `${attribute}=${quote}${next}${quote}`
@@ -101,7 +102,12 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
   )
 }
 
-function rewriteSrcset(value: string, slug: string, mediaFiles: MediaFile[]): string {
+function rewriteSrcset(
+  value: string,
+  slug: string,
+  mediaFiles: MediaFile[],
+  base = '/',
+): string {
   function rewriteCandidate(candidate: string): string {
     const leading = candidate.match(/^\s*/)?.[0] ?? ''
     const trailing = candidate.match(/\s*$/)?.[0] ?? ''
@@ -109,7 +115,7 @@ function rewriteSrcset(value: string, slug: string, mediaFiles: MediaFile[]): st
     const separator = trimmed.search(/\s/)
     const url = separator === -1 ? trimmed : trimmed.slice(0, separator)
     const descriptor = separator === -1 ? '' : trimmed.slice(separator)
-    return `${leading}${rewriteMediaUrl(url, slug, mediaFiles)}${descriptor}${trailing}`
+    return `${leading}${rewriteMediaUrl(url, slug, mediaFiles, base)}${descriptor}${trailing}`
   }
 
   let result = ''
@@ -179,7 +185,6 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     return fail(indexPath, error instanceof Error ? error.message : String(error))
   }
   const slug = folderName
-
   const blog = parseBlog(await readFile(indexPath, 'utf8'), label)
   if (blog.ignoredKeys.length > 0) {
     console.warn(
@@ -222,8 +227,13 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     tags: blog.tags,
     suggestions: blog.suggestions,
     cover: coverFile?.type
-      ? { url: `/content/${slug}/${encodeMediaPath(coverFile.relativePath)}`, type: coverFile.type }
-      : blog.coverEmbed ? embedCover(blog.coverEmbed) : null,
+      ? {
+          url: `${baseUrl}content/${encodeURIComponent(slug)}/${encodeMediaPath(coverFile.relativePath)}`,
+          type: coverFile.type,
+        }
+      : blog.coverEmbed
+        ? embedCover(blog.coverEmbed)
+        : null,
     readingTime: blog.readingTime ?? Math.max(1, Math.ceil(words / 200)),
     ...(blog.lang ? { lang: blog.lang } : {}),
     ...(blog.dir ? { dir: blog.dir } : {}),

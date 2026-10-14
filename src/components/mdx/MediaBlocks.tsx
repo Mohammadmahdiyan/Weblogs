@@ -126,36 +126,50 @@ export function Gallery({ children }: { children?: ReactNode }) {
   const { size } = useFont()
   const items = collectGalleryItems(children)
   const lightboxItems = items.map((item) => item.media)
-  const openGalleryItem: OpenLightbox = (item) => openLightbox(item, lightboxItems)
+  const openGalleryItem: OpenLightbox = (item) =>
+    openLightbox(item, lightboxItems)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
+
   useEffect(() => {
     const element = containerRef.current
     if (!element || typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
+
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(entry.contentRect.width)
+    })
+
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
 
   if (items.length === 0) return null
 
-  // 1 item: not a gallery, just the media at normal size.
   if (items.length === 1) {
-    return <LightboxContext.Provider value={openGalleryItem}>{items[0].element}</LightboxContext.Provider>
+    return (
+      <LightboxContext.Provider value={openGalleryItem}>
+        {items[0].element}
+      </LightboxContext.Provider>
+    )
   }
 
-  // Never squeeze tiles below ~7rem (the rem already follows the font size).
   const tilePx = MIN_TILE_REM * 16 * (size / 100)
   const rows = galleryRows(
     items.length,
     size,
-    width > 0 ? Math.max(1, Math.floor(width / tilePx)) : Number.POSITIVE_INFINITY
+    width > 0
+      ? Math.max(1, Math.floor(width / tilePx))
+      : Number.POSITIVE_INFINITY,
   )
 
   return (
     <LightboxContext.Provider value={openGalleryItem}>
-      <div ref={containerRef} data-gallery-rows={rows.join(',')} className="not-prose my-5 grid gap-3">
+      <div
+        ref={containerRef}
+        data-gallery-rows={rows.join(',')}
+        className="not-prose my-5 grid gap-3"
+      >
         {rows.map((columns, rowIndex) => {
           const start = rows
             .slice(0, rowIndex)
@@ -167,16 +181,23 @@ export function Gallery({ children }: { children?: ReactNode }) {
             <div
               key={rowIndex}
               className="grid gap-3"
-              style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+              style={{
+                gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+              }}
             >
               {rowItems.map((item, index) => (
                 <div
-                  key={index}
+                  key={`${start}-${index}`}
                   className={clsx(
-                    'overflow-hidden rounded-[var(--radius-sm)] bg-[var(--surface-strong)]',
-                    '[&_button]:my-0 [&_button]:h-full [&_img]:h-full [&_img]:object-cover',
-                    '[&_video]:my-0 [&_video]:h-full [&_video]:max-h-none [&_video]:object-cover',
-                    columns === 1 ? 'aspect-[16/9]' : columns <= 3 ? 'aspect-[4/3]' : 'aspect-square',
+                    'relative h-full min-w-0 overflow-hidden rounded-[var(--radius-sm)] bg-[var(--surface-strong)]',
+                    columns === 1
+                      ? 'aspect-[16/9]'
+                      : columns <= 3
+                        ? 'aspect-[4/3]'
+                        : 'aspect-square',
+                    '[&>button]:!my-0 [&>button]:!flex [&>button]:!h-full [&>button]:!w-full [&>button]:!max-w-none',
+                    '[&_img]:!h-full [&_img]:!w-full [&_img]:!max-w-none [&_img]:!max-h-none [&_img]:!object-cover',
+                    '[&>video]:!my-0 [&>video]:!h-full [&>video]:!w-full [&>video]:!max-h-none [&>video]:!object-cover',
                   )}
                 >
                   {item.element}

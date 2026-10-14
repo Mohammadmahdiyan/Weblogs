@@ -46,7 +46,13 @@ export function isAbsoluteUrl(value: string): boolean {
   return value.startsWith('/') || value.startsWith('#') || /^[a-z][a-z\d+.-]*:/i.test(value)
 }
 
-export function rewriteMediaUrl(value: string, slug: string, mediaFiles: MediaFile[]): string {
+
+export function rewriteMediaUrl(
+  value: string,
+  slug: string,
+  mediaFiles: MediaFile[],
+  base = '/',
+): string {
   const suffixIndex = value.search(/[?#]/)
   const pathname = suffixIndex === -1 ? value : value.slice(0, suffixIndex)
   const suffix = suffixIndex === -1 ? '' : value.slice(suffixIndex)
@@ -55,8 +61,16 @@ export function rewriteMediaUrl(value: string, slug: string, mediaFiles: MediaFi
 
   const normalizedPath = normalizeMediaPath(pathname)
   if (!normalizedPath || normalizedPath === '.') return value
-  const isArticleMedia = mediaFiles.some((media) => media.relativePath.toLowerCase() === normalizedPath.toLowerCase())
+
+  const isArticleMedia = mediaFiles.some(
+    (media) => media.relativePath.toLowerCase() === normalizedPath.toLowerCase(),
+  )
+
   if (!isArticleMedia && !coverTypeFor(pathname)) return value
-  return `/content/${slug}/${encodeMediaPath(normalizedPath)}${suffix}`
+
+  const normalizedBase = base.replace(/^\/+|\/+$/g, '')
+  const prefix = normalizedBase ? `/${normalizedBase}` : ''
+
+  return `${prefix}/content/${encodeURIComponent(slug)}/${encodeMediaPath(normalizedPath)}${suffix}`
 }
 

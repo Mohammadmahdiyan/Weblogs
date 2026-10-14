@@ -14,9 +14,12 @@ export function ImageWithFallback({
   onError,
   ...props
 }: ImageWithFallbackProps) {
-  const [failed, setFailed] = useState(false)
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
 
-  if (typeof src !== 'string' || !src.trim() || failed) {
+  const validSrc = typeof src === 'string' && src.trim().length > 0
+  const failed = !validSrc || failedSrc === src
+
+  if (failed) {
     return <NoImage className={fallbackClassName} />
   }
 
@@ -27,8 +30,14 @@ export function ImageWithFallback({
       alt={alt}
       className={className}
       onError={(event) => {
+        console.error('[Image load failed]', {
+          src,
+          resolvedUrl: event.currentTarget.src,
+          page: window.location.href,
+        })
+
         onError?.(event)
-        setFailed(true)
+        setFailedSrc(String(src))
       }}
     />
   )
