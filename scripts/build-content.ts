@@ -345,12 +345,18 @@ async function buildContent(): Promise<void> {
   const metadata = articles
     .map((article) => article.meta)
     .sort((left, right) => right.date.localeCompare(left.date) || left.slug.localeCompare(right.slug))
-  const searchIndex: SearchEntry[] = metadata.map((article) => ({
-    slug: article.slug,
-    title: article.title,
-    phrases: [...new Set([article.title, ...article.suggestions, ...article.tags])],
-    content: plainText(article.body).replace(/\|/g, ' '),
-  }))
+  // Search metadata is sorted separately from PreparedArticle, so resolve the
+  // original Markdown body by slug instead of reading a nonexistent meta.body.
+  const preparedBySlug = new Map(articles.map((article) => [article.meta.slug, article]))
+  const searchIndex: SearchEntry[] = metadata.map((article) => {
+    const prepared = preparedBySlug.get(article.slug)
+    return {
+      slug: article.slug,
+      title: article.title,
+      phrases: [...new Set([article.title, ...article.suggestions, ...article.tags])],
+      content: plainText(prepared?.body).replace(/\|/g, ' '),
+    }
+  })
 
   await rm(publicContentRoot, { recursive: true, force: true })
   await mkdir(publicContentRoot, { recursive: true })

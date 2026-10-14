@@ -262,16 +262,33 @@ const directiveComponents = {
   'mdx-unknown': withMdxErrorBoundary('unknown', UnknownDirective),
 } as unknown as MarkdownComponents
 
-function Spoiler({ children }: { children?: ReactNode }) {
+function Spoiler({
+  children,
+  animationText,
+  hasAnimationDirective = false,
+}: {
+  children?: ReactNode
+  animationText?: string
+  hasAnimationDirective?: boolean
+}) {
   const [revealed, setRevealed] = useState(false)
   const [askAge, setAskAge] = useState(false)
-  const [showApology, setShowApology] = useState(false)
+  const [showAnimationText, setShowAnimationText] = useState(false)
+
+  useEffect(() => {
+    if (!showAnimationText) return
+    const timer = window.setTimeout(() => setShowAnimationText(false), 1800)
+    return () => window.clearTimeout(timer)
+  }, [showAnimationText])
+
+  function revealText() {
+    setRevealed(true)
+    setShowAnimationText(true)
+  }
 
   function reveal() {
     if (isAdultConfirmed()) {
-      setRevealed(true)
-      setShowApology(true)
-      window.setTimeout(() => setShowApology(false), 1000)
+      revealText()
     } else {
       setAskAge(true)
     }
@@ -280,15 +297,16 @@ function Spoiler({ children }: { children?: ReactNode }) {
   function acceptAge() {
     confirmAdultAccess()
     setAskAge(false)
-    setRevealed(true)
-    setShowApology(true)
-    window.setTimeout(() => setShowApology(false), 1000)
+    revealText()
   }
 
   function declineAge() {
     rejectAdultAccess()
     setAskAge(false)
   }
+  const phrase = hasAnimationDirective !== false
+    ? (animationText ?? '').trim()
+    : 'معذرت می‌خوام'
 
   return (
     <span className="spoiler-wrap">
@@ -298,7 +316,11 @@ function Spoiler({ children }: { children?: ReactNode }) {
           <span className="sr-only">برای نمایش متن کلیک کنید</span>
         </button>
       )}
-      {showApology && <span key="apology" className="spoiler-apology" aria-hidden="true">معذرت می‌خوام</span>}
+      {showAnimationText && revealed && phrase.length > 0 && (
+        <span className="spoiler-animation-phrase" aria-hidden="true">
+          {phrase}
+        </span>
+      )}
       {askAge && (
         <span className="spoiler-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAskAge(false) }}>
           <span className="spoiler-dialog" role="dialog" aria-modal="true" aria-labelledby="spoiler-age-title">
