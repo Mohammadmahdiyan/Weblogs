@@ -30,3 +30,12 @@ public/sitemap.xml
 public/rss.xml
 public/robots.txt
 public/_headers
+
+# ignore photo and videos in project
+content/blog/*/*.png
+content/blog/*/*.gif
+content/blog/*/*.jpg
+content/blog/*/*.mp4
+content/blog/*/*.mp3
+content/blog/*/*.mkv
+content/blog/*/*.mov
