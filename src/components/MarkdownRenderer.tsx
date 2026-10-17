@@ -262,6 +262,40 @@ const directiveComponents = {
   'mdx-unknown': withMdxErrorBoundary('unknown', UnknownDirective),
 } as unknown as MarkdownComponents
 
+function Honorific({
+  file,
+  label,
+  width,
+  height,
+  verticalAlign,
+}: {
+  file?: string
+  label?: string
+  width?: string
+  height?: string
+  verticalAlign?: string
+}) {
+  if (!file || !label || !/^[a-z]+\.svg$/.test(file)) return null
+
+  const imageUrl = `${import.meta.env.BASE_URL}honorifics/${file}`
+
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className="markdown-honorific"
+      style={{
+        width: width ?? '1.8em',
+        height: height ?? '1.8em',
+        verticalAlign: verticalAlign ?? '-0.4em',
+        maskImage: `url("${imageUrl}")`,
+        WebkitMaskImage: `url("${imageUrl}")`,
+      }}
+    />
+  )
+}
+
 function Spoiler({
   children,
   animationText,
@@ -349,6 +383,7 @@ const markdownComponents: MarkdownComponents = {
   h6: createHeading('h6'),
   p: Paragraph,
   'mdx-spoiler': Spoiler,
+  'mdx-honorific': Honorific,
   a: Anchor,
   ul: UnorderedList,
   ol: OrderedList,

@@ -8,11 +8,19 @@ import remarkParse from 'remark-parse'
 import remarkRehype from 'remark-rehype'
 import { unified, type Plugin } from 'unified'
 import type { Parent, Root } from 'hast'
-import type { Root as MdastRoot } from 'mdast'
+import type {
+  Root as MdastRoot,
+  PhrasingContent,
+} from 'mdast'
 import { visit } from 'unist-util-visit'
 import type { Node } from 'unist'
 
 type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
+  'mdx-honorific'?: import('react').ComponentType<{
+    children?: import('react').ReactNode
+    file?: string
+    label?: string
+  }>
   'mdx-spoiler'?: import('react').ComponentType<{
     children?: import('react').ReactNode
     animationText?: string
@@ -239,7 +247,7 @@ const remarkSpoilers: Plugin<[], MdastRoot> = () => (tree) => {
     if (!pattern.test(value)) return
     pattern.lastIndex = 0
 
-    const replacement: typeof parent.children = []
+    const replacement: PhrasingContent[] = []
     let cursor = 0
 
     for (const match of value.matchAll(pattern)) {
@@ -284,12 +292,163 @@ const remarkSpoilers: Plugin<[], MdastRoot> = () => (tree) => {
   })
 }
 
+
+/**
+ * Replaces short honorific markers in ordinary Markdown text with SVG-backed
+ * inline nodes. Code, inline code, and fenced code are not text nodes, so they
+ * are intentionally left untouched.
+ */
+
+type HonorificConfig = {
+  file: string
+  label: string
+  width?: string
+  height?: string
+  verticalAlign?: string
+}
+
+
+const DEFAULT_HONORIFIC_SIZE = '1.8em'
+const DEFAULT_HONORIFIC_ALIGN = '-0.4em'
+const SMALL_HONORIFIC_SIZE = '1.2em'
+const SMALL_HONORIFIC_ALIGN = '-0.15em'
+const MEDIUM_HONORIFIC_SIZE = '1.5em'
+const MEDIUM_HONORIFIC_ALIGN = '-0.25em'
+
+const createHonorific = (
+  file: string,
+  label: string,
+  size = DEFAULT_HONORIFIC_SIZE,
+  verticalAlign = DEFAULT_HONORIFIC_ALIGN,
+): HonorificConfig => ({
+  file,
+  label,
+  width: size,
+  height: size,
+  verticalAlign,
+})
+
+const honorifics: Record<string, HonorificConfig> = {
+  // درود بر پیامبر ﷺ
+  'ص': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
+  'ﷺ': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
+  'صلى الله عليه وسلم': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
+
+  // سلام بر پیامبران
+  'ع': createHonorific('as.svg', 'عليه السلام'),
+  'عليه السلام': createHonorific('as.svg', 'عليه السلام'),
+  'عليه الصلاة والسلام': createHonorific('asws.svg', 'عليه الصلاة والسلام'),
+  'عليها السلام': createHonorific('ahas.svg', 'عليها السلام'),
+  'عليهم السلام': createHonorific('amus.svg', 'عليهم السلام'),
+
+  // رضایت خداوند از صحابه
+  'رض': createHonorific('radu.svg', 'رضي الله عنه'),
+  'رضي الله عنه': createHonorific('radu.svg', 'رضي الله عنه'),
+  'رضي الله عنها': createHonorific('rada.svg', 'رضي الله عنها'),
+  'رضي الله عنهما': createHonorific('raduma.svg', 'رضي الله عنهما'),
+  'رضي الله عنهم': createHonorific('radum.svg', 'رضي الله عنهم'),
+  'رضي الله عنهن': createHonorific('radunna.svg', 'رضي الله عنهن'),
+
+  // رحمت خداوند
+  'رح': createHonorific('rahimahu.svg', 'رحمه الله'),
+  'رحمه الله': createHonorific('rahimahu.svg', 'رحمه الله'),
+  'رحمها الله': createHonorific('rahimaha.svg', 'رحمها الله', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
+  'رحمهم الله': createHonorific('rahimahum.svg', 'رحمهم الله'),
+  'رحمهما الله': createHonorific('rahimahuma.svg', 'رحمهما الله'),
+  'رحمهن الله': createHonorific('rahimahunna.svg', 'رحمهن الله'),
+
+  // عبارات مربوط به خداوند
+  'جل جلاله': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'عز وجل': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'جل وعلا': createHonorific('jwa.svg', 'جل وعلا', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'سبحانه وتعالى': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'تبارك وتعالى': createHonorific('twt.svg', 'تبارك وتعالى', '1.5em', '-0.25em'),
+
+  // اختصارات مؤنث و جمع
+  'رضها': createHonorific('rada.svg', 'رضي الله عنها'),
+  'رضهما': createHonorific('raduma.svg', 'رضي الله عنهما'),
+  'رضهم': createHonorific('radum.svg', 'رضي الله عنهم'),
+  'رضهن': createHonorific('radunna.svg', 'رضي الله عنهن'),
+
+  'رحها': createHonorific('rahimaha.svg', 'رحمها الله', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
+  'رحهم': createHonorific('rahimahum.svg', 'رحمهم الله'),
+  'رحهما': createHonorific('rahimahuma.svg', 'رحمهما الله'),
+  'رحهن': createHonorific('rahimahunna.svg', 'رحمهن الله'),
+
+  // اختصارات عبارات مربوط به خداوند
+  'جل': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'عز': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'سبح': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'تبارك': createHonorific('twt.svg', 'تبارك وتعالى', '1.6em', '-0.25em'),
+}
+
+
+const honorificPattern = new RegExp(
+  `\\(\\s*(${Object.keys(honorifics).sort((a, b) => b.length - a.length).map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s*\\)`,
+  'g',
+)
+
+const remarkHonorifics: Plugin<[], MdastRoot> = () => (tree) => {
+  visit(tree, 'text', (node, index, parent) => {
+    if (
+      index === undefined ||
+      !parent ||
+      !('children' in parent) ||
+      !Array.isArray(parent.children)
+    ) return
+
+    honorificPattern.lastIndex = 0
+    if (!honorificPattern.test(node.value)) return
+    honorificPattern.lastIndex = 0
+
+    const replacement: PhrasingContent[] = []
+    let cursor = 0
+
+    for (const match of node.value.matchAll(honorificPattern)) {
+      const start = match.index ?? 0
+      if (start > cursor) {
+        replacement.push({ type: 'text', value: node.value.slice(cursor, start) })
+      }
+
+      const key = (match[1] ?? '').trim()
+      const honorific = honorifics[key]
+      if (honorific) {
+        replacement.push({
+          type: 'emphasis',
+          data: {
+            hName: 'mdx-honorific',
+            hProperties: {
+              file: honorific.file,
+              label: honorific.label,
+              width: honorific.width,
+              height: honorific.height,
+              verticalAlign: honorific.verticalAlign,
+            },
+          },
+          children: [],
+        })
+      } else {
+        replacement.push({ type: 'text', value: match[0] })
+      }
+      cursor = start + match[0].length
+    }
+
+    if (cursor < node.value.length) {
+      replacement.push({ type: 'text', value: node.value.slice(cursor) })
+    }
+
+    parent.children.splice(index, 1, ...replacement)
+    return index + replacement.length - 1
+  })
+}
+
 export function createMarkdownProcessor(components: MarkdownComponents) {
   return unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkDirective)
     .use(remarkSpoilers)
+    .use(remarkHonorifics)
     .use(remarkHeadingLevels)
     .use(remarkComponents)
     .use(remarkRehype, { allowDangerousHtml: true })

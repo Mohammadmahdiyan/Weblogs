@@ -68,6 +68,21 @@
   --no-image-star: #FFFFFF;
 }
 
+/* Inline Islamic honorific SVGs: fixed box, theme-aware ink color. */
+/* Inline Islamic honorific SVGs */
+.markdown-honorific {
+  display: inline-block;
+  margin-inline: 0.08em;
+  flex-shrink: 0;
+  background-color: var(--text);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
 .dark {
   --bg: #141414;
   --surface: #1c1c1c;
