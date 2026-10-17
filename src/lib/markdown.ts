@@ -380,6 +380,14 @@ const honorifics: Record<string, HonorificConfig> = {
   'عز': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'سبح': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'تبارك': createHonorific('twt.svg', 'تبارك وتعالى', '1.6em', '-0.25em'),
+
+    // درود بر پیامبر و خاندان ایشان
+  'صا': createHonorific('saa.svg', 'صلى الله عليه و آله'),
+  'صلى الله عليه و آله': createHonorific('saa.svg', 'صلى الله عليه و آله'),
+
+  // حفظه الله
+  'حف': createHonorific('haf.svg', 'حفظه الله'),
+  'حفظه الله': createHonorific('haf.svg', 'حفظه الله'),
 }
 
 
