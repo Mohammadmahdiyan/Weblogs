@@ -30,12 +30,11 @@ function TocBranch({
   }
 
   const paths: Record<TocBranchType, string> = {
-    single: 'M2 12 H22',
+    single: 'M16 12 H2',
     first: 'M16 24 V12 H2',
     middle: 'M16 0 V24 M16 12 H2',
-    last: 'M8 0 V12 H2',
-    continuation: 'M8 0 V24',
-
+    continuation: 'M16 0 V24',
+    last: 'M16 0 V12 H2',
   }
 
   return (
@@ -54,24 +53,52 @@ function TocBranch({
   )
 }
 
+function getParentIndex(items: TocItem[], index: number): number {
+  const current = items[index]
+  if (!current) return -1
+
+  for (let i = index - 1; i >= 0; i--) {
+    const previous = items[i]
+
+    if (previous && previous.level < current.level) {
+      return i
+    }
+  }
+
+  return -1
+}
+
 function getBranchType(
   items: TocItem[],
   index: number,
 ): TocBranchType {
-  if (items.length === 1) return 'single'
-  if (index === 0) return 'first'
-  if (index === items.length - 1) return 'last'
-
   const current = items[index]
-  const next = items[index + 1]
+  if (!current) return 'single'
 
-  if (current && next && next.level > current.level) {
-    return 'middle'
-  }
+  const parentIndex = getParentIndex(items, index)
+
+  const siblings = items
+    .map((item, itemIndex) => ({
+      item,
+      index: itemIndex,
+      parentIndex: getParentIndex(items, itemIndex),
+    }))
+    .filter(
+      ({ item, parentIndex: itemParentIndex }) =>
+        item.level === current.level &&
+        itemParentIndex === parentIndex,
+    )
+
+  const position = siblings.findIndex(
+    (sibling) => sibling.index === index,
+  )
+
+  if (siblings.length <= 1) return 'single'
+  if (position === 0) return 'first'
+  if (position === siblings.length - 1) return 'last'
 
   return 'middle'
 }
-
 function useActiveHeading(
   items: TocItem[],
   enabled: boolean,
@@ -142,13 +169,13 @@ export function ArticleToc({
             {isChild && (
               <TocBranch
                 type="continuation"
-                className="shrink-0"
+                className="-ms-1 shrink-0"
               />
             )}
 
             <TocBranch
               type={branchType}
-              className="shrink-0"
+              className="-ms-1 shrink-0"
             />
 
             <a
