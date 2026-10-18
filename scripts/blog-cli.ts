@@ -32,11 +32,12 @@ import {
 } from './lib/blog.ts'
 import { pickMarkdownFile, resolveSlug } from './lib/mdimport.ts'
 
-type Command = 'create' | 'update' | 'delete' | 'create-test' | 'delete-test'
+type Command = 'create' | 'update' | 'publish' | 'delete' | 'create-test' | 'delete-test'
 
 const usage: Record<Command, string> = {
   create: 'npm run createNewBlog <folder> [--move] [--force] [--no-build]',
   update: 'npm run updateBlog <name> [--from <folder>] [--no-build]',
+  publish: 'npm run publishBlog <name> [--no-build]',
   delete: 'npm run deleteBlog <name> [--yes] [--no-build]',
   'create-test': 'npm run createTest <folder> [--move] [--force] [--no-build]',
   'delete-test': 'npm run deleteTest <name> [--yes] [--no-build]',
@@ -44,6 +45,7 @@ const usage: Record<Command, string> = {
 const allowedFlags: Record<Command, string[]> = {
   create: ['--move', '--force', '--no-build'],
   update: ['--from', '--no-build'],
+  publish: ['--no-build'],
   delete: ['--yes', '--no-build'],
   'create-test': ['--move', '--force', '--no-build'],
   'delete-test': ['--yes', '--no-build'],
@@ -190,7 +192,9 @@ async function create(kind: 'blog' | 'test'): Promise<void> {
   // Replacing an existing blog with --force keeps its first date and counts as an update.
   if (kind === 'blog') {
     const day = today()
-    dates[slug] = alreadyThere && previousDates[slug] ? { date: previousDates[slug].date, updated: day } : { date: day, updated: day }
+    dates[slug] = alreadyThere && previousDates[slug]
+      ? { ...previousDates[slug], updated: previousDates[slug].completed ? day : previousDates[slug].date }
+      : { date: day, updated: day, completed: false }
     await writeDates(dates)
   }
 
@@ -247,7 +251,10 @@ async function update(): Promise<void> {
   // updated = today. A blog that was never registered keeps today as its first date too.
   const day = today()
   if (kind === 'blog') {
-    dates[slug] = { date: dates[slug]?.date ?? day, updated: day }
+    const previous = dates[slug]
+    dates[slug] = previous
+      ? { ...previous, updated: previous.completed ? day : previous.date }
+      : { date: day, updated: day, completed: false }
     await writeDates(dates)
   }
 
@@ -268,6 +275,35 @@ async function update(): Promise<void> {
     ...(kind === 'blog' ? { date: dates[slug].date, updated: dates[slug].updated } : {}),
   })
   if (kind === 'test') console.log('! Test blogs have no stored dates; nothing to update there.')
+}
+
+// ── publish (mark article as complete) ──
+async function publish(): Promise<void> {
+  if (target.startsWith('_')) stop('test blogs cannot be published; use a normal folder name.')
+  const { slug, directory } = await findExisting(target, 'blog')
+  if (!(await exists(path.join(directory, 'index.md')))) stop(`content/blog/${slug}/index.md is missing`)
+  const blog = await readArticle(directory, 'index.md', `content/blog/${slug}/index.md`)
+  const dates = await readDates()
+  const previousDates: DatesRegistry = { ...dates }
+  const day = today()
+  const previous = dates[slug]
+
+  if (previous?.completed) {
+    console.log(`! ${slug} is already marked complete; dates were not changed.`)
+  } else {
+    dates[slug] = { date: previous?.date ?? day, updated: previous?.date ? previous.date : day, completed: true }
+    await writeDates(dates)
+  }
+
+  if (!flags.has('--no-build') && !runContentBuild()) {
+    await writeDates(previousDates)
+    stop('the content step failed (see the message above), so the publication status was undone.')
+  }
+
+  console.log(`✔ content/blog/${slug} marked as complete`)
+  report(blog)
+  console.table({ slug, title: blog.title, date: dates[slug].date, updated: dates[slug].updated, completed: dates[slug].completed })
+  console.log(`Next: npm run updateBlog ${slug} whenever you edit this article later.`)
 }
 
 // ── delete / delete-test ──
@@ -295,6 +331,7 @@ async function remove(kind: 'blog' | 'test'): Promise<void> {
 
 try {
   if (command === 'create') await create('blog')
+  else if (command === 'publish') await publish()
   else if (command === 'create-test') await create('test')
   else if (command === 'update') await update()
   else if (command === 'delete') await remove('blog')

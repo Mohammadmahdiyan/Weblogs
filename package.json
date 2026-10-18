@@ -16,6 +16,7 @@
     "new": "tsx scripts/new-article.ts",
     "createNewBlog": "tsx scripts/blog-cli.ts create",
     "updateBlog": "tsx scripts/blog-cli.ts update",
+    "publishBlog": "tsx scripts/blog-cli.ts publish",
     "deleteBlog": "tsx scripts/blog-cli.ts delete",
     "createTest": "tsx scripts/blog-cli.ts create-test",
     "deleteTest": "tsx scripts/blog-cli.ts delete-test"

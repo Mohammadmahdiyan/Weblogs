@@ -5,6 +5,25 @@ import type { SVGProps } from 'react'
 import type { TocItem } from '../lib/toc'
 import { useMediaQuery } from '../lib/useMediaQuery'
 
+
+const tocHonorificFiles: Record<string, string> = {
+  'ص': 'sas.svg', 'ﷺ': 'sas.svg', 'صا': 'saa.svg',
+  'ع': 'as.svg', 'رض': 'radu.svg', 'رح': 'rahimahu.svg',
+  'رضها': 'rada.svg', 'رضهما': 'raduma.svg', 'رضهم': 'radum.svg', 'رضهن': 'radunna.svg',
+  'رحها': 'rahimaha.svg', 'رحهما': 'rahimahuma.svg', 'رحهم': 'rahimahum.svg', 'رحهن': 'rahimahunna.svg',
+  'جل': 'jal.svg', 'عز': 'awj.svg', 'سبح': 'swt.svg', 'تبارك': 'twt.svg', 'حف': 'haf.svg',
+}
+
+function TocTitle({ title }: { title: string }) {
+  const parts = title.split(/\(\s*(صلى الله عليه وسلم|ﷺ|صلى الله عليه و آله|صا|ص|عليه الصلاة والسلام|عليه السلام|عليها السلام|عليهم السلام|ع|رضي الله عنهما|رضي الله عنهم|رضي الله عنهن|رضي الله عنها|رضي الله عنه|رضهما|رضهم|رضهن|رضها|رض|رحمهما الله|رحمهم الله|رحمهن الله|رحمها الله|رحمه الله|رحهما|رحهم|رحهن|رحها|رح|جل جلاله|عز وجل|جل وعلا|سبحانه وتعالى|تبارك وتعالى|جل|عز|سبح|تبارك|حفظه الله|حف)\s*\)/g)
+  return <>{parts.map((part, index) => {
+    const key = part.trim()
+    const file = tocHonorificFiles[key]
+    if (!file) return <span key={index}>{part}</span>
+    return <img key={index} src={`${import.meta.env.BASE_URL}honorifics/${file}`} alt={key} title={key} className="mx-0.5 inline-block h-[1.35em] w-[1.35em] object-contain align-[-0.3em]" />
+  })}</>
+}
+
 type TocBranchType =
   | 'single'
   | 'first'
@@ -188,7 +207,7 @@ export function ArticleToc({
                   : 'text-[var(--text-secondary)]',
               )}
             >
-              {item.title}
+              <TocTitle title={item.title} />
             </a>
           </li>
         )

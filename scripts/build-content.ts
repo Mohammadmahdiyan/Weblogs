@@ -200,7 +200,7 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     console.warn(`! ${label}: no creation date registered; using the file date. Run "npm run createNewBlog ${slug}" to register it.`)
   }
   const date = registered?.date ?? fileDay
-  const updated = registered?.updated ?? date
+  const updated = registered?.completed === false ? date : (registered?.updated ?? date)
 
   const mediaFiles = await collectMediaFiles(articleDirectory)
   let coverFile: MediaFile | undefined

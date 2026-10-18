@@ -62,6 +62,8 @@ export function today(): string {
 export interface BlogDates {
   date: string
   updated: string
+  /** Whether the author has explicitly finished the article. Legacy entries count as complete. */
+  completed: boolean
 }
 export type DatesRegistry = Record<string, BlogDates>
 
@@ -93,7 +95,12 @@ export async function readDates(): Promise<DatesRegistry> {
       throw new Error(`content/blog-dates.json: "${slug}" needs "date": "YYYY-MM-DD"`)
     }
     const updated = typeof entry.updated === 'string' && isoDate.test(entry.updated) ? entry.updated : entry.date
-    registry[slug] = { date: entry.date, updated }
+    registry[slug] = {
+      date: entry.date,
+      updated,
+      // Existing registry entries predate this flag and should keep their current behavior.
+      completed: typeof entry.completed === 'boolean' ? entry.completed : true,
+    }
   }
   return registry
 }
