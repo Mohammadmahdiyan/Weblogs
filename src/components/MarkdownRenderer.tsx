@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { clsx } from 'clsx'
-import { Copy, ExternalLink, Link2 } from 'lucide-react'
+import { Copy, ExternalLink, Link2, Quote } from 'lucide-react'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
 import { withMdxErrorBoundary } from '../lib/mdx-component'
 import {
@@ -104,11 +104,58 @@ function ListItem(props: ComponentPropsWithoutRef<'li'>) {
 }
 
 function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
+  const { children, className, ...rest } = props
+
   return (
     <blockquote
-      {...props}
-      className={clsx('border-s-4 border-[var(--border-strong)] ps-4 text-start', props.className)}
-    />
+      {...rest}
+      className={clsx(
+        'group relative isolate my-7 rounded-xl',
+        'border border-[var(--border-light)]',
+        'bg-transparent px-5 py-6 pe-7',
+        'text-start text-[var(--text)]',
+        'shadow-[0_4px_18px_rgba(15,23,42,0.04)]',
+        'transition-[border-color,box-shadow] duration-300',
+        'hover:shadow-[0_4px_18px_rgba(15,23,42,0.04)]',
+        'prose-blockquote:border-0',
+        'prose-blockquote:bg-transparent',
+        'prose-blockquote:text-[var(--text)] overflow-hidden',
+        className,
+      )}
+    >
+      {/* خط گرادینتی سمت راست */}
+      <span
+        aria-hidden="true"
+        className={clsx(
+          'pointer-events-none absolute inset-y-0 right-0 z-10 w-[3px]',
+          'rounded-full bg-gradient-to-b',
+          'from-emerald-500 via-green-400 to-emerald-600',
+        )}
+      />
+      {/* آیکون کوچک در بالای باکس */}
+      <span
+        aria-hidden="true"
+        className={clsx(
+          'pointer-events-none absolute -top-3 right-5 z-20',
+          'flex size-6 items-center justify-center rounded-full',
+          'border border-[var(--border-light)]',
+          'bg-[var(--background)] text-violet-500',
+        )}
+      >
+        <Quote className="size-3.5" />
+      </span>
+
+      {/* متن و افکت ماژیک */}
+      <div
+        className={clsx(
+          'quote-highlight relative text-start leading-8',
+          '[&>p:first-child]:mt-0 [&>p:last-child]:mb-0',
+          '[&>p]:relative [&>p]:z-0',
+        )}
+      >
+        {children}
+      </div>
+    </blockquote>
   )
 }
 
@@ -464,7 +511,7 @@ export function MarkdownRenderer({ markdown, className }: MarkdownRendererProps)
       className={clsx(
         'article-body prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-headings:var(--text)] [--tw-prose-links:var(--info)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-counters:var(--brand)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-hr:var(--border-light)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-th-borders:var(--border-strong)] [--tw-prose-td-borders:var(--border-light)]',
         'prose-headings:text-start prose-p:text-start prose-ul:ps-6 prose-ol:ps-6',
-        'prose-blockquote:border-s-4 prose-blockquote:ps-4 prose-li:ps-1',
+        'prose-li:ps-1',
         className,
       )}
     >
