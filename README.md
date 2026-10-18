@@ -64,7 +64,8 @@ suggestions:
 | دستور | کار |
 |---|---|
 | `npm run createNewBlog <پوشه>` | ساخت وبلاگ جدید و پر کردن خودکار اطلاعات از md و پوشه |
-| `npm run updateBlog <نام‌پوشه>` | به‌روزرسانی؛ `updated` را امروز می‌کند |
+| `npm run updateBlog <نام‌پوشه>` | ویرایش مقاله؛ اگر مقاله تکمیل شده باشد `updated` را امروز می‌کند |
+| `npm run publishBlog <نام‌پوشه>` | اعلام پایان نگارش؛ مقاله را تکمیل‌شده علامت می‌زند و تاریخ انتشار را ثبت می‌کند |
 | `npm run deleteBlog <نام‌پوشه>` | حذف وبلاگ (پوشه + تاریخ‌ها + خروجی‌ها) |
 | `npm run createTest <پوشه>` | ساخت وبلاگ **آزمایشی** (فقط در توسعه دیده می‌شود) |
 | `npm run deleteTest <نام>` | حذف وبلاگ آزمایشی |
@@ -90,6 +91,9 @@ npm run createNewBlog -- ~/Desktop/my-post --move
 # ویرایش: فایل content/blog/my-post/index.md را عوض کنید، بعد:
 npm run updateBlog my-post
 
+# وقتی نگارش مقاله واقعاً تمام شد، یک‌بار اعلام تکمیل کنید:
+npm run publishBlog my-post
+
 # حذف:
 npm run deleteBlog my-post
 ```
@@ -100,8 +104,9 @@ npm run deleteBlog my-post
 
 تاریخ‌ها داخل md نیستند؛ در `content/blog-dates.json` نگه داشته می‌شوند (این فایل را دستورها می‌نویسند و **باید در گیت commit شود** تا نسخهٔ آنلاین هم همین تاریخ‌ها را بسازد).
 
-- `createNewBlog`: `date` = امروز و `updated` = همان `date`.
-- `updateBlog`: `updated` = امروز (`date` ثابت می‌ماند). تا وقتی به‌روزرسانی نشده، `updated` برابر `date` است و در صفحه فقط «تاریخ انتشار» دیده می‌شود.
+- `createNewBlog`: مقالهٔ جدید با `completed: false` ثبت می‌شود؛ تاریخ موقت ذخیره می‌شود اما تا اعلام تکمیل، مقاله تاریخ به‌روزرسانی جداگانه نشان نمی‌دهد.
+- `publishBlog`: وقتی نگارش واقعاً تمام شد اجرا کنید. `completed` را `true` می‌کند و تاریخ انتشار را تثبیت می‌کند. این دستور برای مقاله‌ای که قبلاً تکمیل شده، تاریخ‌ها را تغییر نمی‌دهد.
+- `updateBlog`: پیش از تکمیل، تاریخ به‌روزرسانی را جلو نمی‌برد؛ پس از تکمیل، `updated` را امروز می‌کند و `date` انتشار ثابت می‌ماند. در صفحه فقط وقتی این دو تاریخ متفاوت باشند تاریخ به‌روزرسانی دیده می‌شود.
 - اگر پوشه‌ای را دستی در `content/blog` بگذارید و ثبت نکنید، تاریخ از زمان فایل گرفته می‌شود و هشدار می‌بینید؛ `npm run createNewBlog <نام>` آن را ثبت می‌کند.
 
 ### وبلاگ آزمایشی (تست)
@@ -326,13 +331,14 @@ Text…
 
 | Command | What it does |
 |---|---|
-| `npm run createNewBlog <folder>` | Create a blog from a folder (md + media). Fills everything from the md and the folder; `date` = `updated` = today. |
-| `npm run updateBlog <name>` | Re-validate and set `updated` = today (`date` stays). |
+| `npm run createNewBlog <folder>` | Create/register a blog from a folder (md + media). New articles remain incomplete until explicitly published. |
+| `npm run updateBlog <name>` | Re-validate; only completed articles get `updated` = today (`date` stays). |
+| `npm run publishBlog <name>` | Mark the article complete and set its publication date; run once when writing is finished. |
 | `npm run deleteBlog <name>` | Delete the blog folder, its dates and generated output. Asks to confirm (`-- --yes` skips). |
 | `npm run createTest <folder>` | Same as createNewBlog but the folder becomes `content/blog/_<name>`: development only, never built for production. |
 | `npm run deleteTest <name>` | Delete a test blog. |
 
-Options go after `--`: `--move`, `--force`, `--no-build`, `--yes`, and `updateBlog -- <name> --from <folder>`. Every command runs `npm run content` and undoes its change if that fails. Dates live in `content/blog-dates.json` (commit it). The reader's style choice (header button, saved in the browser; `?style=N` wins) decides the style: there is no `style` or `draft` key. `npm run new -- my-post "Title"` writes an empty template.
+Options go after `--`: `--move`, `--force`, `--no-build`, `--yes`, and `updateBlog -- <name> --from <folder>`. Every command runs `npm run content` and undoes its change if that fails. Dates and completion status live in `content/blog-dates.json` (commit it). New articles stay incomplete until `npm run publishBlog <name>`; later `updateBlog` calls advance `updated` only after completion. The reader's style choice (header button, saved in the browser; `?style=N` wins) decides the style: there is no `style` or `draft` key. `npm run new -- my-post "Title"` writes an empty template.
 
 ## Search suggestions
 
