@@ -1,6 +1,6 @@
 /*
   Usage:  npm run new -- my-slug "عنوان مقاله"
-  Creates content/blog/<slug>/index.md from a template (then run `npm run createNewBlog <slug>` to register it).
+  Creates content/blog/<slug>/index.md from a template. The dev watcher registers it automatically.
 */
 import { mkdir, writeFile, access } from 'node:fs/promises'
 import path from 'node:path'
@@ -53,4 +53,4 @@ try {
 
 await mkdir(directory, { recursive: true })
 await writeFile(file, template, 'utf8')
-console.log(`Created ${path.relative(projectRoot, file)}\nAdd images / videos next to it (a file named cover.jpg becomes the cover), then run: npm run createNewBlog ${slug}`)
+console.log(`Created ${path.relative(projectRoot, file)}\nAdd images / videos next to it (a file named cover.jpg becomes the cover), then run npm run dev to register it automatically`)

@@ -193,11 +193,11 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     )
   }
 
-  // date / updated come from content/blog-dates.json (written by createNewBlog / updateBlog).
+  // date / updated come from content/blog-dates.json (maintained by the dev watcher and publishBlog).
   const registered = dates[slug]
   const fileDay = (await stat(indexPath)).mtime.toISOString().slice(0, 10)
   if (!registered && !isTestFolder(slug)) {
-    console.warn(`! ${label}: no creation date registered; using the file date. Run "npm run createNewBlog ${slug}" to register it.`)
+    console.warn(`! ${label}: no creation date registered; using the file date. Run "npm run dev" to register it automatically.`)
   }
   const date = registered?.date ?? fileDay
   const updated = registered?.completed === false ? date : (registered?.updated ?? date)

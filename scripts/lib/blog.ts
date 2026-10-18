@@ -1,6 +1,5 @@
 /*
-  Shared helpers for the blog commands (createNewBlog, updateBlog, deleteBlog, createTest,
-  deleteTest) and for scripts/build-content.ts. Everything that decides what a valid article
+  Shared helpers for the blog commands (publishBlog, deleteBlog, createTest, deleteTest) and for scripts/build-content.ts. Everything that decides what a valid article
   looks like lives here so the commands and the build can never disagree.
 
   The markdown file contains ONLY:
@@ -13,7 +12,7 @@
       # Title                         # the first "# " line is the title
 
   Dates are not written in the markdown: they live in content/blog-dates.json, which the
-  commands maintain (date = creation day, updated = last updateBlog day).
+  commands and development watcher maintain (date = creation day, updated = last saved change after publication).
 */
 import { spawnSync } from 'node:child_process'
 import { access, readFile, writeFile } from 'node:fs/promises'

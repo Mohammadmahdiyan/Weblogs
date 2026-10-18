@@ -59,59 +59,47 @@ suggestions:
 - چیز دیگری لازم نیست. `date` و `updated` را دستورهای زیر خودکار می‌گذارند؛ `style` را خودِ خواننده از دکمهٔ «استایل» انتخاب می‌کند؛ `draft` وجود ندارد (برای وبلاگ آزمایشی از «تست» استفاده کنید). کلیدهای قدیمی (`title`، `name`، `date`، `style`، `draft`) خوانده نمی‌شوند و فقط یک هشدار می‌گیرید.
 - کلیدهای اختیاری پیشرفته: `description` (خلاصهٔ سئو؛ پیش‌فرض ۱۶۰ نویسهٔ اول متن)، `readingTime` (دقیقه؛ پیش‌فرض خودکار از تعداد کلمه‌ها)، `coverEmbed` (کاور از یوتیوب/آپارات/اینستاگرام اگر `cover.*` ندارید)، `cover` (مسیر کاور با نامی غیر از `cover.*`)، `lang`، `dir`.
 
-### دستورها
+### دستورها و انتشار خودکار
 
 | دستور | کار |
 |---|---|
-| `npm run createNewBlog <پوشه>` | ساخت وبلاگ جدید و پر کردن خودکار اطلاعات از md و پوشه |
-| `npm run updateBlog <نام‌پوشه>` | ویرایش مقاله؛ اگر مقاله تکمیل شده باشد `updated` را امروز می‌کند |
-| `npm run publishBlog <نام‌پوشه>` | اعلام پایان نگارش؛ مقاله را تکمیل‌شده علامت می‌زند و تاریخ انتشار را ثبت می‌کند |
-| `npm run deleteBlog <نام‌پوشه>` | حذف وبلاگ (پوشه + تاریخ‌ها + خروجی‌ها) |
-| `npm run createTest <پوشه>` | ساخت وبلاگ **آزمایشی** (فقط در توسعه دیده می‌شود) |
-| `npm run deleteTest <نام>` | حذف وبلاگ آزمایشی |
+| `npm run publishBlog -- <نام-پوشه>` | اعلام پایان نگارش مقاله، ثبت وضعیت تکمیل، ساخت مجدد محتوا و `git commit`/`git push` به شاخهٔ `main` |
+| `npm run deleteBlog -- <نام-پوشه>` | حذف کامل پوشه و تاریخ‌های آن، بازسازی محتوا و push به GitHub |
+| `npm run createTest` | ساخت مجدد مقالهٔ آزمایشی کامل در `content/blog/_example-article/index.md`؛ بدون ورودی و بدون بازنویسی نمونه‌ای که از قبل وجود دارد |
+| `npm run deleteTest` | حذف مقالهٔ آزمایشی ثابت `_example-article`؛ بدون ورودی |
 
-`<پوشه>` می‌تواند پوشه‌ای باشد که از قبل در `content/blog` هست، یا هر پوشهٔ دلخواه روی سیستم (شامل یک فایل md و عکس/ویدیوهایش): در حالت دوم کپی می‌شود به `content/blog/<نام‌پوشه>/` و فایل md به `index.md` تغییر نام می‌دهد. بعد از هر دستور خودکار `npm run content` اجرا می‌شود (اعتبارسنجی کل سایت، slug تکراری، ساخت `articles.json`، جست‌وجو، sitemap، RSS)؛ اگر خطایی باشد همهٔ تغییرها **برگردانده می‌شود**. بعد از آن فقط `npm run build` می‌ماند.
+دیگر نیازی به دستورهای جداگانهٔ `createNewBlog` و `updateBlog` نیست. برای افزودن مقاله، پوشهٔ آن را مستقیم در `content/blog/<نام-پوشه>/` بساز و فایل `index.md` را قرار بده. هنگام اجرای `npm run dev`، پوشه‌های تازه به‌صورت خودکار ثبت و محتوای سایت بازسازی می‌شوند.
 
-گزینه‌ها را بعد از `--` بنویسید (npm بدون آن گزینه‌ها را خودش می‌خورد):
+**پس از اجرای `npm run publishBlog -- <نام-پوشه>`، مقاله تکمیل‌شده محسوب می‌شود.** تا وقتی `npm run dev` باز است، هر ذخیرهٔ بعدی در فایل‌ها یا رسانه‌های همان مقاله، تاریخ `updated` را خودکار به‌روز می‌کند، محتوا را بازسازی می‌کند و تغییرات مقاله را به GitHub push می‌کند. مقاله‌هایی که هنوز منتشر/تکمیل نشده‌اند خودکار push نمی‌شوند.
 
-```bash
-npm run createNewBlog -- مسیر/پوشه --move       # بعد از کپی، پوشهٔ مبدأ پاک شود
-npm run createNewBlog -- مسیر/پوشه --force      # اگر وبلاگ از قبل هست جایگزین شود (تاریخ ساخت حفظ می‌شود)
-npm run updateBlog -- my-post --from مسیر/پوشه  # محتوای تازه را از یک پوشهٔ دیگر جایگزین کن
-npm run deleteBlog -- my-post --yes             # بدون پرسیدن تأیید
-npm run createNewBlog -- مسیر/پوشه --no-build   # بدون اجرای npm run content
-```
-
-**روال معمول**
+نمونه:
 
 ```bash
-# ساخت: پوشه‌ای با md و عکس‌ها آماده کنید
-npm run createNewBlog -- ~/Desktop/my-post --move
+# پوشهٔ content/blog/my-post از قبل ساخته شده و index.md دارد
+npm run publishBlog -- my-post
 
-# ویرایش: فایل content/blog/my-post/index.md را عوض کنید، بعد:
-npm run updateBlog my-post
+# حذف کامل مقاله و انتشار حذف در سایت
+npm run deleteBlog -- my-post
 
-# وقتی نگارش مقاله واقعاً تمام شد، یک‌بار اعلام تکمیل کنید:
-npm run publishBlog my-post
-
-# حذف:
-npm run deleteBlog my-post
+# ساخت/حذف نمونهٔ آزمایشی؛ هیچ نامی وارد نکنید
+npm run createTest
+npm run deleteTest
 ```
 
-`deleteBlog` بدون `--yes` تأیید می‌گیرد. اگر قالب خالی می‌خواهید: `npm run new -- my-post "عنوان"` فایل `index.md` می‌سازد؛ بعد `npm run createNewBlog my-post` ثبتش می‌کند.
+برای push خودکار باید مخزن محلی روی شاخهٔ `main` باشد، remote با نام `origin` به `https://github.com/mohammadmahdiyan/weblogs` متصل باشد و احراز هویت GitHub از قبل کار کند. فایل `.github/workflows/deploy.yml` سایت را پس از push به `main` می‌سازد و منتشر می‌کند؛ ممکن است نمایش تغییرات آنلاین چند دقیقه زمان ببرد.
 
 ### تاریخ‌ها (`date` و `updated`)
 
-تاریخ‌ها داخل md نیستند؛ در `content/blog-dates.json` نگه داشته می‌شوند (این فایل را دستورها می‌نویسند و **باید در گیت commit شود** تا نسخهٔ آنلاین هم همین تاریخ‌ها را بسازد).
+تاریخ‌ها داخل Markdown نیستند؛ در `content/blog-dates.json` نگه داشته می‌شوند و همراه محتوای مقاله commit می‌شوند.
 
-- `createNewBlog`: مقالهٔ جدید با `completed: false` ثبت می‌شود؛ تاریخ موقت ذخیره می‌شود اما تا اعلام تکمیل، مقاله تاریخ به‌روزرسانی جداگانه نشان نمی‌دهد.
-- `publishBlog`: وقتی نگارش واقعاً تمام شد اجرا کنید. `completed` را `true` می‌کند و تاریخ انتشار را تثبیت می‌کند. این دستور برای مقاله‌ای که قبلاً تکمیل شده، تاریخ‌ها را تغییر نمی‌دهد.
-- `updateBlog`: پیش از تکمیل، تاریخ به‌روزرسانی را جلو نمی‌برد؛ پس از تکمیل، `updated` را امروز می‌کند و `date` انتشار ثابت می‌ماند. در صفحه فقط وقتی این دو تاریخ متفاوت باشند تاریخ به‌روزرسانی دیده می‌شود.
-- اگر پوشه‌ای را دستی در `content/blog` بگذارید و ثبت نکنید، تاریخ از زمان فایل گرفته می‌شود و هشدار می‌بینید؛ `npm run createNewBlog <نام>` آن را ثبت می‌کند.
+- پوشهٔ مقاله‌ای که در حالت توسعه شناسایی شود، به‌صورت خودکار با `completed: false` ثبت می‌شود.
+- `publishBlog` مقدار `completed` را `true` می‌کند و تاریخ تکمیل/انتشار را ثبت می‌کند.
+- پس از تکمیل، ذخیرهٔ هر تغییر در فایل‌ها و رسانه‌های مقاله هنگام اجرای `npm run dev` تاریخ `updated` را خودکار جلو می‌برد و به GitHub push می‌کند؛ نیازی به `updateBlog` نیست.
+- پوشه‌های شروع‌شونده با `_` آزمایشی هستند و در انتشار تولیدی، sitemap و RSS قرار نمی‌گیرند.
 
 ### وبلاگ آزمایشی (تست)
 
-`createTest` همان کار `createNewBlog` را می‌کند ولی پوشه را `content/blog/_<نام>` می‌سازد. پوشه‌های `_…` در `npm run dev` دیده می‌شوند و در `npm run build` / سایت آنلاین / sitemap / RSS **هرگز نمی‌آیند**. تست‌ها تاریخ ثبت‌شده ندارند. حذف: `npm run deleteTest <نام>` (با یا بدون `_`). مقالهٔ نمونهٔ پروژه (`_example-article`) هم یک تست است. `deleteBlog` روی تست و `deleteTest` روی وبلاگ عادی جواب نمی‌دهد (پیام راهنما می‌دهد)، تا چیزی اشتباهی پاک نشود.
+`npm run createTest` بدون آرگومان، قالب کامل `scripts/templates/example-article` را به `content/blog/_example-article` کپی می‌کند. اگر پوشه موجود باشد آن را بازنویسی نمی‌کند؛ اگر حذف شده باشد دوباره ساخته می‌شود. `npm run deleteTest` همان پوشهٔ ثابت را حذف می‌کند. این مقاله برای تست محلی است و در build تولیدی منتشر نمی‌شود.
 
 ### خروجی ساخته‌شده برای هر وبلاگ (`src/generated/articles.json`)
 
@@ -315,30 +303,27 @@ npm test
 
 ## Add, update and delete a blog
 
-A blog is a **folder**; the folder name is the URL (`content/blog/my-post` → `/blog/my-post`; `a-z 0-9 - _` only). The markdown file contains only this:
-
-```md
----
-tags: [tag one, tag two]      # optional, default: none
-suggestions:                  # optional, default: the title
-  - a phrase people search for
----
-
-# Blog title                  # the first "# " line = the title (removed from the body)
-
-Text…
-```
+A blog is a folder; the folder name is the URL (`content/blog/my-post` → `/blog/my-post`). Put the article in `content/blog/<folder>/index.md` using the Markdown format above.
 
 | Command | What it does |
 |---|---|
-| `npm run createNewBlog <folder>` | Create/register a blog from a folder (md + media). New articles remain incomplete until explicitly published. |
-| `npm run updateBlog <name>` | Re-validate; only completed articles get `updated` = today (`date` stays). |
-| `npm run publishBlog <name>` | Mark the article complete and set its publication date; run once when writing is finished. |
-| `npm run deleteBlog <name>` | Delete the blog folder, its dates and generated output. Asks to confirm (`-- --yes` skips). |
-| `npm run createTest <folder>` | Same as createNewBlog but the folder becomes `content/blog/_<name>`: development only, never built for production. |
-| `npm run deleteTest <name>` | Delete a test blog. |
+| `npm run publishBlog -- <folder>` | Mark the article complete, rebuild content, then commit and push blog changes to `main`. |
+| `npm run deleteBlog -- <folder>` | Delete the article folder and its dates, rebuild content, then commit and push the deletion. |
+| `npm run createTest` | Restore the full `_example-article` test fixture, with no arguments. Existing fixtures are not overwritten. |
+| `npm run deleteTest` | Delete the fixed `_example-article` test fixture, with no arguments. |
 
-Options go after `--`: `--move`, `--force`, `--no-build`, `--yes`, and `updateBlog -- <name> --from <folder>`. Every command runs `npm run content` and undoes its change if that fails. Dates and completion status live in `content/blog-dates.json` (commit it). New articles stay incomplete until `npm run publishBlog <name>`; later `updateBlog` calls advance `updated` only after completion. The reader's style choice (header button, saved in the browser; `?style=N` wins) decides the style: there is no `style` or `draft` key. `npm run new -- my-post "Title"` writes an empty template.
+`createNewBlog` and `updateBlog` are no longer separate commands. Create a new folder directly under `content/blog` and add `index.md`; while `npm run dev` is running, new folders are registered automatically. After `publishBlog` marks an article complete, saving changes to its Markdown or media files automatically updates `updated`, rebuilds the content and pushes the change to GitHub. This watcher runs only while `npm run dev` is running; incomplete articles are not auto-pushed.
+
+Automatic push requires the local clone to be on branch `main`, an `origin` remote pointing to `https://github.com/mohammadmahdiyan/weblogs`, and working GitHub authentication. The existing `.github/workflows/deploy.yml` builds and deploys the site after a push to `main`; the public site may take a few minutes to refresh.
+
+```bash
+npm run publishBlog -- my-post
+npm run deleteBlog -- my-post
+npm run createTest
+npm run deleteTest
+```
+
+Dates and completion status live in `content/blog-dates.json` and are committed with the article. A folder first detected by the dev watcher is registered as incomplete; `publishBlog` marks it complete. Test folders begin with `_` and are excluded from production output, sitemap and RSS.
 
 ## Search suggestions
 

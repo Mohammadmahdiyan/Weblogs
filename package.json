@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run content && vite",
+    "dev": "tsx scripts/dev.ts",
     "content": "tsx scripts/build-content.ts",
     "content:prod": "tsx scripts/build-content.ts --production",
     "build": "npm run content:prod && tsc -b && vite build && tsx scripts/prerender.ts",
@@ -14,8 +14,6 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "new": "tsx scripts/new-article.ts",
-    "createNewBlog": "tsx scripts/blog-cli.ts create",
-    "updateBlog": "tsx scripts/blog-cli.ts update",
     "publishBlog": "tsx scripts/blog-cli.ts publish",
     "deleteBlog": "tsx scripts/blog-cli.ts delete",
     "createTest": "tsx scripts/blog-cli.ts create-test",
