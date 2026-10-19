@@ -107,47 +107,51 @@ function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
   const { children, className, ...rest } = props
 
   return (
-    <blockquote
-      {...rest}
-      className={clsx(
-        'group relative isolate mt-2 mb-2 rounded-lg overflow-hidden',
-        'border border-emerald-700/10 bg-emerald-50/55 px-5 py-5 pe-8',
-        'text-start text-[var(--text)] shadow-sm shadow-emerald-950/[0.03]',
-        'transition-colors duration-300',
-        'prose-blockquote:text-[var(--text)]',
-        'before:content-none after:content-none',
-        'dark:border-emerald-300/15 dark:bg-emerald-950/20',
-        className,
-      )}
-    >
-      {/* آیکون نقل‌قول؛ کوتیشن‌های تزئینی پیش‌فرض Typography غیرفعال شده‌اند. */}
+    <div className="relative my-1 pt-1">
+      {/* آیکون بیرون از باکس و خارج از محدوده overflow */}
       <Quote
         aria-hidden="true"
-        className="pointer-events-none absolute -top-3 right-5 z-20 h-6 w-6 text-emerald-700/65 dark:text-emerald-300/65"
+        className="pointer-events-none absolute right-4 top-5 z-20 h-5 w-5 text-emerald-700/75 dark:text-emerald-300"
         strokeWidth={2.2}
       />
-      {/* خط گرادینتی در سمت راست، مناسب چیدمان راست‌به‌چپ */}
-      <span
-        aria-hidden="true"
+
+      <blockquote
+        {...rest}
         className={clsx(
-          'pointer-events-none absolute inset-y-0 right-0 z-10 w-[3px]',
-          'rounded-full bg-gradient-to-b',
-          'from-emerald-300 via-emerald-600 to-teal-800 dark:from-emerald-300 dark:via-emerald-400 dark:to-teal-300',
-        )}
-      />
-      {/* متن و افکت ماژیک */}
-      <div
-        className={clsx(
-          'quote-highlight relative text-start leading-8 [&>p:first-child]:pe-1',
-          '[&>p:first-child]:mt-0 [&>p:last-child]:mb-0',
-          '[&>p]:relative [&>p]:z-0',
+          'group relative isolate overflow-hidden rounded-lg',
+          'border border-emerald-700/10 bg-emerald-50/55 px-4 py-2 pe-7',
+          'text-start text-[var(--text)] shadow-sm shadow-emerald-950/[0.03]',
+          'transition-colors duration-300',
+          'prose-blockquote:text-[var(--text)]',
+          'before:content-none after:content-none',
+          'dark:border-emerald-300/15 dark:bg-emerald-950/20',
+          className,
         )}
       >
-        {children}
-      </div>
-    </blockquote>
+        {/* خط سبز کاملاً داخل محدوده باکس */}
+        <span
+          aria-hidden="true"
+          className={clsx(
+            'pointer-events-none absolute inset-y-0 right-0 z-10 w-[3px]',
+            'rounded-full bg-gradient-to-b',
+            'from-emerald-300 via-emerald-600 to-teal-800 dark:from-emerald-300 dark:via-emerald-400 dark:to-teal-300',
+          )}
+        />
+
+        <div
+          className={clsx(
+            'quote-highlight relative text-start leading-8 [&>p:first-child]:pe-1',
+            '[&>p:first-child]:mt-0 [&>p:last-child]:mb-0',
+            '[&>p]:relative [&>p]:z-0',
+          )}
+        >
+          {children}
+        </div>
+      </blockquote>
+    </div>
   )
 }
+
 
 function textFromNode(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node)
