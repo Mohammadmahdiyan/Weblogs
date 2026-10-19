@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { clsx } from 'clsx'
-import { Copy, ExternalLink, Link2 } from 'lucide-react'
+import { Copy, ExternalLink, Link2, Quote } from 'lucide-react'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
 import { withMdxErrorBoundary } from '../lib/mdx-component'
 import {
@@ -110,29 +110,35 @@ function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
     <blockquote
       {...rest}
       className={clsx(
-        'group relative isolate my-7 rounded-xl',
-        'px-5 py-6 pe-7',
-        'text-start text-[var(--text)]',
-        'shadow-[0_4px_18px_rgba(15,23,42,0.04)]',
-        'transition-[border-color,box-shadow] duration-300',
-        'hover:shadow-[0_4px_18px_rgba(15,23,42,0.04)]',
-        'prose-blockquote:text-[var(--text)] overflow-hidden',
+        'group relative isolate mt-2 mb-2 rounded-lg overflow-hidden',
+        'border border-emerald-700/10 bg-emerald-50/55 px-5 py-5 pe-8',
+        'text-start text-[var(--text)] shadow-sm shadow-emerald-950/[0.03]',
+        'transition-colors duration-300',
+        'prose-blockquote:text-[var(--text)]',
+        'before:content-none after:content-none',
+        'dark:border-emerald-300/15 dark:bg-emerald-950/20',
         className,
       )}
     >
-      {/* خط گرادینتی سمت راست */}
+      {/* آیکون نقل‌قول؛ کوتیشن‌های تزئینی پیش‌فرض Typography غیرفعال شده‌اند. */}
+      <Quote
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-3 right-5 z-20 h-6 w-6 text-emerald-700/65 dark:text-emerald-300/65"
+        strokeWidth={2.2}
+      />
+      {/* خط گرادینتی در سمت راست، مناسب چیدمان راست‌به‌چپ */}
       <span
         aria-hidden="true"
         className={clsx(
           'pointer-events-none absolute inset-y-0 right-0 z-10 w-[3px]',
           'rounded-full bg-gradient-to-b',
-          'from-emerald-500 via-green-400 to-emerald-600',
+          'from-emerald-300 via-emerald-600 to-teal-800 dark:from-emerald-300 dark:via-emerald-400 dark:to-teal-300',
         )}
       />
       {/* متن و افکت ماژیک */}
       <div
         className={clsx(
-          'quote-highlight relative text-start leading-8',
+          'quote-highlight relative text-start leading-8 [&>p:first-child]:pe-1',
           '[&>p:first-child]:mt-0 [&>p:last-child]:mb-0',
           '[&>p]:relative [&>p]:z-0',
         )}

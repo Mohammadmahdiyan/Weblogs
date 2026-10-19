@@ -313,28 +313,38 @@
 .blog-style-8 .article-body table, .blog-style-8 .article-body th, .blog-style-8 .article-body td { border-width: 2px; border-color: var(--text); }
 .blog-style-8 :focus-visible { outline: 4px solid var(--brand) !important; outline-offset: 3px; }
 
-/* Refined, varied blockquotes: each quote gets a slightly different green wash. */
+/* Elegant RTL blockquotes: a restrained green surface, right accent rail, and no generated quote glyphs. */
 .blog-scope .article-body blockquote {
-  position: relative;
-  border: 1px solid color-mix(in srgb, var(--brand) 24%, var(--border-light));
-  border-inline-start: 4px solid color-mix(in srgb, var(--brand) 62%, transparent);
-  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 8%, var(--surface)), var(--surface) 78%);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 5%, transparent);
+  border: 1px solid color-mix(in srgb, #10b981 15%, var(--border-light));
+  border-inline-start: 0;
+  border-inline-end: 3px solid color-mix(in srgb, #10b981 55%, transparent);
+  background: linear-gradient(100deg, color-mix(in srgb, #10b981 3%, var(--surface)), color-mix(in srgb, #10b981 8%, var(--surface)));
+  box-shadow: 0 5px 18px color-mix(in srgb, #064e3b 4%, transparent);
 }
 .blog-scope .article-body blockquote:nth-of-type(2n) {
-  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 13%, var(--surface)), var(--surface) 82%);
-  border-inline-start-color: color-mix(in srgb, var(--brand) 76%, transparent);
+  border-inline-end-color: color-mix(in srgb, #059669 72%, transparent);
+  background: linear-gradient(100deg, color-mix(in srgb, #10b981 5%, var(--surface)), color-mix(in srgb, #10b981 11%, var(--surface)));
 }
 .blog-scope .article-body blockquote:nth-of-type(3n) {
-  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 18%, var(--surface)), var(--surface) 86%);
-  border-inline-start-color: var(--brand);
+  border-inline-end-color: #059669;
+  background: linear-gradient(100deg, color-mix(in srgb, #10b981 7%, var(--surface)), color-mix(in srgb, #10b981 14%, var(--surface)));
+}
+.blog-scope .article-body blockquote::before,
+.blog-scope .article-body blockquote::after {
+  content: none !important;
 }
 .dark .blog-scope .article-body blockquote {
-  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 12%, var(--surface)), var(--surface) 82%);
+  border-color: color-mix(in srgb, #34d399 16%, var(--border-light));
+  border-inline-start: 0;
+  border-inline-end: 3px solid #34d399;
+  background: linear-gradient(100deg, color-mix(in srgb, #064e3b 14%, var(--surface)), color-mix(in srgb, #065f46 25%, var(--surface)));
+  box-shadow: 0 5px 18px rgb(0 0 0 / 10%);
 }
 .dark .blog-scope .article-body blockquote:nth-of-type(2n) {
-  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 18%, var(--surface)), var(--surface) 84%);
+  border-inline-end-color: #6ee7b7;
+  background: linear-gradient(100deg, color-mix(in srgb, #064e3b 18%, var(--surface)), color-mix(in srgb, #065f46 32%, var(--surface)));
 }
 .dark .blog-scope .article-body blockquote:nth-of-type(3n) {
-  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 24%, var(--surface)), var(--surface) 88%);
+  border-inline-end-color: #a7f3d0;
+  background: linear-gradient(100deg, color-mix(in srgb, #064e3b 22%, var(--surface)), color-mix(in srgb, #065f46 38%, var(--surface)));
 }
