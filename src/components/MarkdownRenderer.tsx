@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { clsx } from 'clsx'
-import { Copy, ExternalLink, Link2, Quote } from 'lucide-react'
+import { Copy, ExternalLink, Link2 } from 'lucide-react'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
 import { withMdxErrorBoundary } from '../lib/mdx-component'
 import {
@@ -111,14 +111,11 @@ function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
       {...rest}
       className={clsx(
         'group relative isolate my-7 rounded-xl',
-        'border border-[var(--border-light)]',
-        'bg-transparent px-5 py-6 pe-7',
+        'px-5 py-6 pe-7',
         'text-start text-[var(--text)]',
         'shadow-[0_4px_18px_rgba(15,23,42,0.04)]',
         'transition-[border-color,box-shadow] duration-300',
         'hover:shadow-[0_4px_18px_rgba(15,23,42,0.04)]',
-        'prose-blockquote:border-0',
-        'prose-blockquote:bg-transparent',
         'prose-blockquote:text-[var(--text)] overflow-hidden',
         className,
       )}
@@ -132,19 +129,6 @@ function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
           'from-emerald-500 via-green-400 to-emerald-600',
         )}
       />
-      {/* آیکون کوچک در بالای باکس */}
-      <span
-        aria-hidden="true"
-        className={clsx(
-          'pointer-events-none absolute -top-3 right-5 z-20',
-          'flex size-6 items-center justify-center rounded-full',
-          'border border-[var(--border-light)]',
-          'bg-[var(--background)] text-violet-500',
-        )}
-      >
-        <Quote className="size-3.5" />
-      </span>
-
       {/* متن و افکت ماژیک */}
       <div
         className={clsx(

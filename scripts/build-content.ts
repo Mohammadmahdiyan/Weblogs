@@ -8,6 +8,7 @@ import { visit } from 'unist-util-visit'
 import type { ArticleMeta, SearchEntry } from '../src/lib/types.ts'
 import siteConfig from '../src/site.config.ts'
 import { detectProvider, parseYouTubeId, youtubePoster } from '../src/lib/embed.ts'
+import { markdownToPlainText } from '../src/lib/plainText.ts'
 import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, type MediaFile } from './lib/media.ts'
 import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
 
@@ -32,19 +33,7 @@ function fail(filePath: string, message: string): never {
 }
 
 function plainText(markdown: string | undefined): string {
-  if (typeof markdown !== 'string') return ''
-  return markdown
-    .replace(/```[\s\S]*?```|~~~[\s\S]*?~~~/g, ' ')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
-    .replace(/^\s*[-*+]\s+/gm, '')
-    .replace(/^\s*\|.*\|\s*$/gm, ' ')
-    .replace(/:{3,}[\w-]*/g, ' ')
-    .replace(/[>*_~`|]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return markdownToPlainText(markdown)
 }
 
 function excerptFrom(markdown: string): string {
@@ -364,7 +353,7 @@ async function buildContent(): Promise<void> {
       slug: article.slug,
       title: article.title,
       phrases: [...new Set([article.title, ...article.suggestions, ...article.tags])],
-      content: plainText(prepared?.body).replace(/\|/g, ' '),
+      content: plainText([article.title, prepared?.body].filter(Boolean).join('\n')).replace(/\|/g, ' '),
     }
   })
 

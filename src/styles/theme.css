@@ -138,3 +138,8 @@
   --color-code-bg: var(--code-bg);
   --color-code-text: var(--code-text);
 }
+
+/* TOC honorifics are external SVG images, so use a theme-aware filter in dark mode. */
+.dark .toc-honorific-icon {
+  filter: brightness(0) invert(1);
+}

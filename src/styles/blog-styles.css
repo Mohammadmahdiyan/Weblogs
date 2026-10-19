@@ -312,3 +312,29 @@
 .blog-style-8 .article-body blockquote { border-inline-start: 8px solid var(--text); font-weight: 700; }
 .blog-style-8 .article-body table, .blog-style-8 .article-body th, .blog-style-8 .article-body td { border-width: 2px; border-color: var(--text); }
 .blog-style-8 :focus-visible { outline: 4px solid var(--brand) !important; outline-offset: 3px; }
+
+/* Refined, varied blockquotes: each quote gets a slightly different green wash. */
+.blog-scope .article-body blockquote {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--brand) 24%, var(--border-light));
+  border-inline-start: 4px solid color-mix(in srgb, var(--brand) 62%, transparent);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 8%, var(--surface)), var(--surface) 78%);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 5%, transparent);
+}
+.blog-scope .article-body blockquote:nth-of-type(2n) {
+  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 13%, var(--surface)), var(--surface) 82%);
+  border-inline-start-color: color-mix(in srgb, var(--brand) 76%, transparent);
+}
+.blog-scope .article-body blockquote:nth-of-type(3n) {
+  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 18%, var(--surface)), var(--surface) 86%);
+  border-inline-start-color: var(--brand);
+}
+.dark .blog-scope .article-body blockquote {
+  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 12%, var(--surface)), var(--surface) 82%);
+}
+.dark .blog-scope .article-body blockquote:nth-of-type(2n) {
+  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 18%, var(--surface)), var(--surface) 84%);
+}
+.dark .blog-scope .article-body blockquote:nth-of-type(3n) {
+  background: linear-gradient(115deg, color-mix(in srgb, var(--brand) 24%, var(--surface)), var(--surface) 88%);
+}

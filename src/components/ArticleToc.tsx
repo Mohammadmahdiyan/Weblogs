@@ -20,7 +20,7 @@ function TocTitle({ title }: { title: string }) {
     const key = part.trim()
     const file = tocHonorificFiles[key]
     if (!file) return <span key={index}>{part}</span>
-    return <img key={index} src={`${import.meta.env.BASE_URL}honorifics/${file}`} alt={key} title={key} className="mx-0.5 inline-block h-[1.35em] w-[1.35em] object-contain align-[-0.3em]" />
+    return <img key={index} src={`${import.meta.env.BASE_URL}honorifics/${file}`} alt={key} title={key} className="toc-honorific-icon mx-0.5 inline-block h-[1.35em] w-[1.35em] object-contain align-[-0.3em]" />
   })}</>
 }
 
