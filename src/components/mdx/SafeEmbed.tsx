@@ -126,7 +126,7 @@ const providerLabel: Record<EmbedProvider, string> = {
 
 function SourceLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={clsx('inline-flex items-center gap-1 font-semibold text-[var(--info)] no-underline hover:underline', className)}>
+    <a href={href} target="_blank" rel="noopener noreferrer" className={clsx('inline-flex items-center gap-1 font-semibold text-[var(--info)] no-underline', className)}>
       {children}
       <ArrowRight aria-hidden="true" className="size-3.5 rtl:rotate-180" />
     </a>

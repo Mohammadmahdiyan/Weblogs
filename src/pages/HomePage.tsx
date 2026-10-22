@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Grid2X2, Headphones, List, Play } from 'lucide-react'
-import { clsx } from 'clsx'
+import { Headphones, Play } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
 import searchJson from '../generated/search-index.json'
 import type { ArticleMeta, SearchEntry } from '../lib/types'
@@ -39,13 +38,13 @@ function ArticleCover({ article }: { article: ArticleMeta }) {
   return <NoImage/>
 }
 
-function ArticleCard({ article, list, adultConfirmed }: { article: ArticleMeta; list: boolean; adultConfirmed: boolean }) {
+function ArticleCard({ article, adultConfirmed }: { article: ArticleMeta; adultConfirmed: boolean }) {
   const censored = article.adult === true && !adultConfirmed
   const hasCover = true
   return (
-    <article className={clsx('overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5', list && 'sm:flex')}>
+    <article className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5">
       {hasCover && (
-        <Link to={`/blog/${article.slug}`} aria-label={censored ? 'مشاهده مقاله +۱۸' : `خواندن ${article.title}`} className={clsx('relative block overflow-hidden bg-[var(--surface-alt)]', list && 'sm:w-56 sm:shrink-0')}>
+        <Link to={`/blog/${article.slug}`} aria-label={censored ? 'مشاهده مقاله +۱۸' : `خواندن ${article.title}`} className="relative block overflow-hidden bg-[var(--surface-alt)]">
           {censored ? <div className="relative aspect-video overflow-hidden"><div className="pointer-events-none scale-110 blur-xl" aria-hidden="true"><ArticleCover article={article} /></div><div className="absolute inset-0 grid place-items-center bg-[var(--surface)]/75"><AdultArticleNotice compact /></div></div> : <ArticleCover article={article} />}
         </Link>
       )}
@@ -85,11 +84,8 @@ export function HomePage() {
       },
     },
   })
-  const [view, setView] = useState<'grid' | 'list'>(() => localStorage.getItem('article-view') === 'list' ? 'list' : 'grid')
   const [visibleCount, setVisibleCount] = useState(12)
   const visibleArticles = useMemo(() => allArticles.slice(0, visibleCount), [visibleCount])
-
-  useEffect(() => localStorage.setItem('article-view', view), [view])
 
   return (
     <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -103,16 +99,12 @@ export function HomePage() {
       </section>
 
       <section id="articles" aria-labelledby="articles-heading">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-5">
           <h2 id="articles-heading" className="m-0 text-start text-xl font-bold">همه مقاله‌ها</h2>
-          <div role="group" aria-label="نمایش مقاله‌ها" className="inline-flex rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] p-1">
-            <button type="button" onClick={() => setView('grid')} aria-label="نمای شبکه‌ای" aria-pressed={view === 'grid'} className={clsx('rounded-[var(--radius-sm)] p-2', view === 'grid' ? 'bg-[var(--surface-strong)] text-[var(--brand)]' : 'text-[var(--muted)]')}><Grid2X2 aria-hidden="true" className="size-4" /></button>
-            <button type="button" onClick={() => setView('list')} aria-label="نمای فهرستی" aria-pressed={view === 'list'} className={clsx('rounded-[var(--radius-sm)] p-2', view === 'list' ? 'bg-[var(--surface-strong)] text-[var(--brand)]' : 'text-[var(--muted)]')}><List aria-hidden="true" className="size-4" /></button>
-          </div>
         </div>
         {visibleArticles.length ? (
-          <div className={clsx('grid gap-4 sm:gap-5', view === 'grid' ? 'sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1')}>
-            {visibleArticles.map((article) => <ArticleCard key={article.slug} article={article} list={view === 'list'} adultConfirmed={adultConfirmed} />)}
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {visibleArticles.map((article) => <ArticleCard key={article.slug} article={article} adultConfirmed={adultConfirmed} />)}
           </div>
         ) : (
           <p className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-6 text-center text-[var(--text-secondary)]">هنوز مقاله‌ای منتشر نشده است.</p>

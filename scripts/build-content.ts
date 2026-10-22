@@ -227,6 +227,8 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     ...(blog.lang ? { lang: blog.lang } : {}),
     ...(blog.dir ? { dir: blog.dir } : {}),
     ...(blog.adult === true ? { adult: true } : {}),
+    // Only `publishBlog` marks an article complete (test blogs and unregistered folders never are).
+    ...(registered?.completed === true ? {} : { incomplete: true }),
   }
 
   return { meta, body, mediaFiles, articleDirectory }

@@ -85,7 +85,7 @@ function Anchor({ href, target, rel, children, className, ...props }: ComponentP
       href={href}
       target={safeTarget}
       rel={safeRel}
-      className={clsx('text-[var(--info)] underline decoration-[var(--info)]/40 underline-offset-4', className)}
+      className={clsx('text-[var(--info)] no-underline', className)}
     >
       {children}
       {isExternal && <ExternalLink aria-hidden="true" className="ms-1 inline size-3.5 align-text-top" />}

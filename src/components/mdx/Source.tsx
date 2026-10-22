@@ -56,7 +56,7 @@ export function Source({ title, url, site, reference, grade, lang, dir, children
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border-light)] px-4 py-2 text-xs text-[var(--text-secondary)]">
           {reference ? <cite className="not-italic">{reference}</cite> : <span />}
           {safeUrl && (
-            <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[var(--info)] no-underline hover:underline">
+            <a href={safeUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[var(--info)] no-underline">
               مشاهده در منبع
               <ArrowRight aria-hidden="true" className="size-3.5 rtl:rotate-180" />
             </a>

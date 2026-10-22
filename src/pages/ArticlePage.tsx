@@ -15,6 +15,7 @@ import { CoverMedia } from '../components/CoverMedia'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
 import { ArticleLayout } from '../layouts'
 import { Basmala } from '../components/Basmala'
+import { IncompleteNotice } from '../components/IncompleteNotice'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
 
@@ -199,7 +200,7 @@ export function ArticlePage() {
           </nav>
 
           <h1 className="article-title mb-5">{article.title}</h1>
-          <div className="article-meta mb-6 grid grid-cols-3 gap-3 border-b border-[var(--border-light)] pb-5 text-start sm:gap-8">
+          <div className="article-meta mb-6 grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] gap-3 border-b border-[var(--border-light)] pb-5 text-start sm:gap-8">
             <MetaValue label="تاریخ انتشار" value={formatDate(article.date)} />
             {article.updated !== article.date && <MetaValue label="به‌روزرسانی" value={formatDate(article.updated)} />}
             <MetaValue label="زمان مطالعه" value={`${article.readingTime} دقیقه`} />
@@ -216,6 +217,8 @@ export function ArticlePage() {
             {markdown === null && !bodyError && <div aria-busy="true" className="my-6 grid gap-4"><div className="h-6 w-2/5 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 w-5/6 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /></div>}
             {markdown !== null && <MarkdownRenderer markdown={markdown} className="[&_h2]:scroll-mt-24" />}
           </div>
+
+          {article.incomplete && markdown !== null && <IncompleteNotice title={article.title} />}
 
           {article.suggestions.length > 0 && <section aria-labelledby="questions-heading" className="mt-8 border-t border-[var(--border-light)] pt-5">
             <h2 id="questions-heading" className="mb-3 text-start text-base font-bold">پرسش‌های مرتبط</h2>

@@ -28,6 +28,8 @@ export interface ArticleMeta {
   dir?: 'ltr' | 'rtl'
   /** Whether the article requires an 18+ confirmation gate. */
   adult?: boolean
+  /** true until the author runs `npm run publishBlog -- <name>`; the page then ends with a «not finished» notice. */
+  incomplete?: boolean
 }
 
 export interface SearchEntry {

@@ -26,7 +26,7 @@ function AnnouncementBar() {
 
   return (
     <div className="relative bg-[var(--brand)] px-12 py-2 text-center text-sm text-[var(--brand-contrast)]">
-      <SiteLink href={siteConfig.announcement.linkHref} className="font-medium underline underline-offset-4">
+      <SiteLink href={siteConfig.announcement.linkHref} className="font-medium no-underline">
         {siteConfig.announcement.text} <span className="mx-1">·</span>{siteConfig.announcement.linkText}
       </SiteLink>
       <button type="button" onClick={dismiss} aria-label="بستن پیام" className="absolute end-3 top-2 rounded-[var(--radius-sm)] p-1 focus-visible:outline-2 focus-visible:outline-[var(--brand-contrast)]">
@@ -90,12 +90,12 @@ function Header() {
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-[var(--border-strong)] bg-[var(--surface)] text-[var(--text)]">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-20">
-          <Link to="/" className="shrink-0 text-lg font-extrabold text-[var(--text)] no-underline sm:text-xl">{siteConfig.siteName}</Link>
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:gap-4 sm:px-6 lg:min-h-20">
+          <Link to="/" className="min-w-0 text-lg font-extrabold text-[var(--text)] no-underline sm:text-xl">{siteConfig.siteName}</Link>
           <nav aria-label="پیمایش اصلی" className="hidden items-center gap-7 md:flex">
             {siteConfig.nav.map((item) => <SiteLink key={item.href} href={item.href} className="text-sm text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">{item.label}</SiteLink>)}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <div className="hidden items-center gap-3 lg:flex">
               <ThemeToggle />
               <details className="group relative">

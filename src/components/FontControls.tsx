@@ -105,29 +105,30 @@ export function FontProvider({ children }: { children: ReactNode }) {
   return <FontContext.Provider value={value}>{children}</FontContext.Provider>
 }
 
-const buttonClass = 'inline-flex size-9 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--brand)] focus-visible:outline-2 focus-visible:outline-[var(--info)] disabled:opacity-40'
+// Sizes are in px on purpose: this control must keep its size (and fit a phone) however big the text is set.
+const buttonClass = 'inline-flex size-[36px] shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--brand)] focus-visible:outline-2 focus-visible:outline-[var(--info)] disabled:opacity-40'
 
 export function FontControls() {
   const { fonts, current, setFont, size, setSize, resetFont } = useFont()
 
   return (
-    <div role="group" aria-label="تنظیمات فونت" className="inline-flex flex-wrap items-center justify-center gap-3 text-sm text-[var(--text-secondary)]">
+    <div role="group" aria-label="تنظیمات فونت" className="inline-flex max-w-full flex-wrap items-center justify-center gap-[12px] text-[14px] leading-[20px] text-[var(--text-secondary)]">
       {fonts.length > 1 && (
-        <label className="inline-flex items-center gap-2">
+        <label className="inline-flex items-center gap-[8px]">
           <span>فونت</span>
           <select
             value={current.id}
             onChange={(event) => setFont(event.currentTarget.value)}
-            className="min-h-9 rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-2 text-[var(--text)]"
+            className="min-h-[36px] max-w-[200px] rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-[8px] text-[14px] text-[var(--text)]"
           >
             {fonts.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}
           </select>
         </label>
       )}
 
-      <div className="inline-flex items-center gap-2">
+      <div className="inline-flex max-w-full items-center gap-[8px]">
         <button type="button" onClick={() => setSize(size - FONT_STEP)} disabled={size <= MIN_FONT_PERCENT} aria-label="کوچک‌کردن متن" title="کوچک‌کردن متن" className={buttonClass}>
-          <Minus aria-hidden="true" className="size-4" />
+          <Minus aria-hidden="true" className="size-[16px]" />
         </button>
         <input
           type="range"
@@ -138,16 +139,16 @@ export function FontControls() {
           aria-label="اندازه متن"
           aria-valuetext={`${size} درصد`}
           onChange={(event) => setSize(Number(event.currentTarget.value))}
-          className="w-28 accent-[var(--brand)]"
+          className="w-[112px] min-w-0 shrink accent-[var(--brand)]"
         />
         <button type="button" onClick={() => setSize(size + FONT_STEP)} disabled={size >= MAX_FONT_PERCENT} aria-label="بزرگ‌کردن متن" title="بزرگ‌کردن متن" className={buttonClass}>
-          <Plus aria-hidden="true" className="size-4" />
+          <Plus aria-hidden="true" className="size-[16px]" />
         </button>
-        <output className="min-w-12 text-center tabular-nums" aria-live="polite">{size}٪</output>
+        <output className="min-w-[44px] text-center tabular-nums" aria-live="polite">{size}٪</output>
       </div>
 
       <button type="button" onClick={resetFont} aria-label="بازنشانی فونت و اندازه" title="بازنشانی" className={buttonClass}>
-        <RotateCcw aria-hidden="true" className="size-4" />
+        <RotateCcw aria-hidden="true" className="size-[16px]" />
       </button>
     </div>
   )
