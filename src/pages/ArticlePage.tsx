@@ -11,8 +11,8 @@ import { ArticleSidebar } from '../components/ArticleSidebar'
 import { ArticleToc } from '../components/ArticleToc'
 import { CoverMedia } from '../components/CoverMedia'
 import { MarkdownRenderer } from '../components/MarkdownRenderer'
-import { ArticleLayout, getLayout } from '../layouts'
-import { useArticleStyle } from '../lib/useArticleStyle'
+import { ArticleLayout } from '../layouts'
+import { Basmala } from '../components/Basmala'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
 
@@ -110,8 +110,6 @@ export function ArticlePage() {
   const { slug = '' } = useParams()
   const article = articles.find((item) => item.slug === slug)
   const adultConfirmed = useAdultAccess()
-  const activeStyle = useArticleStyle()
-  const layout = getLayout(activeStyle)
   const [bodyState, setBodyState] = useState<{ slug: string; markdown?: string; error?: boolean } | null>(null)
   const markdown = bodyState?.slug === slug ? bodyState.markdown ?? null : null
   const bodyError = (bodyState?.slug === slug && bodyState.error === true) || Boolean(article && !articleBodies[article.slug])
@@ -185,11 +183,7 @@ export function ArticlePage() {
   return (
     <>
       <ReadingProgress />
-      <ArticleLayout
-        style={activeStyle}
-        sidebar={<ArticleSidebar articles={articles} article={article} />}
-        toc={layout.tocMode === 'side' && tocReady ? <ArticleToc items={toc} variant="side" /> : undefined}
-      >
+      <ArticleLayout sidebar={<ArticleSidebar articles={articles} article={article} />}>
         <article className="article-card text-[var(--text)]">
           <nav aria-label="مسیر صفحه" className="mb-4 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
             <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>
@@ -208,7 +202,9 @@ export function ArticlePage() {
 
           <div className="article-cover"><CoverMedia cover={article.cover} title={article.title} /></div>
 
-          {layout.tocMode === 'inline' && tocReady && <ArticleToc items={toc} variant="box" />}
+          <Basmala />
+
+          {tocReady && <ArticleToc items={toc} variant="box" />}
 
           <div className="article-lang" lang={article.lang} dir={article.dir}>
             {bodyError && <p role="alert" className="text-[var(--danger)]">بارگذاری متن مقاله ممکن نشد.</p>}

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Search, ArrowUp, ArrowDown, CornerDownLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { normalizeSearchText } from '../lib/normalize'
-import { decideSubmit } from '../lib/search'
+import { decideSubmit, parseSearchQuery, toContentSearchQuery } from '../lib/search'
 import type { ArticleMeta, SearchEntry } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
 
@@ -31,6 +31,8 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
   const [results, setResults] = useState<SearchResult[]>([])
   const [activeIndex, setActiveIndex] = useState(-1)
   const [open, setOpen] = useState(false)
+  // The query the current `results` were computed for. Until it equals `query`, “not found” must not be shown.
+  const [settledQuery, setSettledQuery] = useState<string | null>(null)
   const listboxId = 'article-search-results'
 
   const normalizedEntries = useMemo(() => safeSearchIndex.map((entry) => ({
@@ -46,8 +48,8 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
     minMatchCharLength: 2,
   }), [normalizedEntries])
 
-  const contentSearch = /^\s*محتوا\s*::/u.test(query)
-  const contentQuery = contentSearch ? query.replace(/^\s*محتوا\s*::/u, '').trim() : ''
+  const { contentSearch, term } = parseSearchQuery(query)
+  const contentQuery = contentSearch ? term : ''
 
   useEffect(() => {
     const normalizedQuery = normalizeSearchText(contentSearch ? contentQuery : query)
@@ -76,15 +78,33 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
         }))
         setResults(hits)
       }
+      setSettledQuery(query)
       setActiveIndex(-1)
       setOpen(true)
     }, 70)
     return () => window.clearTimeout(timer)
   }, [contentSearch, contentQuery, fuse, query, safeSearchIndex])
 
-  const visibleResults = normalizeSearchText(contentSearch ? contentQuery : query).length >= 2 ? results : []
+  const activeQueryLength = normalizeSearchText(contentSearch ? contentQuery : query).length
+  const visibleResults = activeQueryLength >= 2 ? results : []
+  const nothingFound = activeQueryLength >= 2 && settledQuery === query && visibleResults.length === 0
+  // Offered only after a normal search found nothing; after a content search the plain “not found” remains.
+  const contentSearchTarget = nothingFound ? toContentSearchQuery(query) : null
+  const optionCount = visibleResults.length || (contentSearchTarget ? 1 : 0)
+
+  function searchInContent() {
+    if (!contentSearchTarget) return
+    setQuery(contentSearchTarget)
+    setActiveIndex(-1)
+    setOpen(true)
+    inputRef.current?.focus()
+  }
 
   function submit() {
+    if (contentSearchTarget && activeIndex === 0) {
+      searchInContent()
+      return
+    }
     // Activating a highlighted option always wins.
     if (activeIndex >= 0 && visibleResults[activeIndex]) {
       navigate(`/blog/${visibleResults[activeIndex].entry.slug}`)
@@ -100,13 +120,13 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'ArrowDown' && visibleResults.length) {
+    if (event.key === 'ArrowDown' && optionCount) {
       event.preventDefault()
       setOpen(true)
-      setActiveIndex((current) => (current + 1) % visibleResults.length)
-    } else if (event.key === 'ArrowUp' && visibleResults.length) {
+      setActiveIndex((current) => (current + 1) % optionCount)
+    } else if (event.key === 'ArrowUp' && optionCount) {
       event.preventDefault()
-      setActiveIndex((current) => (current <= 0 ? visibleResults.length - 1 : current - 1))
+      setActiveIndex((current) => (current <= 0 ? optionCount - 1 : current - 1))
     } else if (event.key === 'Enter') {
       event.preventDefault()
       submit()
@@ -128,7 +148,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
           role="combobox"
           aria-autocomplete="list"
           aria-controls={listboxId}
-          aria-expanded={open && visibleResults.length > 0}
+          aria-expanded={open && optionCount > 0}
           aria-activedescendant={activeIndex >= 0 ? `article-search-option-${activeIndex}` : undefined}
           value={query}
           onChange={(event) => { setQuery(event.currentTarget.value); setOpen(true) }}
@@ -143,7 +163,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
         </button>
       </div>
 
-      {open && normalizeSearchText(query).length >= 2 && (
+      {open && activeQueryLength >= 2 && (visibleResults.length > 0 || nothingFound) && (
         <div className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)]">
           {visibleResults.length ? (
             <ul id={listboxId} role="listbox" aria-label="نتایج جست‌وجو" className="m-0 max-h-[min(60vh,28rem)] list-none overflow-y-auto p-1">
@@ -181,7 +201,27 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
               ))}
             </ul>
           ) : (
-            <p role="status" className="m-0 px-4 py-5 text-start text-sm text-[var(--text-secondary)]">نتیجه‌ای پیدا نشد؛ عبارت دیگری را امتحان کنید.</p>
+            <div>
+              {contentSearchTarget && (
+                <button
+                  id="article-search-option-0"
+                  type="button"
+                  role="option"
+                  aria-selected={activeIndex === 0}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={searchInContent}
+                  onMouseEnter={() => setActiveIndex(0)}
+                  className="flex w-full items-center gap-3 border-b border-[var(--border-light)] px-4 py-3 text-start hover:bg-[var(--surface-alt)] aria-selected:bg-[var(--surface-alt)]"
+                >
+                  <Search aria-hidden="true" className="size-5 shrink-0 text-[var(--brand)]" />
+                  <span className="grid min-w-0 gap-1">
+                    <span className="text-sm font-semibold text-[var(--text)]">می‌خواهید در محتوا جست‌وجو کنید؟</span>
+                    <span className="truncate text-xs text-[var(--text-secondary)]">{contentSearchTarget}</span>
+                  </span>
+                </button>
+              )}
+              <p role="status" className="m-0 px-4 py-5 text-start text-sm text-[var(--text-secondary)]">نتیجه‌ای پیدا نشد؛ عبارت دیگری را امتحان کنید.</p>
+            </div>
           )}
         </div>
       )}

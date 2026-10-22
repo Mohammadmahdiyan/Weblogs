@@ -76,12 +76,12 @@ const textToneClasses: Record<string, string> = {
   brand: 'text-[var(--brand)]',
 }
 
-function LinkOrAnchor({ href, children, className }: { href?: string; children: ReactNode; className?: string }) {
+function LinkOrAnchor({ href, children, className, variant }: { href?: string; children: ReactNode; className?: string; variant?: string }) {
   if (href?.startsWith('/')) {
-    return <Link to={href} className={className}>{children}</Link>
+    return <Link to={href} className={className} data-variant={variant}>{children}</Link>
   }
   const external = typeof href === 'string' && /^https?:\/\//i.test(href)
-  return <a href={href || '#'} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} className={className}>{children}</a>
+  return <a href={href || '#'} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} className={className} data-variant={variant}>{children}</a>
 }
 
 export function Alert({ type = 'info', children }: { type?: string; children?: ReactNode }) {
@@ -142,11 +142,11 @@ export function Button({
     : variant === 'text'
       ? clsx('border border-transparent bg-transparent', textToneClasses[tone])
       : buttonToneClasses[tone]
-  const className = clsx('not-prose inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--radius-sm)] border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]', variantClass)
+  const className = clsx('md-button not-prose inline-flex min-h-10 items-center justify-center gap-2 rounded-[var(--radius-sm)] border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]', variantClass)
 
   return href
-    ? <LinkOrAnchor href={href} className={className}>{children}</LinkOrAnchor>
-    : <button type="button" className={className}>{children}</button>
+    ? <LinkOrAnchor href={href} className={className} variant={variant}>{children}</LinkOrAnchor>
+    : <button type="button" data-variant={variant} className={className}>{children}</button>
 }
 
 export function Buttons({ children }: { children?: ReactNode }) {

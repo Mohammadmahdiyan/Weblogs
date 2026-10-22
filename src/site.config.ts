@@ -3,7 +3,6 @@ export interface SiteConfig {
   siteDescription: string
   siteUrl: string
   defaultFont: string
-  defaultStyle: number
   announcement: {
     enabled: boolean
     text: string
@@ -25,7 +24,6 @@ const siteConfig: SiteConfig = {
   siteDescription: 'مقاله‌ها و یادداشت‌های آموزشی',
   siteUrl: 'https://mohammadmahdiyan.github.io/Weblogs',
   defaultFont: 'Vazirmatn',
-  defaultStyle: 1,
   announcement: {
     enabled: false,
     text: 'به وبلاگ خوش آمدید',

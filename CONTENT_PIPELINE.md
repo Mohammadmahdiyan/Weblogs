@@ -6,7 +6,7 @@ The Vite production build passes `--production` explicitly to the builder. In pr
 
 ## Additions (embeds, SEO files)
 
-- `articles.json` fields: `slug, title, description, date, updated, tags, suggestions, cover{url,type}, readingTime` (+ optional `lang`, `dir`). There is no `style` (the reader picks it) and no `draft`.
+- `articles.json` fields: `slug, title, description, date, updated, tags, suggestions, cover{url,type}, readingTime` (+ optional `lang`, `dir`). There is no `style` (the reader only adjusts small looks from the «ظاهر» menu) and no `draft`.
 
 - `coverEmbed` (https URL) becomes `cover: { type: 'embed', url, embedProvider, poster? }` when no local `cover.*` file exists.
 - `lang` / `dir` are copied to `articles.json` and applied to the article body wrapper.

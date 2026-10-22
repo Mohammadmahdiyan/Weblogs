@@ -7,7 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="%BASE_URL%fonts/fonts.css" />
   <script>
-    // Runs before React: applies theme + font settings so nothing flashes or jumps.
+    // Runs before React: applies theme + font + look settings so nothing flashes or jumps.
     (() => {
       const root = document.documentElement
       try {
@@ -21,6 +21,13 @@
         if (stack) root.style.setProperty('--app-font-family', stack)
         const size = Number(localStorage.getItem('fontSize'))
         if (size >= 80 && size <= 150) root.style.setProperty('--app-font-scale', String(size / 100))
+
+        // Reader's small look changes (palette, accordion, quote, button). Keep in sync with src/lib/appearance.ts.
+        const look = JSON.parse(localStorage.getItem('blog-appearance') || 'null') || {}
+        for (const key of ['palette', 'accordion', 'quote', 'button']) {
+          const value = look[key]
+          if (typeof value === 'string' && value !== 'default' && /^[a-z-]+$/.test(value)) root.setAttribute('data-' + key, value)
+        }
       } catch (error) {
         // localStorage can be blocked; defaults from CSS apply.
       }

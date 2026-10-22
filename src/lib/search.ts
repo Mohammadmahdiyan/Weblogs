@@ -35,3 +35,26 @@ export function decideSubmit<T extends SearchableArticle>(
   }
   return { action: 'list' }
 }
+
+/** Prefix that switches the search box to “search inside article text”. */
+export const CONTENT_SEARCH_PREFIX = 'محتوا::'
+
+const CONTENT_SEARCH_PATTERN = /^\s*محتوا\s*::/u
+
+/** Splits a raw search-box value into its mode and the term to look for. */
+export function parseSearchQuery(query: string): { contentSearch: boolean; term: string } {
+  const contentSearch = CONTENT_SEARCH_PATTERN.test(query)
+  return { contentSearch, term: contentSearch ? query.replace(CONTENT_SEARCH_PATTERN, '').trim() : query }
+}
+
+/**
+ * The search-box value after the reader accepts “search in the content” for a query that found nothing.
+ * `بشر بن سلیمان بصری` → `محتوا::بشر بن سلیمان بصری`. Returns null when there is nothing to search for
+ * or the query already is a content search (the offer is shown once; a second miss only says “not found”).
+ */
+export function toContentSearchQuery(query: string): string | null {
+  const { contentSearch } = parseSearchQuery(query)
+  const term = query.trim()
+  if (contentSearch || !term) return null
+  return `${CONTENT_SEARCH_PREFIX}${term}`
+}

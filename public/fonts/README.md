@@ -14,7 +14,7 @@ Fonts are *pluggable*: no React code needs to change.
 
 After that the font appears automatically in the font selector on the home
 page (the selector is hidden while only one font is registered) and is
-applied to the whole site, including all 8 blog styles.
+applied to the whole site, including every colour palette and look option.
 
 ### Worked example: adding another font later (e.g. IRANYekanX)
 
@@ -56,7 +56,7 @@ Step 3, `fonts.json` (add this object to the `fonts` array):
 
 ## Weights
 
-All blog styles use weights 400/500/700/800. Vazir ships Thin, Regular,
+The site uses weights 400/500/700/800. Vazir ships Thin, Regular,
 Medium and Bold, so `fonts.css` maps ranges: 100–200 → Thin, 300–400 →
 Regular, 500–600 → Medium, 700–900 → Bold.
 

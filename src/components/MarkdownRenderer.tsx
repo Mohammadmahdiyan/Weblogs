@@ -1,5 +1,6 @@
 import {
   Children,
+  cloneElement,
   isValidElement,
   useEffect,
   useMemo,
@@ -103,49 +104,69 @@ function ListItem(props: ComponentPropsWithoutRef<'li'>) {
   return <li {...props} className={clsx('ps-1 marker:text-[var(--brand)]', props.className)} />
 }
 
+function QuoteIcon({ end = false }: { end?: boolean }) {
+  // Same glyph at both ends of the quote; the closing one is turned 180°.
+  return (
+    <Quote
+      aria-hidden="true"
+      strokeWidth={2.2}
+      className={clsx(
+        'md-quote-icon inline-block size-4 shrink-0 align-[-0.2em] text-[var(--brand)]',
+        end ? 'ms-1.5 rotate-180' : 'me-1.5',
+      )}
+    />
+  )
+}
+
+function isParagraphElement(node: ReactNode): node is ReactElement<{ children?: ReactNode }> {
+  return isValidElement(node) && (node.type === Paragraph || node.type === 'p')
+}
+
+/** Puts the opening icon right before the first word and the closing icon right after the last word. */
+function withQuoteIcons(children: ReactNode): ReactNode {
+  const nodes = Children.toArray(children)
+  const elementIndexes = nodes.flatMap((node, index) => (isValidElement(node) ? [index] : []))
+  if (elementIndexes.length === 0) return <><QuoteIcon />{nodes}<QuoteIcon end /></>
+
+  const firstIndex = elementIndexes[0]
+  const lastIndex = elementIndexes[elementIndexes.length - 1]
+  const output: ReactNode[] = []
+
+  nodes.forEach((node, index) => {
+    let current: ReactNode = node
+    if (index === firstIndex) {
+      // A quote that opens with a list/table/etc. gets the icon on a line of its own.
+      if (isParagraphElement(current)) {
+        current = cloneElement(current, undefined, <QuoteIcon key="quote-start" />, ...Children.toArray(current.props.children))
+      } else {
+        output.push(<div key="quote-start"><QuoteIcon /></div>)
+      }
+    }
+    if (index === lastIndex) {
+      if (isParagraphElement(current)) {
+        current = cloneElement(current, undefined, ...Children.toArray(current.props.children), <QuoteIcon key="quote-end" end />)
+      } else {
+        output.push(current, <div key="quote-end"><QuoteIcon end /></div>)
+        return
+      }
+    }
+    output.push(current)
+  })
+  return output
+}
+
 function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
   const { children, className, ...rest } = props
 
   return (
-    <div className="relative my-1 pt-1">
-      {/* آیکون بیرون از باکس و خارج از محدوده overflow */}
-      <Quote
-        aria-hidden="true"
-        className="pointer-events-none absolute right-4 top-5 z-20 h-5 w-5 text-emerald-700/75 dark:text-emerald-300"
-        strokeWidth={2.2}
-      />
-
+    <div className="my-1 pt-1">
       <blockquote
         {...rest}
-        className={clsx(
-          'group relative isolate overflow-hidden rounded-lg',
-          'border border-emerald-700/10 bg-emerald-50/55 px-4 py-2 pe-7',
-          'text-start text-[var(--text)] shadow-sm shadow-emerald-950/[0.03]',
-          'transition-colors duration-300',
-          'prose-blockquote:text-[var(--text)]',
-          'before:content-none after:content-none',
-          'dark:border-emerald-300/15 dark:bg-emerald-950/20',
-          className,
-        )}
+        className={clsx('md-quote group relative isolate overflow-hidden text-start text-[var(--text)]', className)}
       >
-        {/* خط سبز کاملاً داخل محدوده باکس */}
-        <span
-          aria-hidden="true"
-          className={clsx(
-            'pointer-events-none absolute inset-y-0 right-0 z-10 w-[3px]',
-            'rounded-full bg-gradient-to-b',
-            'from-emerald-300 via-emerald-600 to-teal-800 dark:from-emerald-300 dark:via-emerald-400 dark:to-teal-300',
-          )}
-        />
-
-        <div
-          className={clsx(
-            'quote-highlight relative text-start leading-8 [&>p:first-child]:pe-1',
-            '[&>p:first-child]:mt-0 [&>p:last-child]:mb-0',
-            '[&>p]:relative [&>p]:z-0',
-          )}
-        >
-          {children}
+        <span aria-hidden="true" className="md-quote-rail pointer-events-none absolute inset-y-0 end-0 z-10" />
+        <div className="quote-highlight relative text-start leading-8 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 [&>p]:relative [&>p]:z-0">
+          {withQuoteIcons(children)}
         </div>
       </blockquote>
     </div>

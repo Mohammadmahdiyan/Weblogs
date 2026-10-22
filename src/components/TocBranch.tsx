@@ -18,7 +18,7 @@ export default function TocBranch({
 }: TocBranchProps) {
   const common: SVGProps<SVGPathElement> = {
     fill: 'none',
-    stroke: '#16a34a',
+    stroke: 'var(--brand)',
     strokeWidth: 2,
     strokeLinecap: 'square',
     strokeLinejoin: 'round',

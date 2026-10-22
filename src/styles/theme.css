@@ -3,9 +3,9 @@
   every blog style (Part 7). Components must use ONLY these tokens, so changing
   `style:` restyles everything.
 
-  Global values below also drive the site shell (header/footer/home page) and
-  equal the defaults of blog style 1. Each `.blog-style-N` scope in
-  blog-styles.css overrides the whole set for the article page.
+  Global values below drive the whole site (shell, home page, articles).
+  The reader can pick another colour palette from the «ظاهر» menu: it sets
+  `data-palette` on <html> and only the brand tokens change (see the end of this file).
 
   Typography rule: never hardcode a font family. Everything uses
   `var(--app-font-family)`, supplied by the font system (public/fonts).
@@ -143,3 +143,24 @@
 .dark .toc-honorific-icon {
   filter: brightness(0) invert(1);
 }
+
+/* ───────────── colour palettes (reader choice, `data-palette` on <html>) ─────────────
+   Only the accent tokens change; surfaces, text and layout stay the same.
+   Green is the default and needs no attribute. Dark rules come after light rules on purpose. */
+:root[data-palette='blue'] { --brand: #1d4ed8; --brand-bright: #3b82f6; --brand-dark: #1e40af; --brand-contrast: #ffffff; }
+.dark[data-palette='blue'] { --brand: #60a5fa; --brand-bright: #3b82f6; --brand-dark: #93c5fd; --brand-contrast: #0b1b3a; }
+
+:root[data-palette='purple'] { --brand: #6d28d9; --brand-bright: #8b5cf6; --brand-dark: #5b21b6; --brand-contrast: #ffffff; }
+.dark[data-palette='purple'] { --brand: #c4b5fd; --brand-bright: #a78bfa; --brand-dark: #ddd6fe; --brand-contrast: #1e1052; }
+
+:root[data-palette='rose'] { --brand: #be123c; --brand-bright: #e11d48; --brand-dark: #9f1239; --brand-contrast: #ffffff; }
+.dark[data-palette='rose'] { --brand: #fb7185; --brand-bright: #f43f5e; --brand-dark: #fda4af; --brand-contrast: #2a0510; }
+
+:root[data-palette='orange'] { --brand: #c2410c; --brand-bright: #ea580c; --brand-dark: #9a3412; --brand-contrast: #ffffff; }
+.dark[data-palette='orange'] { --brand: #fb923c; --brand-bright: #f97316; --brand-dark: #fdba74; --brand-contrast: #2b1100; }
+
+:root[data-palette='teal'] { --brand: #0f766e; --brand-bright: #14b8a6; --brand-dark: #115e59; --brand-contrast: #ffffff; }
+.dark[data-palette='teal'] { --brand: #2dd4bf; --brand-bright: #14b8a6; --brand-dark: #99f6e4; --brand-contrast: #042f2e; }
+
+:root[data-palette='graphite'] { --brand: #374151; --brand-bright: #6b7280; --brand-dark: #1f2937; --brand-contrast: #ffffff; }
+.dark[data-palette='graphite'] { --brand: #e5e7eb; --brand-bright: #9ca3af; --brand-dark: #f9fafb; --brand-contrast: #111827; }

@@ -10,7 +10,7 @@
 
 موتور وبلاگ استاتیک (RTL، فارسی‌محور). برای افزودن مقاله فقط یک پوشه می‌سازید؛ لیست مقاله‌ها، جست‌وجو، سایدبار، سئو، sitemap و RSS خودکار ساخته می‌شوند.
 
-ویژگی‌ها: ۸ استایل مقاله (انتخاب با خواننده)، حالت روشن/تیره/سیستم، فونت قابل‌تعویض و تنظیم اندازهٔ متن، جست‌وجوی هوشمند با `suggestions`، بزرگ‌نمایی عکس/گیف/ویدیو، کامپوننت‌های آماده در مارک‌داون، iframe امن (یوتیوب، اینستاگرام، آپارات، صفحهٔ دلخواه)، کارت نقل‌قول منبع (`:::source`)، HTML خام با Tailwind.
+ویژگی‌ها: تغییرات جزئی ظاهر مقاله (رنگ‌بندی، آکاردئون، نقل‌قول، دکمه؛ انتخاب با خواننده)، بسم‌الله خودکار در ابتدای هر مقاله، حالت روشن/تیره/سیستم، فونت قابل‌تعویض و تنظیم اندازهٔ متن، جست‌وجوی هوشمند با `suggestions`، بزرگ‌نمایی عکس/گیف/ویدیو، کامپوننت‌های آماده در مارک‌داون، iframe امن (یوتیوب، اینستاگرام، آپارات، صفحهٔ دلخواه)، کارت نقل‌قول منبع (`:::source`)، HTML خام با Tailwind.
 
 ## ۲. فناوری‌ها
 
@@ -56,7 +56,7 @@ suggestions:
 - **نام (عنوان) وبلاگ** = اولین خطی که با `# ` شروع می‌شود. همین خط عنوان صفحه است و از متن حذف می‌شود (عنوان دوبار نمایش داده نمی‌شود).
 - `tags` اختیاری است؛ اگر ننویسید هیچ برچسبی ثبت نمی‌شود.
 - `suggestions` اختیاری است؛ اگر ننویسید فقط خود عنوان پیشنهاد جست‌وجو می‌شود.
-- چیز دیگری لازم نیست. `date` و `updated` را دستورهای زیر خودکار می‌گذارند؛ `style` را خودِ خواننده از دکمهٔ «استایل» انتخاب می‌کند؛ `draft` وجود ندارد (برای وبلاگ آزمایشی از «تست» استفاده کنید). کلیدهای قدیمی (`title`، `name`، `date`، `style`، `draft`) خوانده نمی‌شوند و فقط یک هشدار می‌گیرید.
+- چیز دیگری لازم نیست. `date` و `updated` را دستورهای زیر خودکار می‌گذارند؛ ظاهر مقاله را خودِ خواننده از دکمهٔ «ظاهر» تغییر می‌دهد (نه از md)؛ `draft` وجود ندارد (برای وبلاگ آزمایشی از «تست» استفاده کنید). کلیدهای قدیمی (`title`، `name`، `date`، `style`، `draft`) خوانده نمی‌شوند و فقط یک هشدار می‌گیرید.
 - کلیدهای اختیاری پیشرفته: `description` (خلاصهٔ سئو؛ پیش‌فرض ۱۶۰ نویسهٔ اول متن)، `readingTime` (دقیقه؛ پیش‌فرض خودکار از تعداد کلمه‌ها)، `coverEmbed` (کاور از یوتیوب/آپارات/اینستاگرام اگر `cover.*` ندارید)، `cover` (مسیر کاور با نامی غیر از `cover.*`)، `lang`، `dir`.
 
 ### دستورها و انتشار خودکار
@@ -152,6 +152,8 @@ suggestions:
 
 اگر کاربر دقیقاً یکی از این عبارت‌ها (یا عنوان) را جست‌وجو و Enter بزند، مستقیم به مقاله می‌رود. مقایسه پس از نرمال‌سازی است: یکسان‌سازی «ي/ی» و «ك/ک»، حذف اعراب و نیم‌فاصله، تبدیل ارقام فارسی/عربی به لاتین، حروف کوچک و فاصله‌های اضافه. تطبیق تقریبی فقط لیست نتایج را نشان می‌دهد.
 
+**جست‌وجو در محتوا:** با نوشتن `محتوا::عبارت` در کادر جست‌وجوی صفحهٔ خانه، داخل متن مقاله‌ها جست‌وجو می‌شود. اگر عبارتی در عنوان/پیشنهادها پیدا نشود، دو مورد نشان داده می‌شود: «می‌خواهید در محتوا جست‌وجو کنید؟» (با کلیک، کادر به `محتوا::عبارت` تغییر می‌کند و در متن جست‌وجو می‌شود) و «نتیجه‌ای پیدا نشد». اگر جست‌وجوی محتوا هم چیزی نیافت، فقط «نتیجه‌ای پیدا نشد» می‌آید و پیشنهاد دوباره نمی‌آید.
+
 ## ۸. مارک‌داون، HTML و Tailwind
 
 مارک‌داون معمولی (`## h2`، جدول، لیست، کد) + کامپوننت‌ها با سینتکس directive. راهنمای کامل: [docs/COMPONENTS.md](docs/COMPONENTS.md). HTML خام و کلاس‌های Tailwind داخل `.md` هم کار می‌کند؛ `<script>` و `on*` و `javascript:` حذف می‌شوند.
@@ -179,28 +181,34 @@ suggestions:
 3. در `src/components/MarkdownRenderer.tsx` نقشهٔ کامپوننت‌ها: `'mdx-note': withMdxErrorBoundary('note', Note),` و در صورت نیاز نام را به مجموعهٔ unwrap اضافه کنید.
 4. در `docs/COMPONENTS.md` مستند کنید و استفاده: `:::note` … `:::`.
 
-فقط از توکن‌های رنگی (`var(--surface-alt)` و …) استفاده کنید تا با هر ۸ استایل هماهنگ شود.
+فقط از توکن‌های رنگی (`var(--surface-alt)` و …) استفاده کنید تا با هر رنگ‌بندی هماهنگ شود.
 
-## ۱۱. هشت استایل مقاله
+## ۱۱. ظاهر مقاله (تغییرات جزئی)
 
-| # | نام | مناسب برای |
-|---|---|---|
-| 1 | آموزشی (الهام از سبزلرن): کارت‌ها روی زمینهٔ خاکستری، سبز | آموزش و راهنما |
-| 2 | مینیمال (Medium): ستون باریک، متن درشت | مقالهٔ بلند |
-| 3 | توسعه‌دهنده (Dev.to): TOC چسبان، برچسب‌های تک‌فاصله | مطالب فنی |
-| 4 | مستندات (Stripe): سه ستون | مرجع و مستند |
-| 5 | مجله (Editorial): تیتر درشت، نقل‌قول بزرگ | گزارش و تحلیل |
-| 6 | یادداشت (Notion): ساده و روشن | یادداشت |
-| 7 | شیشه‌ای (Glass): گرادیان و blur | صفحهٔ ویژه |
-| 8 | کنتراست بالا (WCAG AAA) | دسترس‌پذیری |
+چیدمان صفحهٔ مقاله **فقط یکی** است و خواننده نمی‌تواند کل صفحه را عوض کند. به‌جایش در صفحهٔ هر وبلاگ دکمهٔ «ظاهر» در هدر هست که فقط این تغییرهای جزئی را می‌دهد:
 
-انتخاب استایل با **خوانندهٔ سایت** است، نه با فایل md: در صفحهٔ هر وبلاگ دکمهٔ «استایل» در هدر هست. انتخاب او در مرورگرش ذخیره می‌شود و همهٔ وبلاگ‌ها با همان استایل باز می‌شوند. اگر چیزی انتخاب نکرده باشد، `defaultStyle` در `src/site.config.ts` استفاده می‌شود. برای اشتراک‌گذاری یک استایل مشخص `?style=3` را به آدرس اضافه کنید (روی انتخاب ذخیره‌شده اولویت دارد).
+| گروه | گزینه‌ها |
+|---|---|
+| رنگ‌بندی | سبز (پیش‌فرض)، آبی، بنفش، قرمز، نارنجی، فیروزه‌ای، خاکستری (هرکدام برای حالت روشن و تیره) |
+| آکاردئون (`:::item`) | پر (پیش‌فرض)، کادردار، ساده |
+| نقل‌قول (`>`) | کارتی (پیش‌فرض)، خط کناری، کادردار |
+| دکمه (`:button`، مودال) | معمولی (پیش‌فرض)، گرد، برجسته |
 
-همهٔ استایل‌ها یک قرارداد توکن مشترک دارند (`--bg --surface --surface-alt --surface-strong --text --text-secondary --muted --border-light --border-strong --brand --brand-dark --brand-contrast --info --warn --danger --code-bg --code-text --radius-card --radius-sm --shadow-card --body-line-height --prose-size --heading-weight`). استایل ۱ شبیه بلاگ آموزشی کارت‌محور با تأکید سبز است. **ساخت استایل نهم:** یک بلاک `.blog-style-N` را در `src/styles/blog-styles.css` کپی کنید، فقط توکن‌ها (روشن و تیره) را عوض کنید، و آن را در `src/layouts/config.ts` ثبت کنید (دکمهٔ «استایل» لیست را از همان‌جا می‌سازد).
+انتخاب خواننده در مرورگرش ذخیره می‌شود و روی همهٔ صفحه‌های سایت اثر می‌گذارد؛ دکمهٔ «بازگشت به حالت پیش‌فرض» همه را برمی‌گرداند. فایل md هیچ کلیدی برای ظاهر ندارد.
+
+**نقل‌قول:** آیکون نقل‌قول دیگر روی متن نمی‌افتد؛ یکی اول متن و یکی آخر متن می‌آید و آیکون آخر ۱۸۰ درجه چرخیده است. اندازهٔ آیکون‌ها `size-4` است (در `QuoteIcon` در `src/components/MarkdownRenderer.tsx` تغییر می‌کند).
+
+**چطور کار می‌کند:** هر انتخاب یک attribute روی `<html>` می‌گذارد (`data-palette`، `data-accordion`، `data-quote`، `data-button`) و فقط CSS همان گزینه فعال می‌شود. منطق و فهرست گزینه‌ها در `src/lib/appearance.ts`، رنگ‌بندی‌ها در انتهای `src/styles/theme.css` و بقیه در `src/styles/blog-styles.css` هستند. `index.html` انتخاب ذخیره‌شده را پیش از React اعمال می‌کند تا پرشی دیده نشود.
+
+**افزودن گزینهٔ جدید:** یک گزینه به `appearanceGroups` در `src/lib/appearance.ts` اضافه کنید (برای رنگ‌بندی، `swatch` هم بدهید) و قاعدهٔ CSS آن را بنویسید، مثلاً `[data-button='square'] .md-button { border-radius: 0 }`. برای رنگ‌بندی جدید دو خط در `theme.css` کافی است (`:root[data-palette='x']` و `.dark[data-palette='x']`؛ فقط توکن‌های `--brand*`).
+
+## بسم‌الله ابتدای مقاله
+
+بالای متن هر مقاله (بعد از کاور و پیش از فهرست مطالب) خودکار این دو جمله وسط‌چین نمایش داده می‌شود و زیر هرکدام ترجمهٔ فارسی‌اش با اندازهٔ کمی کوچک‌تر است. لازم نیست در md چیزی بنویسید (اگر نوشته‌اید پاک کنید تا دوبار نیاید). متن و ترجمه در `src/components/Basmala.tsx` است.
 
 ## ۱۲. تم روشن/تیره/سیستم و رنگ‌ها
 
-پیش‌فرض «سیستم» است و با `localStorage.theme` ذخیره می‌شود (بدون پرش هنگام بارگذاری). رنگ‌های سراسری در `src/styles/theme.css` و رنگ هر استایل در `src/styles/blog-styles.css` هستند.
+پیش‌فرض «سیستم» است و با `localStorage.theme` ذخیره می‌شود (بدون پرش هنگام بارگذاری). رنگ‌های سراسری در `src/styles/theme.css` و ظاهر مقاله (نقل‌قول، آکاردئون، دکمه) در `src/styles/blog-styles.css` هستند.
 
 ## ۱۳. فونت
 
@@ -327,7 +335,7 @@ Dates and completion status live in `content/blog-dates.json` and are committed 
 
 ## Search suggestions
 
-If a visitor submits a phrase that exactly equals (after normalization) a `suggestions` entry or a title, they are taken straight to that article. Fuzzy matches only show the result list.
+If a visitor submits a phrase that exactly equals (after normalization) a `suggestions` entry or a title, they are taken straight to that article. Fuzzy matches only show the result list. Typing `محتوا::term` searches inside article text. When a normal search finds nothing, the dropdown offers «search in the content» (which rewrites the box to `محتوا::term`) above the usual «not found» line; if the content search also finds nothing, only «not found» is shown.
 
 ## Markdown & components
 
@@ -337,9 +345,11 @@ Standard markdown + directives (accordion, alert, card, gallery, modal, tooltip,
 
 `::youtube`, `::instagram`, `::aparat`, `::embed`, raw `<iframe>` and the `:::source` quote card. All frames use `SafeEmbed`: sandbox, referrer policy, lazy loading, click-to-load for video providers, an allowlist notice, an 8-second failure timeout with a link-card fallback, and an expand-to-modal button. Add your hadith site's hostname to `embedAllowlist` in `src/site.config.ts`. `public/_headers` is generated with a matching CSP `frame-src`.
 
-## Styles, themes, fonts
+## Look, themes, fonts
 
-Eight styles (`.blog-style-1 … 8`) share one token contract; themes are light / dark / system (default system); the default font is Vazir and more fonts can be added in 3 steps (`public/fonts/README.md`). Users can change font and size from the home page.
+There is one article layout. Readers can only make small changes from the «ظاهر» menu: colour palette (7), accordion look (3), quote look (3) and button look (3). The choice is saved in the browser and set as `data-palette / data-accordion / data-quote / data-button` on `<html>`; see `src/lib/appearance.ts`, the end of `src/styles/theme.css` and `src/styles/blog-styles.css`. Themes are light / dark / system (default system); the default font is Vazir and more fonts can be added in 3 steps (`public/fonts/README.md`). Users can change font and size from the home page.
+
+Every article starts with the Basmala and the salawat (centred, each with a smaller Persian translation below); it is added automatically by `src/components/Basmala.tsx`, so do not write it in the md files.
 
 ## SEO & deployment
 
