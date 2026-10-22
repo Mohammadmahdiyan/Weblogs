@@ -41,6 +41,7 @@ import { AccordionItem as MdxAccordionItem, Accordion as MdxAccordion, Modal } f
 import { AudioDirective, Gallery, MarkdownImage, MarkdownVideo, VideoDirective } from './mdx/MediaBlocks'
 import { RawIframe, SafeEmbed } from './mdx/SafeEmbed'
 import { Source } from './mdx/Source'
+import { Emoji, Mini } from './mdx/InlineExtras'
 import { highlightCode } from '../lib/highlight'
 import { confirmAdultAccess, isAdultConfirmed, rejectAdultAccess } from '../lib/adultAccess'
 
@@ -445,6 +446,8 @@ const markdownComponents: MarkdownComponents = {
   h6: createHeading('h6'),
   p: Paragraph,
   'mdx-spoiler': Spoiler,
+  'mdx-mini': Mini,
+  'mdx-emoji': Emoji,
   'mdx-honorific': Honorific,
   a: Anchor,
   ul: UnorderedList,

@@ -172,3 +172,14 @@
   content: none !important;
   display: none !important;
 }
+
+/* Inline extras written in Markdown text: ((text))(options) and {emoji} */
+.md-mini { font-size: 0.75em; line-height: 0; vertical-align: super; }
+.md-mini[data-size='small'] { font-size: 0.6em; }
+.md-mini[data-size='large'] { font-size: 0.9em; }
+.md-mini[data-placement='middle'] { vertical-align: middle; }
+.md-mini[data-placement='bottom'] { vertical-align: sub; }
+.md-emoji { display: inline-block; width: auto; height: 1.4em; margin-inline: 0.06em; vertical-align: -0.3em; }
+
+/* Text found by a content search is highlighted when the article opens (see src/lib/findInPage.ts) */
+::highlight(search-hit) { background-color: rgb(250 204 21 / 0.55); color: inherit; }

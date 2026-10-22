@@ -1,3 +1,0 @@
-این دو فایل را از پروژه حذف کنید (دیگر استفاده نمی‌شوند):
-src/layouts/config.ts
-src/lib/useArticleStyle.ts

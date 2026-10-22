@@ -1,9 +1,11 @@
 import Fuse from 'fuse.js'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { clsx } from 'clsx'
 import { Search, ArrowUp, ArrowDown, CornerDownLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { normalizeSearchText } from '../lib/normalize'
 import { decideSubmit, parseSearchQuery, toContentSearchQuery } from '../lib/search'
+import { articleHref, findContentMatch, type ContentMatch } from '../lib/contentSearch'
 import type { ArticleMeta, SearchEntry } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
 
@@ -11,6 +13,8 @@ interface SearchResult {
   entry: SearchEntry
   score: number
   matchedPhrase: string
+  /** Content search only: the text around the match, with the match in the middle. */
+  snippet?: ContentMatch
 }
 
 function HighlightedPhrase({ text, query }: { text: string; query: string }) {
@@ -19,6 +23,11 @@ function HighlightedPhrase({ text, query }: { text: string; query: string }) {
   const index = normalizedText.indexOf(normalizedQuery)
   if (!normalizedQuery || index < 0) return <>{text}</>
   return <>{text.slice(0, index)}<mark className="rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--brand)_18%,transparent)] text-[var(--text)]">{text.slice(index, index + normalizedQuery.length)}</mark>{text.slice(index + normalizedQuery.length)}</>
+}
+
+/** Content-search description: the found text sits in the middle, with equal context on both sides. */
+function SnippetText({ snippet }: { snippet: ContentMatch }) {
+  return <>{snippet.before}<mark className="rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--brand)_18%,transparent)] px-0.5 font-semibold text-[var(--text)]">{snippet.match}</mark>{snippet.after}</>
 }
 
 export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { articles: ArticleMeta[]; searchIndex: SearchEntry[]; initialQuery?: string }) {
@@ -61,13 +70,9 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
     const timer = window.setTimeout(() => {
       if (contentSearch) {
         const hits: SearchResult[] = safeSearchIndex.flatMap((entry) => {
-          const body = normalizeSearchText(entry.content ?? '')
-          const index = body.indexOf(normalizedQuery)
-          if (index < 0) return []
-          const originalBody = entry.content ?? ''
-          const start = Math.max(0, index - 55)
-          const end = Math.min(originalBody.length, index + normalizedQuery.length + 85)
-          return [{ entry, score: 0, matchedPhrase: `${start > 0 ? '…' : ''}${originalBody.slice(start, end)}${end < originalBody.length ? '…' : ''}` }]
+          const snippet = findContentMatch(entry.content ?? '', contentQuery)
+          if (!snippet) return []
+          return [{ entry, score: 0, matchedPhrase: `${snippet.before}${snippet.match}${snippet.after}`, snippet }]
         }).slice(0, 8)
         setResults(hits)
       } else {
@@ -100,6 +105,9 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
     inputRef.current?.focus()
   }
 
+  // After a content search the article opens scrolled to (and highlighting) the found text.
+  const hrefFor = (slug: string) => articleHref(slug, contentSearch ? contentQuery : '')
+
   function submit() {
     if (contentSearchTarget && activeIndex === 0) {
       searchInContent()
@@ -107,11 +115,11 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
     }
     // Activating a highlighted option always wins.
     if (activeIndex >= 0 && visibleResults[activeIndex]) {
-      navigate(`/blog/${visibleResults[activeIndex].entry.slug}`)
+      navigate(hrefFor(visibleResults[activeIndex].entry.slug))
       return
     }
     if (contentSearch && visibleResults.length === 1) {
-      navigate(`/blog/${visibleResults[0].entry.slug}`)
+      navigate(hrefFor(visibleResults[0].entry.slug))
       return
     }
     const decision = decideSubmit(safeArticles, query, visibleResults.map((result) => ({ slug: result.entry.slug, score: result.score })))
@@ -167,7 +175,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
         <div className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)]">
           {visibleResults.length ? (
             <ul id={listboxId} role="listbox" aria-label="نتایج جست‌وجو" className="m-0 max-h-[min(60vh,28rem)] list-none overflow-y-auto p-1">
-              {visibleResults.map(({ entry, matchedPhrase }, index) => (
+              {visibleResults.map(({ entry, matchedPhrase, snippet }, index) => (
                 <li key={entry.slug}>
                   <button
                     id={`article-search-option-${index}`}
@@ -175,7 +183,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
                     role="option"
                     aria-selected={activeIndex === index}
                     onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => navigate(`/blog/${entry.slug}`)}
+                    onClick={() => navigate(hrefFor(entry.slug))}
                     onMouseEnter={() => setActiveIndex(index)}
                     className="grid w-full gap-1 rounded-[var(--radius-sm)] px-4 py-3 text-start hover:bg-[var(--surface-alt)] aria-selected:bg-[var(--surface-alt)]"
                   >
@@ -185,14 +193,14 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
                         <span className="relative block rounded-[var(--radius-sm)] py-1">
                           <span className="block select-none blur-sm" aria-hidden="true">
                             <span className="block text-sm font-semibold">{entry.title}</span>
-                            <span className="block text-xs"><HighlightedPhrase text={matchedPhrase} query={contentSearch ? contentQuery : query} /></span>
+                            <span className="block text-center text-xs">{snippet ? <SnippetText snippet={snippet} /> : <HighlightedPhrase text={matchedPhrase} query={contentSearch ? contentQuery : query} />}</span>
                           </span>
                           <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold">حاوی جملات +۱۸</span>
                         </span>
                       ) : (
                         <>
                           <span className="text-sm font-semibold text-[var(--text)]">{entry.title}</span>
-                          <span className="text-xs text-[var(--text-secondary)]"><HighlightedPhrase text={matchedPhrase} query={contentSearch ? contentQuery : query} /></span>
+                          <span className={clsx('text-xs text-[var(--text-secondary)]', snippet && 'text-center')}>{snippet ? <SnippetText snippet={snippet} /> : <HighlightedPhrase text={matchedPhrase} query={query} />}</span>
                         </>
                       )
                     })()}

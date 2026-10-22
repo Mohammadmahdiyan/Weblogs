@@ -1,6 +1,8 @@
 import { unified } from 'unified'
 import remarkDirective from 'remark-directive'
 import remarkParse from 'remark-parse'
+import { inlineToPlainText } from './inline.ts'
+import { isEmoji } from './emojiRegistry.ts'
 
 type MarkdownNode = {
   type: string
@@ -21,7 +23,10 @@ export function markdownToPlainText(markdown: string | undefined): string {
     // Raw HTML is intentionally ignored, including its contents.
     if (node.type === 'html') return
     if (node.type === 'image' && typeof node.alt === 'string') chunks.push(node.alt)
-    if (node.type === 'text' && typeof node.value === 'string') chunks.push(node.value)
+    if (node.type === 'text' && typeof node.value === 'string') {
+      // Spoiler animation hints, ((mini text))(options) and {emoji} are syntax, not prose.
+      chunks.push(inlineToPlainText(node.value.replace(/\{متن انیمیشن:[^}]*\}/g, ''), isEmoji))
+    }
     if (node.type === 'inlineCode' && typeof node.value === 'string') chunks.push(node.value)
     if (node.type === 'code' && typeof node.value === 'string') chunks.push(node.value)
 

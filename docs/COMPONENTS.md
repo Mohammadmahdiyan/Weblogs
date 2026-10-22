@@ -248,3 +248,13 @@ of a page. For citing a passage, use `:::source`.
 ```
 
 `:::accordion{faq}` also emits `FAQPage` JSON-LD for SEO.
+
+## Small text and emoji (inline)
+
+```md
+((سلام دنیا))
+((سلام دنیا))(سایز: کوچک،قرارگیری: وسط)
+خنده {خخخ} و قلب {قلب}
+```
+
+`سایز` is `کوچک` / `متوسط` / `بزرگ` (default `متوسط`); `قرارگیری` is `بالا` / `وسط` / `پایین` (default `بالا`). Both options are optional. `{name}` becomes an emoji only when `name` is listed in `src/emojis/emojis.json` (name → svg file in `src/emojis/`); any other `{text}` stays as written. Neither is converted inside code. Parsing lives in `src/lib/inline.ts`.

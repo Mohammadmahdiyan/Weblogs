@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="چشمک">
+  <circle cx="32" cy="32" r="29" fill="#FFD43B" stroke="#E8A317" stroke-width="3"/>
+  <circle cx="22" cy="26" r="4" fill="#5A3A00"/>
+  <path d="M36 26q6-5 12 0" fill="none" stroke="#5A3A00" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M18 38q14 16 28 0" fill="none" stroke="#5A3A00" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

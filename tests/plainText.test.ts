@@ -34,4 +34,12 @@ describe('markdownToPlainText', () => {
     expect(text).not.toContain('پنجره')
     expect(text).not.toContain('متن HTML')
   })
+
+  it('drops spoiler animation hints and emoji codes, and keeps mini-text words', () => {
+    const text = markdownToPlainText('سلام ||راز||{متن انیمیشن: نعوذ بالله} {خخخ} عدد ((۳))(سایز: کوچک) پایان')
+    expect(text).toContain('عدد ۳ پایان')
+    expect(text).not.toContain('متن انیمیشن')
+    expect(text).not.toContain('خخخ')
+    expect(text).not.toContain('سایز')
+  })
 })

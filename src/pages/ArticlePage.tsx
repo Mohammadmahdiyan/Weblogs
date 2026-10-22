@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, ChevronLeft, ShieldAlert } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
 import { buildToc } from '../lib/toc'
+import { FIND_PARAM } from '../lib/contentSearch'
+import { useFindInPage } from '../lib/findInPage'
 import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
 import { ArticleSidebar } from '../components/ArticleSidebar'
@@ -114,6 +116,9 @@ export function ArticlePage() {
   const markdown = bodyState?.slug === slug ? bodyState.markdown ?? null : null
   const bodyError = (bodyState?.slug === slug && bodyState.error === true) || Boolean(article && !articleBodies[article.slug])
   const toc = useMemo(() => buildToc(markdown ?? ''), [markdown])
+  const [searchParams] = useSearchParams()
+  // Set by a content search on the home page: scroll to this text and highlight it.
+  useFindInPage(searchParams.get(FIND_PARAM), markdown !== null)
   const articleIndex = articles.findIndex((item) => item.slug === slug)
 
   const pageUrl = `${siteConfig.siteUrl}/blog/${slug}`

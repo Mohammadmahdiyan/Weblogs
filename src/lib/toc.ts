@@ -1,4 +1,6 @@
 import GithubSlugger from 'github-slugger'
+import { splitInline } from './inline.ts'
+import { isEmoji } from './emojiRegistry.ts'
 
 export interface TocItem { level: number; title: string; id: string }
 
@@ -13,7 +15,11 @@ export function buildToc(markdown: string): TocItem[] {
   const withoutCode = markdown.replace(/^( {0,3})(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1\2[`~]*[ \t]*$/gm, '')
   const expression = /^ {0,3}(#{1,3})\s+(.+?)\s*#*\s*$/gm
   for (const match of withoutCode.matchAll(expression)) {
-    const title = match[2].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`~]/g, '').trim()
+    // Mini-text keeps its words in the heading; emoji are images with no text.
+    const visibleTitle = splitInline(match[2], isEmoji)
+      .map((segment) => (segment.type === 'text' ? segment.value : segment.type === 'mini' ? segment.text : ''))
+      .join('')
+    const title = visibleTitle.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`~]/g, '').trim()
 
     // remarkHonorifics turns these parenthesized markers into image-backed
     // React components with no text content. rehype-slug therefore excludes

@@ -14,12 +14,23 @@ import type {
 } from 'mdast'
 import { visit } from 'unist-util-visit'
 import type { Node } from 'unist'
+import { splitInline } from './inline.ts'
+import { emojiFile, isEmoji } from './emojiRegistry.ts'
 
 type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
   'mdx-honorific'?: import('react').ComponentType<{
     children?: import('react').ReactNode
     file?: string
     label?: string
+  }>
+  'mdx-mini'?: import('react').ComponentType<{
+    children?: import('react').ReactNode
+    miniSize?: string
+    miniPlacement?: string
+  }>
+  'mdx-emoji'?: import('react').ComponentType<{
+    emojiName?: string
+    emojiFile?: string
   }>
   'mdx-spoiler'?: import('react').ComponentType<{
     children?: import('react').ReactNode
@@ -294,6 +305,38 @@ const remarkSpoilers: Plugin<[], MdastRoot> = () => (tree) => {
 
 
 /**
+ * ((text))(سایز: …، قرارگیری: …) → small raised/lowered text, and {name} → a registered emoji.
+ * Only text nodes are scanned, so code is never touched; an unregistered {name} stays text.
+ */
+const remarkInlineExtras: Plugin<[], MdastRoot> = () => (tree) => {
+  visit(tree, 'text', (node, index, parent) => {
+    if (index === undefined || !parent || !('children' in parent) || !Array.isArray(parent.children)) return
+
+    const segments = splitInline(node.value, isEmoji)
+    if (segments.length === 1 && segments[0].type === 'text') return
+
+    const replacement: PhrasingContent[] = segments.map((segment): PhrasingContent => {
+      if (segment.type === 'text') return { type: 'text', value: segment.value }
+      if (segment.type === 'mini') {
+        return {
+          type: 'emphasis',
+          data: { hName: 'mdx-mini', hProperties: { miniSize: segment.size, miniPlacement: segment.placement } },
+          children: [{ type: 'text', value: segment.text }],
+        }
+      }
+      return {
+        type: 'emphasis',
+        data: { hName: 'mdx-emoji', hProperties: { emojiName: segment.name, emojiFile: emojiFile(segment.name) ?? '' } },
+        children: [],
+      }
+    })
+
+    parent.children.splice(index, 1, ...replacement)
+    return index + replacement.length
+  })
+}
+
+/**
  * Replaces short honorific markers in ordinary Markdown text with SVG-backed
  * inline nodes. Code, inline code, and fenced code are not text nodes, so they
  * are intentionally left untouched.
@@ -456,6 +499,7 @@ export function createMarkdownProcessor(components: MarkdownComponents) {
     .use(remarkGfm)
     .use(remarkDirective)
     .use(remarkSpoilers)
+    .use(remarkInlineExtras)
     .use(remarkHonorifics)
     .use(remarkHeadingLevels)
     .use(remarkComponents)

@@ -154,6 +154,8 @@ suggestions:
 
 **جست‌وجو در محتوا:** با نوشتن `محتوا::عبارت` در کادر جست‌وجوی صفحهٔ خانه، داخل متن مقاله‌ها جست‌وجو می‌شود. اگر عبارتی در عنوان/پیشنهادها پیدا نشود، دو مورد نشان داده می‌شود: «می‌خواهید در محتوا جست‌وجو کنید؟» (با کلیک، کادر به `محتوا::عبارت` تغییر می‌کند و در متن جست‌وجو می‌شود) و «نتیجه‌ای پیدا نشد». اگر جست‌وجوی محتوا هم چیزی نیافت، فقط «نتیجه‌ای پیدا نشد» می‌آید و پیشنهاد دوباره نمی‌آید.
 
+**نتایج جست‌وجوی محتوا:** خط اول هر نتیجه نام مقاله است. زیرش توضیحی هست که عبارت پیداشده همیشه در **وسط** آن است، با تعداد نویسهٔ برابر قبل و بعدش (اگر عبارت نزدیک ابتدا یا انتهای متن باشد، از همان طرف متن کمتری هست). با کلیک روی نتیجه (یا Enter)، مقاله باز می‌شود و **خودکار تا همان جایی که متن نوشته شده اسکرول** می‌کند و آن را هایلایت می‌کند؛ اگر داخل آکاردئون یا `<details>` بسته باشد، اول باز می‌شود. این با پارامتر `?find=عبارت` در آدرس مقاله کار می‌کند (کد: `src/lib/findInPage.ts`).
+
 ## ۸. مارک‌داون، HTML و Tailwind
 
 مارک‌داون معمولی (`## h2`، جدول، لیست، کد) + کامپوننت‌ها با سینتکس directive. راهنمای کامل: [docs/COMPONENTS.md](docs/COMPONENTS.md). HTML خام و کلاس‌های Tailwind داخل `.md` هم کار می‌کند؛ `<script>` و `on*` و `javascript:` حذف می‌شوند.
@@ -205,6 +207,38 @@ suggestions:
 ## بسم‌الله ابتدای مقاله
 
 بالای متن هر مقاله (بعد از کاور و پیش از فهرست مطالب) خودکار این دو جمله وسط‌چین نمایش داده می‌شود و زیر هرکدام ترجمهٔ فارسی‌اش با اندازهٔ کمی کوچک‌تر است. لازم نیست در md چیزی بنویسید (اگر نوشته‌اید پاک کنید تا دوبار نیاید). متن و ترجمه در `src/components/Basmala.tsx` است.
+
+## متن کوچک و ایموجی (داخل متن)
+
+**متن کوچک** (مثل ³¹²⁴ در تلگرام):
+
+```md
+((سلام دنیا))
+((سلام دنیا))(سایز: کوچک،قرارگیری: وسط)
+((۳))(قرارگیری: پایین)
+```
+
+- `سایز`: `کوچک`، `متوسط`، `بزرگ` — پیش‌فرض `متوسط`
+- `قرارگیری`: `بالا`، `وسط`، `پایین` — پیش‌فرض `بالا`
+- هرکدام را می‌شود ننوشت (`((x))(سایز: کوچک)`) و ترتیب مهم نیست. جداکننده `،` یا `,` است. بدون تنظیمات یعنی `((سلام دنیا))(سایز: متوسط،قرارگیری: بالا)`.
+- متن داخل `(( ))` فقط متن ساده باشد (بدون ** و لینک). در جست‌وجو و فهرست مطالب، خود متن حساب می‌شود نه تنظیمات.
+
+**ایموجی/شکلک** با `{نام}`:
+
+```md
+این خنده‌دار بود {خخخ} واقعا {قلب}
+```
+
+نام‌ها و فایل هرکدام در **یک فایل** `src/emojis/emojis.json` است (کنار خود فایل‌های `.svg` همان پوشه):
+
+```json
+{
+  "خخخ": "funnyface.svg",
+  "قلب": "heart.svg"
+}
+```
+
+برای افزودن: فایل svg را در `src/emojis/` بگذارید و یک خط `"نام": "فایل.svg"` به `emojis.json` اضافه کنید. فقط نام‌های ثبت‌شده تبدیل می‌شوند؛ هر `{چیز دیگری}` همان متن می‌ماند. موجودها: `خخخ` `لبخند` `چشمک` `باحال` `تعجب` `گریه` `عصبانی` `قلب`. (داخل کد تبدیل نمی‌شود.)
 
 ## ۱۲. تم روشن/تیره/سیستم و رنگ‌ها
 
@@ -335,7 +369,7 @@ Dates and completion status live in `content/blog-dates.json` and are committed 
 
 ## Search suggestions
 
-If a visitor submits a phrase that exactly equals (after normalization) a `suggestions` entry or a title, they are taken straight to that article. Fuzzy matches only show the result list. Typing `محتوا::term` searches inside article text. When a normal search finds nothing, the dropdown offers «search in the content» (which rewrites the box to `محتوا::term`) above the usual «not found» line; if the content search also finds nothing, only «not found» is shown.
+If a visitor submits a phrase that exactly equals (after normalization) a `suggestions` entry or a title, they are taken straight to that article. Fuzzy matches only show the result list. Typing `محتوا::term` searches inside article text; each result shows the article title, then a description with the found text exactly in the middle (equal context on both sides). Clicking a result opens the article at `?find=term`, which scrolls to the first occurrence, highlights it and opens any accordion / `<details>` hiding it. When a normal search finds nothing, the dropdown offers «search in the content» (which rewrites the box to `محتوا::term`) above the usual «not found» line; if the content search also finds nothing, only «not found» is shown.
 
 ## Markdown & components
 
@@ -348,6 +382,8 @@ Standard markdown + directives (accordion, alert, card, gallery, modal, tooltip,
 ## Look, themes, fonts
 
 There is one article layout. Readers can only make small changes from the «ظاهر» menu: colour palette (7), accordion look (3), quote look (3) and button look (3). The choice is saved in the browser and set as `data-palette / data-accordion / data-quote / data-button` on `<html>`; see `src/lib/appearance.ts`, the end of `src/styles/theme.css` and `src/styles/blog-styles.css`. Themes are light / dark / system (default system); the default font is Vazir and more fonts can be added in 3 steps (`public/fonts/README.md`). Users can change font and size from the home page.
+
+Inline extras in Markdown text: small text `((text))(سایز: کوچک|متوسط|بزرگ،قرارگیری: بالا|وسط|پایین)` (defaults: medium, top) and emoji `{name}`, registered in `src/emojis/emojis.json` next to their `.svg` files.
 
 Every article starts with the Basmala and the salawat (centred, each with a smaller Persian translation below); it is added automatically by `src/components/Basmala.tsx`, so do not write it in the md files.
 
