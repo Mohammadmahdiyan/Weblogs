@@ -15,6 +15,7 @@ import type {
 import { visit } from 'unist-util-visit'
 import type { Node } from 'unist'
 import { splitInline } from './inline.ts'
+import { transformChatMessages } from './chat.ts'
 import { emojiFile, isEmoji } from './emojiRegistry.ts'
 
 type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
@@ -22,6 +23,13 @@ type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
     children?: import('react').ReactNode
     file?: string
     label?: string
+  }>
+  'mdx-chat'?: import('react').ComponentType<{ children?: import('react').ReactNode }>
+  'mdx-chatmsg'?: import('react').ComponentType<{
+    children?: import('react').ReactNode
+    chatRole?: string
+    chatLabel?: string
+    chatIndex?: string
   }>
   'mdx-mini'?: import('react').ComponentType<{
     children?: import('react').ReactNode
@@ -404,7 +412,7 @@ const honorifics: Record<string, HonorificConfig> = {
   'جل جلاله': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'عز وجل': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'جل وعلا': createHonorific('jwa.svg', 'جل وعلا', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'سبحانه وتعالى': createHonorific('swt.svg', 'سبحانه وتعالى', DEFAULT_HONORIFIC_SIZE, DEFAULT_HONORIFIC_ALIGN),
+  'سبحانه وتعالى': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'تبارك وتعالى': createHonorific('twt.svg', 'تبارك وتعالى', '1.5em', '-0.25em'),
 
   // اختصارات مؤنث و جمع
@@ -421,7 +429,7 @@ const honorifics: Record<string, HonorificConfig> = {
   // اختصارات عبارات مربوط به خداوند
   'جل': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'عز': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'سبح': createHonorific('swt.svg', 'سبحانه وتعالى', DEFAULT_HONORIFIC_SIZE, DEFAULT_HONORIFIC_ALIGN),
+  'سبح': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'تبارك': createHonorific('twt.svg', 'تبارك وتعالى', '1.6em', '-0.25em'),
 
     // درود بر پیامبر و خاندان ایشان
@@ -493,11 +501,15 @@ const remarkHonorifics: Plugin<[], MdastRoot> = () => (tree) => {
   })
 }
 
+/** سوال۱: (...) / جواب۱: (...) lines inside accordion items become chat bubbles (see ./chat.ts). */
+const remarkChat: Plugin<[], MdastRoot> = () => (tree) => transformChatMessages(tree as unknown as Parameters<typeof transformChatMessages>[0])
+
 export function createMarkdownProcessor(components: MarkdownComponents) {
   return unified()
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkDirective)
+    .use(remarkChat)
     .use(remarkSpoilers)
     .use(remarkInlineExtras)
     .use(remarkHonorifics)

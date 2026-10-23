@@ -26,7 +26,8 @@ function faqEntries(children: ReactNode): FaqEntry[] {
   return Children.toArray(children).flatMap((child) => {
     if (!isValidElement<{ title?: unknown; children?: ReactNode }>(child)) return []
     const { title, children: answer } = child.props
-    const current: FaqEntry[] = typeof title === 'string' && title.trim()
+    // Only accordion items are questions: a modal, card or alert inside an item also has a `title` prop.
+    const current: FaqEntry[] = child.type === AccordionItem && typeof title === 'string' && title.trim()
       ? [{
           name: title,
           acceptedAnswer: { '@type': 'Answer', text: nodeText(answer).trim() },

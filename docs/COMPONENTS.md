@@ -258,3 +258,43 @@ of a page. For citing a passage, use `:::source`.
 ```
 
 `سایز` is `کوچک` / `متوسط` / `بزرگ` (default `متوسط`); `قرارگیری` is `بالا` / `وسط` / `پایین` (default `بالا`). Both options are optional. `{name}` becomes an emoji only when `name` is listed in `src/emojis/emojis.json` (name → svg file in `src/emojis/`); any other `{text}` stays as written. Neither is converted inside code. Parsing lives in `src/lib/inline.ts`.
+
+## Accordion as a Q&A chat
+
+Inside an accordion item, lines that look like this become chat bubbles:
+
+```md
+:::item{title="پرسش و پاسخ"}
+سوال1 : (آیا این روایت سند معتبر دارد؟)
+جواب1 : (خیر. سند آن ضعیف است.)
+س2 : (پس منبع دیگری هست؟)
+ج2 : (جواب می‌تواند چند خط
+یا چند پاراگراف باشد)
+این متن بیرون از پرانتز است و مثل متن معمولی آکاردئون دیده می‌شود.
+:::
+```
+
+- Questions: `سوال` or `س`; answers: `جواب` or `ج`. The number is optional (`ج : (…)` works) and the colon can be `:` or `：`.
+- A marker must start a line. Only the text inside the parentheses goes into the bubble; text outside stays normal.
+- Inside a bubble you can use bold, links, lists and nested parentheses such as `(ص)`; a numbering like `۱) …` does not end the bubble.
+- If a parenthesis is never closed, the item is shown as ordinary text (nothing disappears).
+- Questions sit on the reading-start side, answers on the other side; the bubbles pop in one by one when the item opens.
+- Code: `src/lib/chat.ts` (parsing), `src/components/mdx/ChatBlocks.tsx` and the `.md-chat*` rules in `src/index.css` (look).
+
+## Modal (or any container) inside an accordion
+
+Nested `:::` containers only work when the outer one has more colons than the inner one. You no longer have to count: the colons are fixed automatically (`src/lib/directives.ts`), so this works:
+
+```md
+:::accordion
+:::item{title="سوال"}
+متن
+:::modal{trigger="جزئیات"}
+متن داخل مودال
+:::
+:::
+:::
+```
+
+The modal opens above the page (not clipped by the accordion), closes with Escape or a click outside, and returns focus to its button. A modal's own title is no longer mistaken for an extra FAQ question in the page's structured data.
+

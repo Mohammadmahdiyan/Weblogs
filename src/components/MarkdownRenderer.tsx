@@ -42,6 +42,8 @@ import { AudioDirective, Gallery, MarkdownImage, MarkdownVideo, VideoDirective }
 import { RawIframe, SafeEmbed } from './mdx/SafeEmbed'
 import { Source } from './mdx/Source'
 import { Emoji, Mini } from './mdx/InlineExtras'
+import { ChatMessage, ChatThread } from './mdx/ChatBlocks'
+import { normalizeDirectiveFences } from '../lib/directives'
 import { highlightCode } from '../lib/highlight'
 import { confirmAdultAccess, isAdultConfirmed, rejectAdultAccess } from '../lib/adultAccess'
 
@@ -446,6 +448,8 @@ const markdownComponents: MarkdownComponents = {
   h6: createHeading('h6'),
   p: Paragraph,
   'mdx-spoiler': Spoiler,
+  'mdx-chat': ChatThread,
+  'mdx-chatmsg': ChatMessage,
   'mdx-mini': Mini,
   'mdx-emoji': Emoji,
   'mdx-honorific': Honorific,
@@ -500,7 +504,7 @@ export function MarkdownRenderer({ markdown, className }: MarkdownRendererProps)
   useEffect(() => {
     let cancelled = false
 
-    void processor.process(markdown).then(
+    void processor.process(normalizeDirectiveFences(markdown)).then(
       (file) => {
         if (!cancelled) setRendered({ source: markdown, content: file.result as ReactNode })
       },
