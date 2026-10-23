@@ -1,0 +1,2 @@
+این فایل را از پروژه حذف کنید (جایش src/emojis/emojis.ts آمده):
+src/emojis/emojis.json

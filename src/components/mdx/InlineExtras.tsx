@@ -9,7 +9,7 @@ export function Mini({ miniSize = 'medium', miniPlacement = 'top', children }: {
   return <span className="md-mini" data-size={miniSize} data-placement={miniPlacement}>{children}</span>
 }
 
-// Every svg in src/emojis/ → its built URL. Names come from src/emojis/emojis.json.
+// Every svg in src/emojis/ → its built URL. Names come from src/emojis/emojis.ts.
 const emojiUrls = import.meta.glob('../../emojis/*.svg', { eager: true, query: '?url', import: 'default' }) as Record<string, string>
 
 /** Inline emoji: `{خخخ}` → the svg registered for that name. */

@@ -4,7 +4,7 @@ import { normalizeSearchText } from './normalize.ts'
  * Small inline syntaxes written in Markdown text (never inside code):
  *
  *   ((متن))(سایز: کوچک، قرارگیری: وسط)   → small raised/lowered text, like ³¹²⁴ in Telegram
- *   {خخخ}                               → an emoji registered in src/emojis/emojis.json
+ *   {خخخ}                               → an emoji registered in src/emojis/emojis.ts
  *
  * This file only finds them; markdown.ts turns them into nodes and plainText.ts into search text.
  */

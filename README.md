@@ -251,16 +251,16 @@ suggestions:
 این خنده‌دار بود {خخخ} واقعا {قلب}
 ```
 
-نام‌ها و فایل هرکدام در **یک فایل** `src/emojis/emojis.json` است (کنار خود فایل‌های `.svg` همان پوشه):
+نام‌ها و فایل هرکدام در **یک فایل** `src/emojis/emojis.ts` است (کنار خود فایل‌های `.svg` همان پوشه):
 
-```json
-{
-  "خخخ": "funnyface.svg",
-  "قلب": "heart.svg"
+```ts
+export const emojis = {
+  'خخخ': 'funnyface.svg',
+  'قلب': 'heart.svg',
 }
 ```
 
-برای افزودن: فایل svg را در `src/emojis/` بگذارید و یک خط `"نام": "فایل.svg"` به `emojis.json` اضافه کنید. فقط نام‌های ثبت‌شده تبدیل می‌شوند؛ هر `{چیز دیگری}` همان متن می‌ماند. موجودها: `خخخ` `لبخند` `چشمک` `باحال` `تعجب` `گریه` `عصبانی` `قلب`. (داخل کد تبدیل نمی‌شود.)
+برای افزودن: فایل svg را در `src/emojis/` بگذارید و یک خط `'نام': 'فایل.svg',` به `emojis.ts` اضافه کنید. فقط نام‌های ثبت‌شده تبدیل می‌شوند؛ هر `{چیز دیگری}` همان متن می‌ماند. موجودها: `خخخ` `لبخند` `چشمک` `باحال` `تعجب` `گریه` `عصبانی` `قلب`. (داخل کد تبدیل نمی‌شود.)
 
 ## ۱۲. تم روشن/تیره/سیستم و رنگ‌ها
 
@@ -405,7 +405,7 @@ Standard markdown + directives (accordion, alert, card, gallery, modal, tooltip,
 
 There is one article layout. Readers can only make small changes from the «ظاهر» menu: colour palette (7), accordion look (3), quote look (3) and button look (3). The choice is saved in the browser and set as `data-palette / data-accordion / data-quote / data-button` on `<html>`; see `src/lib/appearance.ts`, the end of `src/styles/theme.css` and `src/styles/blog-styles.css`. Themes are light / dark / system (default system); the default font is Vazir and more fonts can be added in 3 steps (`public/fonts/README.md`). Users can change font and size from the home page.
 
-Inline extras in Markdown text: small text `((text))(سایز: کوچک|متوسط|بزرگ،قرارگیری: بالا|وسط|پایین)` (defaults: medium, top) and emoji `{name}`, registered in `src/emojis/emojis.json` next to their `.svg` files.
+Inline extras in Markdown text: small text `((text))(سایز: کوچک|متوسط|بزرگ،قرارگیری: بالا|وسط|پایین)` (defaults: medium, top) and emoji `{name}`, registered in `src/emojis/emojis.ts` next to their `.svg` files.
 
 Every article starts with the Basmala and the salawat (centred, each with a smaller Persian translation below); it is added automatically by `src/components/Basmala.tsx`, so do not write it in the md files.
 

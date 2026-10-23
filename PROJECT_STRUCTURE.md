@@ -12,7 +12,7 @@ scripts/
   blog-cli.ts                  createNewBlog / updateBlog / deleteBlog / createTest / deleteTest
   lib/                         blog.ts (md parsing, title, dates registry), media path rewriter, validators (unit-tested)
 src/
-  emojis/                      emojis.json (name → svg) + the emoji svg files
+  emojis/                      emojis.ts (name → svg) + the emoji svg files
   components/                  shell, search, sidebar, lightbox, cover, font controls…
   components/mdx/              components behind markdown directives (SafeEmbed, Source, …)
   layouts/                     ArticleLayout (the single page layout)
