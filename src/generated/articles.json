@@ -1,24 +1,10 @@
 [
   {
-    "slug": "kashti-najat",
-    "title": "کشتی نجات",
-    "description": "مهم ترین حادثه که در ربیع الاول هست بحث تولد رسول الله (ص) و همچنین وفات رسول الله (ص) هست هم تولد رسول الله (ص) در ربیع الاول بوده و هم وفات رسول الله (ص) در ا",
-    "date": "2026-10-22",
-    "updated": "2026-10-22",
-    "tags": [],
-    "suggestions": [
-      "کشتی نجات"
-    ],
-    "cover": null,
-    "readingTime": 5,
-    "incomplete": true
-  },
-  {
     "slug": "_example-article",
     "title": "مقاله تستی برای خروجی اموزش",
     "description": "سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام عکس پروژه عکس پروژه عکس پروژه عکس پروژه عکس پروژه اولین",
-    "date": "2026-10-21",
-    "updated": "2026-10-21",
+    "date": "2026-10-23",
+    "updated": "2026-10-23",
     "tags": [
       "نمونه",
       "آزمایشی"
@@ -29,6 +15,20 @@
     ],
     "cover": null,
     "readingTime": 5,
+    "incomplete": true
+  },
+  {
+    "slug": "kashti-najat",
+    "title": "کشتی نجات",
+    "description": "مهم ترین حادثه که در ربیع الاول هست بحث تولد رسول الله (ص) و همچنین وفات رسول الله (ص) هست هم تولد رسول الله (ص) در ربیع الاول بوده و هم وفات رسول الله (ص) در ا",
+    "date": "2026-10-22",
+    "updated": "2026-10-22",
+    "tags": [],
+    "suggestions": [
+      "کشتی نجات"
+    ],
+    "cover": null,
+    "readingTime": 6,
     "incomplete": true
   },
   {
@@ -45,7 +45,8 @@
       "سلام"
     ],
     "cover": null,
-    "readingTime": 21
+    "readingTime": 21,
+    "incomplete": true
   },
   {
     "slug": "shia-nabovat-pyambar-ra-batel-kard",
@@ -83,7 +84,8 @@
       "سلام دنیا"
     ],
     "cover": null,
-    "readingTime": 1
+    "readingTime": 1,
+    "incomplete": true
   },
   {
     "slug": "hadis-in-shia",
@@ -100,7 +102,8 @@
       "آیا رافضی میتواند بگوید فلان حدیث ضعیف هست"
     ],
     "cover": null,
-    "readingTime": 5
+    "readingTime": 5,
+    "incomplete": true
   },
   {
     "slug": "shobahat-ravafez",
@@ -131,7 +134,8 @@
       "تحریف قرآن نزد شیعه رافضی"
     ],
     "cover": null,
-    "readingTime": 1
+    "readingTime": 1,
+    "incomplete": true
   },
   {
     "slug": "tohen-ba-ahle-beat",
@@ -149,6 +153,7 @@
       "شیعه به علی میگه چهار پا"
     ],
     "cover": null,
-    "readingTime": 17
+    "readingTime": 17,
+    "incomplete": true
   }
 ]

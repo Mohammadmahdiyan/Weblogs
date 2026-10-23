@@ -95,7 +95,7 @@ npm run deleteTest
 - پوشهٔ مقاله‌ای که در حالت توسعه شناسایی شود، به‌صورت خودکار با `completed: false` ثبت می‌شود.
 - `publishBlog` مقدار `completed` را `true` می‌کند و تاریخ تکمیل/انتشار را ثبت می‌کند.
 - پس از تکمیل، ذخیرهٔ هر تغییر در فایل‌ها و رسانه‌های مقاله هنگام اجرای `npm run dev` تاریخ `updated` را خودکار جلو می‌برد و به GitHub push می‌کند؛ نیازی به `updateBlog` نیست.
-- **تا وقتی `publishBlog` زده نشده**، انتهای مقاله یک اعلان با لودینگ و متن «متن مقاله هنوز کامل نشده» و پیوند «پیگیری از مدیر برای تکمیل این مقاله» نمایش داده می‌شود (مقاله‌های تست `_…` هم همین‌طورند). پیوند، چت تلگرام شما را با یک پیام آمادهٔ مؤدبانه درباره‌ی همین مقاله باز می‌کند و در هر بار کلیک یکی از ۲۵ پیام می‌آید. پیام‌ها در `src/lib/followUp.ts` هستند (هر تعداد قابل‌ویرایش است؛ `{title}` جای عنوان مقاله را می‌گیرد). آیدی تلگرام از اولین پیوند `t.me/…` در `social` فایل `src/site.config.ts` خوانده می‌شود؛ اگر نباشد، فقط متن اعلان نشان داده می‌شود. ظاهر لودینگ در انتهای `src/index.css` (کلاس‌های `wip-*`) است.
+- **تا وقتی `publishBlog` زده نشده** (چه مقالهٔ جدید و چه قدیمی)، انتهای مقاله یک اعلان با متن «متن مقاله هنوز کامل نشده» و پیوند «پیگیری از مدیر برای تکمیل این مقاله» نمایش داده می‌شود (مقاله‌های تست `_…` هم همین‌طورند). پیوند، چت تلگرام شما را با یک پیام آمادهٔ مؤدبانه درباره‌ی همین مقاله باز می‌کند و در هر بار کلیک یکی از ۲۵ پیام می‌آید. فقط `publishBlog` نشانهٔ `"published": true` را در `content/blog-dates.json` می‌گذارد و اعلان را برمی‌دارد؛ مقاله‌های قدیمی که این نشانه را ندارند اعلان می‌گیرند تا برایشان اجرا کنید. برای چند مقاله با هم: `npm run publishBlog -- نام-اول نام-دوم`. پیام‌ها در `src/lib/followUp.ts` هستند (هر تعداد قابل‌ویرایش است؛ `{title}` جای عنوان مقاله را می‌گیرد). آیدی تلگرام از اولین پیوند `t.me/…` در `social` فایل `src/site.config.ts` خوانده می‌شود؛ اگر نباشد، فقط متن اعلان نشان داده می‌شود. ظاهر اعلان در `src/index.css` (کلاس‌های `wip-*`) است.
 - پوشه‌های شروع‌شونده با `_` آزمایشی هستند و در انتشار تولیدی، sitemap و RSS قرار نمی‌گیرند.
 
 ### وبلاگ آزمایشی (تست)
@@ -387,7 +387,7 @@ npm run createTest
 npm run deleteTest
 ```
 
-Until `publishBlog` is run, the end of the article shows a «not finished yet» notice with an animated loader and a Telegram link that opens your chat with a ready-made polite message about that article (a different one of 25 on every click; see `src/lib/followUp.ts`). The Telegram username comes from the first `t.me` link in `social` in `src/site.config.ts`. Dates and completion status live in `content/blog-dates.json` and are committed with the article. A folder first detected by the dev watcher is registered as incomplete; `publishBlog` marks it complete. Test folders begin with `_` and are excluded from production output, sitemap and RSS.
+Until `publishBlog` is run for an article (new or old), its end shows a «not finished yet» line with one Telegram link that opens your chat with a ready-made polite message about that article (a different one of 25 on every click; see `src/lib/followUp.ts`). Only `publishBlog` writes `"published": true` into `content/blog-dates.json` and removes the notice; several articles at once: `npm run publishBlog -- first second`. The Telegram username comes from the first `t.me` link in `social` in `src/site.config.ts`. Dates and completion status live in `content/blog-dates.json` and are committed with the article. A folder first detected by the dev watcher is registered as incomplete; `publishBlog` marks it complete. Test folders begin with `_` and are excluded from production output, sitemap and RSS.
 
 ## Search suggestions
 

@@ -193,87 +193,71 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { overflow-x: clip; }
 .article-body { overflow-wrap: break-word; }
 
-/* "Article not finished yet" notice (IncompleteNotice): skeleton lines, orbit loader, Telegram link */
-@keyframes wip-orbit { to { transform: rotate(360deg); } }
-@keyframes wip-breathe { 0%, 100% { transform: scale(0.65); opacity: 0.55; } 50% { transform: scale(1); opacity: 1; } }
-@keyframes wip-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+/* "Article not finished yet" notice (IncompleteNotice): tinted card, flipping hourglass, sliding progress line */
+@keyframes wip-flip { 0%, 55% { transform: rotate(0deg); } 80%, 100% { transform: rotate(180deg); } }
+@keyframes wip-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-bright) 45%, transparent); } 70%, 100% { box-shadow: 0 0 0 0.7rem transparent; } }
+@keyframes wip-dot { 0%, 80%, 100% { transform: translateY(0); opacity: 0.35; } 40% { transform: translateY(-0.3em); opacity: 1; } }
+@keyframes wip-slide { from { inset-inline-start: -40%; } to { inset-inline-start: 100%; } }
 
 .wip-notice {
-  display: grid;
+  position: relative;
+  display: flex;
+  align-items: center;
   gap: 1rem;
-  justify-items: center;
-  padding: 1.5rem 1rem;
-  border: 1.5px dashed var(--border-strong);
+  overflow: hidden;
+  padding: 1.15rem 1.25rem 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--brand-bright) 30%, var(--border-light));
   border-radius: var(--radius-md);
-  background: var(--surface-alt);
-  text-align: center;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-bright) 12%, var(--surface)), var(--surface) 70%);
 }
-.wip-lines { display: grid; gap: 0.6rem; width: 100%; max-width: 26rem; justify-items: start; }
-.wip-lines span {
-  display: block;
-  height: 0.6rem;
-  max-width: 100%;
-  border-radius: 9999px;
-  background: linear-gradient(90deg, var(--surface-strong) 25%, color-mix(in srgb, var(--brand-bright) 28%, var(--surface-strong)) 50%, var(--surface-strong) 75%);
-  background-size: 300% 100%;
-  animation: wip-shimmer 2.2s linear infinite;
+.wip-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--brand-bright) 18%, var(--surface));
+  color: var(--brand);
+  animation: wip-ring 2.4s ease-out infinite;
 }
-.wip-lines span:nth-child(2) { animation-delay: 0.25s; }
-.wip-lines span:nth-child(3) { animation-delay: 0.5s; }
-.wip-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; }
-.wip-title { margin: 0; font-weight: 700; color: var(--text); }
-
-/* Loader: a ring that sweeps round, a breathing core and three dots on different orbits */
-.wip-loader { position: relative; display: inline-block; flex: none; width: 2.5rem; height: 2.5rem; }
-.wip-loader::before {
-  content: '';
-  position: absolute;
-  inset: 0.35rem;
-  border-radius: 9999px;
-  background: conic-gradient(from 0deg, transparent 0 20%, var(--brand-bright));
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-  animation: wip-orbit 1.3s linear infinite;
-}
-.wip-loader::after {
-  content: '';
-  position: absolute;
-  inset: 0.95rem;
-  border-radius: 9999px;
-  background: var(--brand-bright);
-  animation: wip-breathe 1.3s ease-in-out infinite;
-}
-.wip-loader > i { position: absolute; inset: 0; animation: wip-orbit var(--d, 2s) linear infinite; }
-.wip-loader > i::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: calc(50% - 0.2rem);
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 9999px;
-  background: var(--c, var(--brand-bright));
-}
+.wip-icon > svg { animation: wip-flip 2.8s ease-in-out infinite; }
+.wip-body { display: grid; gap: 0.6rem; justify-items: start; min-width: 0; }
+.wip-title { margin: 0; display: flex; align-items: baseline; gap: 0.4rem; font-weight: 700; line-height: 1.7; color: var(--text); }
+.wip-dots { display: inline-flex; gap: 0.2rem; }
+.wip-dots i { width: 0.3rem; height: 0.3rem; border-radius: 9999px; background: var(--brand); animation: wip-dot 1.2s ease-in-out infinite; }
+.wip-dots i:nth-child(2) { animation-delay: 0.15s; }
+.wip-dots i:nth-child(3) { animation-delay: 0.3s; }
 
 .wip-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1.1rem;
-  border-radius: 9999px;
-  background: var(--brand);
-  color: var(--brand-contrast);
-  font-size: 0.875rem;
+  gap: 0.45rem;
+  color: var(--brand);
+  font-size: 0.9rem;
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 150ms ease, transform 150ms ease;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--brand) 35%, transparent);
+  padding-bottom: 0.1rem;
+  transition: border-color 150ms ease, gap 150ms ease;
 }
-.wip-link:hover { background: var(--brand-dark); color: var(--brand-contrast); transform: translateY(-1px); }
-.dark .wip-link:hover { background: var(--brand-bright); }
+.wip-link:hover { border-color: var(--brand); gap: 0.7rem; }
+
+.wip-bar { position: absolute; inset-inline: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--brand-bright) 14%, transparent); }
+.wip-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, var(--brand-bright), transparent);
+  animation: wip-slide 1.8s ease-in-out infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .wip-lines span, .wip-loader::before, .wip-loader::after, .wip-loader > i { animation: none; }
-  .wip-link:hover { transform: none; }
+  .wip-icon, .wip-icon > svg, .wip-dots i, .wip-bar::after { animation: none; }
+  .wip-bar::after { inset-inline-start: 30%; }
 }
 
 /* Question/answer chat inside accordion items (ChatBlocks.tsx). Colours follow the chosen palette. */

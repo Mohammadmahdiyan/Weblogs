@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { Send } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Hourglass, Send } from 'lucide-react'
 import siteConfig from '../site.config'
 import { FOLLOW_UP_MESSAGES, followUpUrl, pickIndex, telegramUsername } from '../lib/followUp'
 
@@ -7,17 +7,18 @@ const LAST_MESSAGE_KEY = 'followup-last'
 
 function readLast(): number | null {
   try {
-    const value = Number(sessionStorage.getItem(LAST_MESSAGE_KEY))
-    return sessionStorage.getItem(LAST_MESSAGE_KEY) === null || !Number.isInteger(value) ? null : value
+    const stored = sessionStorage.getItem(LAST_MESSAGE_KEY)
+    const value = Number(stored)
+    return stored === null || !Number.isInteger(value) ? null : value
   } catch {
     return null
   }
 }
 
 /**
- * Shown at the end of an article that has not been completed with `npm run publishBlog`.
- * The link opens the author's Telegram chat with a ready-made message about this article; every click
- * uses a different message out of FOLLOW_UP_MESSAGES (src/lib/followUp.ts).
+ * Shown at the end of every article that has not been marked with `npm run publishBlog -- <folder>`.
+ * One line of text and one link: the link opens the author's Telegram chat with a ready-made message about
+ * this article; every click uses a different message out of FOLLOW_UP_MESSAGES (src/lib/followUp.ts).
  */
 export function IncompleteNotice({ title }: { title: string }) {
   const username = useMemo(() => telegramUsername(siteConfig.social), [])
@@ -38,28 +39,21 @@ export function IncompleteNotice({ title }: { title: string }) {
   }
 
   return (
-    <section role="status" aria-label="مقاله هنوز کامل نشده است" className="wip-notice not-prose mt-10">
-      <div aria-hidden="true" className="wip-lines">
-        <span style={{ width: '100%' }} />
-        <span style={{ width: '88%' }} />
-        <span style={{ width: '56%' }} />
+    <section role="status" className="wip-notice not-prose mt-10">
+      <span aria-hidden="true" className="wip-icon"><Hourglass className="size-6" /></span>
+      <div className="wip-body">
+        <p className="wip-title">
+          متن مقاله هنوز کامل نشده
+          <span aria-hidden="true" className="wip-dots"><i /><i /><i /></span>
+        </p>
+        {href && (
+          <a href={href} target="_blank" rel="noopener noreferrer" onClick={onFollowUpClick} className="wip-link">
+            پیگیری از مدیر برای تکمیل این مقاله
+            <Send aria-hidden="true" className="size-4 rtl:-scale-x-100" />
+          </a>
+        )}
       </div>
-
-      <div className="wip-row">
-        <p className="wip-title">متن مقاله هنوز کامل نشده</p>
-        <span aria-hidden="true" className="wip-loader">
-          <i style={{ '--d': '2.4s', '--c': 'var(--brand-bright)' } as CSSProperties} />
-          <i style={{ '--d': '1.6s', '--c': 'var(--info)' } as CSSProperties} />
-          <i style={{ '--d': '3.2s', '--c': 'var(--warn)' } as CSSProperties} />
-        </span>
-      </div>
-
-      {href && (
-        <a href={href} target="_blank" rel="noopener noreferrer" onClick={onFollowUpClick} className="wip-link">
-          <Send aria-hidden="true" className="size-4 rtl:-scale-x-100" />
-          پیگیری از مدیر برای تکمیل این مقاله
-        </a>
-      )}
+      <span aria-hidden="true" className="wip-bar" />
     </section>
   )
 }

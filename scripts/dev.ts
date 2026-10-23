@@ -73,7 +73,7 @@ async function registerUnregisteredBlogs(): Promise<boolean> {
     const fileDate = Number.isNaN(info.mtimeMs) ? today() : info.mtime.toISOString().slice(0, 10)
     // Files already tracked by Git are existing live articles; new untracked folders stay incomplete.
     const completed = isTrackedArticle(slug)
-    dates[slug] = { date: fileDate, updated: fileDate, completed }
+    dates[slug] = { date: fileDate, updated: fileDate, completed, published: false }
     console.log(`ℹ Automatically registered new article: ${slug}`)
     changed = true
   }

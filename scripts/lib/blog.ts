@@ -63,6 +63,11 @@ export interface BlogDates {
   updated: string
   /** Whether the author has explicitly finished the article. Legacy entries count as complete. */
   completed: boolean
+  /**
+   * true only after `npm run publishBlog -- <folder>`. Every article without it (new or old) ends with the
+   * «not finished yet» notice. Entries written before this flag existed count as NOT published.
+   */
+  published: boolean
 }
 export type DatesRegistry = Record<string, BlogDates>
 
@@ -99,6 +104,7 @@ export async function readDates(): Promise<DatesRegistry> {
       updated,
       // Existing registry entries predate this flag and should keep their current behavior.
       completed: typeof entry.completed === 'boolean' ? entry.completed : true,
+      published: entry.published === true,
     }
   }
   return registry
