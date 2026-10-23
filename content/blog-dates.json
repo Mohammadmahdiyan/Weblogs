@@ -2,41 +2,49 @@
   "aga-quran-dar-madh-ali-bod": {
     "date": "2026-10-18",
     "updated": "2026-10-18",
-    "completed": true
+    "completed": true,
+    "published": false
   },
   "eid-syasi-qadir": {
     "date": "2026-10-21",
     "updated": "2026-10-22",
-    "completed": true
+    "completed": true,
+    "published": false
   },
   "hadis-in-shia": {
     "date": "2026-10-18",
     "updated": "2026-10-18",
-    "completed": true
+    "completed": true,
+    "published": false
   },
   "kashti-najat": {
     "date": "2026-10-22",
     "updated": "2026-10-22",
-    "completed": false
+    "completed": false,
+    "published": false
   },
   "shia-nabovat-pyambar-ra-batel-kard": {
     "date": "2026-10-20",
     "updated": "2026-10-20",
-    "completed": false
+    "completed": false,
+    "published": false
   },
   "shobahat-ravafez": {
     "date": "2026-10-18",
     "updated": "2026-10-18",
-    "completed": false
+    "completed": false,
+    "published": false
   },
   "tahref-quran-nazd-shia": {
     "date": "2026-10-18",
     "updated": "2026-10-18",
-    "completed": true
+    "completed": true,
+    "published": false
   },
   "tohen-ba-ahle-beat": {
     "date": "2026-10-18",
-    "updated": "2026-10-19",
-    "completed": true
+    "updated": "2026-10-23",
+    "completed": true,
+    "published": false
   }
 }
