@@ -36,4 +36,10 @@
 > سلام خوبی چخبر 
 و سلام و درود
 )
-5.
+5. این فایل خطا داره 
+
+scripts\lib\blog.ts
+
+There is no `cause` attached to the symptom error being thrown.eslintpreserve-caught-error
+
+Unnecessary escape character: \".eslintno-useless-escape
