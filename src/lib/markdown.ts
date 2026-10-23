@@ -404,7 +404,7 @@ const honorifics: Record<string, HonorificConfig> = {
   'جل جلاله': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'عز وجل': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'جل وعلا': createHonorific('jwa.svg', 'جل وعلا', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'سبحانه وتعالى': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'سبحانه وتعالى': createHonorific('swt.svg', 'سبحانه وتعالى', DEFAULT_HONORIFIC_SIZE, DEFAULT_HONORIFIC_ALIGN),
   'تبارك وتعالى': createHonorific('twt.svg', 'تبارك وتعالى', '1.5em', '-0.25em'),
 
   // اختصارات مؤنث و جمع
@@ -421,7 +421,7 @@ const honorifics: Record<string, HonorificConfig> = {
   // اختصارات عبارات مربوط به خداوند
   'جل': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
   'عز': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'سبح': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  'سبح': createHonorific('swt.svg', 'سبحانه وتعالى', DEFAULT_HONORIFIC_SIZE, DEFAULT_HONORIFIC_ALIGN),
   'تبارك': createHonorific('twt.svg', 'تبارك وتعالى', '1.6em', '-0.25em'),
 
     // درود بر پیامبر و خاندان ایشان
