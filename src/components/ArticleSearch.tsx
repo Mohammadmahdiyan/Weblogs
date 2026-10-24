@@ -5,7 +5,7 @@ import { Search, ArrowUp, ArrowDown, CornerDownLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { normalizeSearchText } from '../lib/normalize'
 import { decideSubmit, parseSearchQuery, toContentSearchQuery } from '../lib/search'
-import { articleHref, findContentMatch, type ContentMatch } from '../lib/contentSearch'
+import { articleHref, bodyOccurrence, findContentMatches, type ContentMatch } from '../lib/contentSearch'
 import type { ArticleMeta, SearchEntry } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
 
@@ -13,8 +13,10 @@ interface SearchResult {
   entry: SearchEntry
   score: number
   matchedPhrase: string
-  /** Content search only: the text around the match, with the match in the middle. */
-  snippet?: ContentMatch
+  /** Content search only: every occurrence in the article, each with the match in the middle of its text. */
+  matches?: ContentMatch[]
+  /** Length of the title at the start of the indexed content (not part of the rendered article body). */
+  titleLength?: number
 }
 
 function HighlightedPhrase({ text, query }: { text: string; query: string }) {
@@ -30,6 +32,8 @@ function SnippetText({ snippet }: { snippet: ContentMatch }) {
   return <>{snippet.before}<mark className="rounded-[var(--radius-sm)] bg-[color-mix(in_srgb,var(--brand)_18%,transparent)] px-0.5 font-semibold text-[var(--text)]">{snippet.match}</mark>{snippet.after}</>
 }
 
+const stepButtonClass = 'inline-flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:bg-[var(--surface-strong)] hover:text-[var(--brand)] focus-visible:outline-2 focus-visible:outline-[var(--info)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--text-secondary)]'
+
 export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { articles: ArticleMeta[]; searchIndex: SearchEntry[]; initialQuery?: string }) {
   const navigate = useNavigate()
   const adultConfirmed = useAdultAccess()
@@ -42,6 +46,8 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
   const [open, setOpen] = useState(false)
   // The query the current `results` were computed for. Until it equals `query`, “not found” must not be shown.
   const [settledQuery, setSettledQuery] = useState<string | null>(null)
+  // Content search: which occurrence (0-based) each result currently shows. Missing = the first.
+  const [occurrences, setOccurrences] = useState<Record<string, number>>({})
   const listboxId = 'article-search-results'
 
   const normalizedEntries = useMemo(() => safeSearchIndex.map((entry) => ({
@@ -70,9 +76,12 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
     const timer = window.setTimeout(() => {
       if (contentSearch) {
         const hits: SearchResult[] = safeSearchIndex.flatMap((entry) => {
-          const snippet = findContentMatch(entry.content ?? '', contentQuery)
-          if (!snippet) return []
-          return [{ entry, score: 0, matchedPhrase: `${snippet.before}${snippet.match}${snippet.after}`, snippet }]
+          const content = entry.content ?? ''
+          const matches = findContentMatches(content, contentQuery)
+          if (matches.length === 0) return []
+          const first = matches[0]
+          const titleLength = content.startsWith(entry.title) ? entry.title.length : 0
+          return [{ entry, score: 0, matchedPhrase: `${first.before}${first.match}${first.after}`, matches, titleLength }]
         }).slice(0, 8)
         setResults(hits)
       } else {
@@ -84,6 +93,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
         setResults(hits)
       }
       setSettledQuery(query)
+      setOccurrences({})
       setActiveIndex(-1)
       setOpen(true)
     }, 70)
@@ -106,7 +116,17 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
   }
 
   // After a content search the article opens scrolled to (and highlighting) the found text.
-  const hrefFor = (slug: string) => articleHref(slug, contentSearch ? contentQuery : '')
+  const occurrenceOf = (result: SearchResult) => Math.min(occurrences[result.entry.slug] ?? 0, Math.max(0, (result.matches?.length ?? 1) - 1))
+  const hrefFor = (result: SearchResult) => {
+    if (!contentSearch) return articleHref(result.entry.slug)
+    const index = occurrenceOf(result)
+    return articleHref(result.entry.slug, contentQuery, result.matches ? bodyOccurrence(result.matches, index, result.titleLength ?? 0) : 0)
+  }
+  function stepOccurrence(result: SearchResult, step: -1 | 1) {
+    const last = (result.matches?.length ?? 1) - 1
+    const next = Math.min(last, Math.max(0, occurrenceOf(result) + step))
+    setOccurrences((current) => ({ ...current, [result.entry.slug]: next }))
+  }
 
   function submit() {
     if (contentSearchTarget && activeIndex === 0) {
@@ -115,11 +135,11 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
     }
     // Activating a highlighted option always wins.
     if (activeIndex >= 0 && visibleResults[activeIndex]) {
-      navigate(hrefFor(visibleResults[activeIndex].entry.slug))
+      navigate(hrefFor(visibleResults[activeIndex]))
       return
     }
     if (contentSearch && visibleResults.length === 1) {
-      navigate(hrefFor(visibleResults[0].entry.slug))
+      navigate(hrefFor(visibleResults[0]))
       return
     }
     const decision = decideSubmit(safeArticles, query, visibleResults.map((result) => ({ slug: result.entry.slug, score: result.score })))
@@ -175,21 +195,25 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
         <div className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)]">
           {visibleResults.length ? (
             <ul id={listboxId} role="listbox" aria-label="نتایج جست‌وجو" className="m-0 max-h-[min(60vh,28rem)] list-none overflow-y-auto p-1">
-              {visibleResults.map(({ entry, matchedPhrase, snippet }, index) => (
-                <li key={entry.slug}>
+              {visibleResults.map((result, index) => {
+                const { entry, matchedPhrase, matches } = result
+                const total = matches?.length ?? 0
+                const current = occurrenceOf(result)
+                const snippet = matches?.[current]
+                const restricted = !adultConfirmed && articles.some((article) => article.slug === entry.slug && article.adult === true)
+                return (
+                <li key={entry.slug} className="flex items-stretch gap-1">
                   <button
                     id={`article-search-option-${index}`}
                     type="button"
                     role="option"
                     aria-selected={activeIndex === index}
                     onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => navigate(hrefFor(entry.slug))}
+                    onClick={() => navigate(hrefFor(result))}
                     onMouseEnter={() => setActiveIndex(index)}
-                    className="grid w-full gap-1 rounded-[var(--radius-sm)] px-4 py-3 text-start hover:bg-[var(--surface-alt)] aria-selected:bg-[var(--surface-alt)]"
+                    className="grid min-w-0 flex-1 gap-1 rounded-[var(--radius-sm)] px-4 py-3 text-start hover:bg-[var(--surface-alt)] aria-selected:bg-[var(--surface-alt)]"
                   >
-                    {(() => {
-                      const restricted = !adultConfirmed && articles.some((article) => article.slug === entry.slug && article.adult === true)
-                      return restricted ? (
+                    {restricted ? (
                         <span className="relative block rounded-[var(--radius-sm)] py-1">
                           <span className="block select-none blur-sm" aria-hidden="true">
                             <span className="block text-sm font-semibold">{entry.title}</span>
@@ -202,11 +226,22 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
                           <span className="text-sm font-semibold text-[var(--text)]">{entry.title}</span>
                           <span className={clsx('text-xs text-[var(--text-secondary)]', snippet && 'text-center')}>{snippet ? <SnippetText snippet={snippet} /> : <HighlightedPhrase text={matchedPhrase} query={query} />}</span>
                         </>
-                      )
-                    })()}
+                      )}
                   </button>
+                  {total > 0 && !restricted && (
+                    <div role="group" aria-label="مورد قبلی و بعدی در این مقاله" className="flex shrink-0 flex-col items-center justify-center gap-0.5 px-1">
+                      <button type="button" aria-label="مورد قبلی" title="مورد قبلی" disabled={current <= 0} onMouseDown={(event) => event.preventDefault()} onClick={() => stepOccurrence(result, -1)} className={stepButtonClass}>
+                        <ArrowUp aria-hidden="true" className="size-4" />
+                      </button>
+                      <span className="text-[10px] leading-none tabular-nums text-[var(--muted)]" aria-live="polite">{(current + 1).toLocaleString('fa-IR')} از {total.toLocaleString('fa-IR')}</span>
+                      <button type="button" aria-label="مورد بعدی" title="مورد بعدی" disabled={current >= total - 1} onMouseDown={(event) => event.preventDefault()} onClick={() => stepOccurrence(result, 1)} className={stepButtonClass}>
+                        <ArrowDown aria-hidden="true" className="size-4" />
+                      </button>
+                    </div>
+                  )}
                 </li>
-              ))}
+                )
+              })}
             </ul>
           ) : (
             <div>
@@ -234,7 +269,6 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
         </div>
       )}
       <div className="sr-only" aria-live="polite">{visibleResults.length ? `${visibleResults.length} نتیجه` : ''}</div>
-      {activeIndex >= 0 && <span className="sr-only"><ArrowUp /><ArrowDown /></span>}
     </div>
   )
 }

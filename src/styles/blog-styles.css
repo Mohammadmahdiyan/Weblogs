@@ -115,6 +115,14 @@
   box-shadow: 0 5px 18px rgb(0 0 0 / 10%);
 }
 
+/* several quotes in one box (`> الف` / `> ب` on consecutive lines): a thin divider between them */
+.blog-scope .md-quote-item > p { margin: 0; }
+.blog-scope .md-quote-item + .md-quote-item {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed color-mix(in srgb, var(--quote-accent) 35%, var(--border-light));
+}
+
 /* «خط کناری»: no card, only the rail */
 [data-quote='line'] .blog-scope .article-body .md-quote {
   border: 0;

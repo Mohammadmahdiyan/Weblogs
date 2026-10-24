@@ -8,6 +8,7 @@ import { FontControls } from './FontControls'
 import { StyleSwitcher } from './StyleSwitcher'
 import type { ArticleMeta } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
+import { useDismissibleDetails } from '../lib/useDismissibleDetails'
 
 function SiteLink({ href, children, className, onClick }: { href: string; children: ReactNode; className?: string; onClick?: () => void }) {
   return href.startsWith('/')
@@ -86,6 +87,8 @@ function MobileDrawer({ onClose }: { onClose: () => void }) {
 
 function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const textSettingsRef = useRef<HTMLDetailsElement>(null)
+  useDismissibleDetails(textSettingsRef)
 
   return (
     <>
@@ -98,7 +101,7 @@ function Header() {
           <div className="flex shrink-0 items-center gap-3">
             <div className="hidden items-center gap-3 lg:flex">
               <ThemeToggle />
-              <details className="group relative">
+              <details ref={textSettingsRef} className="group relative">
                 <summary className="cursor-pointer list-none rounded-[var(--radius-sm)] border border-[var(--border-light)] px-3 py-2 text-sm text-[var(--text-secondary)]">تنظیم متن</summary>
                 <div className="absolute end-0 top-full z-10 mt-2 rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
                   <FontControls />

@@ -5,7 +5,7 @@ import articlesJson from '../generated/articles.json'
 import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
 import { buildToc } from '../lib/toc'
-import { FIND_PARAM } from '../lib/contentSearch'
+import { FIND_INDEX_PARAM, FIND_PARAM, parseOccurrence } from '../lib/contentSearch'
 import { useFindInPage } from '../lib/findInPage'
 import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
@@ -119,7 +119,7 @@ export function ArticlePage() {
   const toc = useMemo(() => buildToc(markdown ?? ''), [markdown])
   const [searchParams] = useSearchParams()
   // Set by a content search on the home page: scroll to this text and highlight it.
-  useFindInPage(searchParams.get(FIND_PARAM), markdown !== null)
+  useFindInPage(searchParams.get(FIND_PARAM), markdown !== null, parseOccurrence(searchParams.get(FIND_INDEX_PARAM)))
   const articleIndex = articles.findIndex((item) => item.slug === slug)
 
   const pageUrl = `${siteConfig.siteUrl}/blog/${slug}`

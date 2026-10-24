@@ -5,6 +5,7 @@ import { inlineToPlainText } from './inline.ts'
 import { isEmoji } from './emojiRegistry.ts'
 import { normalizeDirectiveFences } from './directives.ts'
 import { transformChatMessages } from './chat.ts'
+import { normalizeQuotes } from './quotes.ts'
 
 type MarkdownNode = {
   type: string
@@ -19,7 +20,7 @@ type MarkdownNode = {
 export function markdownToPlainText(markdown: string | undefined): string {
   if (typeof markdown !== 'string' || !markdown.trim()) return ''
 
-  const tree = unified().use(remarkParse).use(remarkDirective).parse(normalizeDirectiveFences(markdown)) as unknown as MarkdownNode
+  const tree = unified().use(remarkParse).use(remarkDirective).parse(normalizeQuotes(normalizeDirectiveFences(markdown))) as unknown as MarkdownNode
   // Chat bubbles: the «سوال۱: (…)» syntax is not prose, only what is inside the parentheses is.
   transformChatMessages(tree as unknown as Parameters<typeof transformChatMessages>[0])
   const chunks: string[] = []

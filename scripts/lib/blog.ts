@@ -85,8 +85,8 @@ export async function readDates(): Promise<DatesRegistry> {
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
-  } catch {
-    throw new Error('content/blog-dates.json is not valid JSON. It is maintained by the blog commands; fix or delete it.')
+  } catch (error) {
+    throw new Error('content/blog-dates.json is not valid JSON. It is maintained by the blog commands; fix or delete it.', { cause: error })
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     throw new Error('content/blog-dates.json must be an object of { "<folder>": { "date", "updated" } }')
@@ -194,7 +194,7 @@ export function parseBlog(source: string, label: string): ParsedBlog {
   try {
     parsed = matter(source)
   } catch (error) {
-    throw new Error(`${label}: invalid frontmatter (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`)
+    throw new Error(`${label}: invalid frontmatter (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`, { cause: error })
   }
   const data = parsed.data as Record<string, unknown>
 
@@ -210,7 +210,7 @@ export function parseBlog(source: string, label: string): ParsedBlog {
     throw new Error(`${label}: "description" must be a string`)
   }
   if (data.adult !== undefined && typeof data.adult !== 'boolean') {
-    throw new Error(`${label}: \"adult\" must be true or false`)
+    throw new Error(`${label}: "adult" must be true or false`)
   }
   if (data.cover !== undefined && typeof data.cover !== 'string') {
     throw new Error(`${label}: "cover" must be a relative media path string`)

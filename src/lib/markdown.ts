@@ -17,6 +17,7 @@ import type { Node } from 'unist'
 import { splitInline } from './inline.ts'
 import { transformChatMessages } from './chat.ts'
 import { emojiFile, isEmoji } from './emojiRegistry.ts'
+import { ITEMS_MARKER } from './quotes.ts'
 
 type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
   'mdx-honorific'?: import('react').ComponentType<{
@@ -393,8 +394,6 @@ const honorifics: Record<string, HonorificConfig> = {
   'عليها السلام': createHonorific('ahas.svg', 'عليها السلام'),
   'عليهم السلام': createHonorific('amus.svg', 'عليهم السلام'),
 
-  
-
   // رضایت خداوند از صحابه
   'رض': createHonorific('radu.svg', 'رضي الله عنه'),
   'رضي الله عنه': createHonorific('radu.svg', 'رضي الله عنه'),
@@ -504,6 +503,19 @@ const remarkHonorifics: Plugin<[], MdastRoot> = () => (tree) => {
   })
 }
 
+/**
+ * A quote whose first line is the ITEMS_MARKER comment (see quotes.ts) holds several quotes in one box:
+ * the comment is removed and the blockquote gets `data-quote-items`, so every paragraph gets its own icons.
+ */
+export const remarkQuoteItems: Plugin<[], MdastRoot> = () => (tree) => {
+  visit(tree, 'blockquote', (node) => {
+    const first = node.children[0]
+    if (first?.type !== 'html' || first.value.trim() !== ITEMS_MARKER) return
+    node.children.shift()
+    node.data = { ...node.data, hProperties: { ...node.data?.hProperties, dataQuoteItems: 'true' } }
+  })
+}
+
 /** سوال۱: (...) / جواب۱: (...) lines inside accordion items become chat bubbles (see ./chat.ts). */
 const remarkChat: Plugin<[], MdastRoot> = () => (tree) => transformChatMessages(tree as unknown as Parameters<typeof transformChatMessages>[0])
 
@@ -512,6 +524,7 @@ export function createMarkdownProcessor(components: MarkdownComponents) {
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkDirective)
+    .use(remarkQuoteItems)
     .use(remarkChat)
     .use(remarkSpoilers)
     .use(remarkInlineExtras)

@@ -44,6 +44,7 @@ import { Source } from './mdx/Source'
 import { Emoji, Mini } from './mdx/InlineExtras'
 import { ChatMessage, ChatThread } from './mdx/ChatBlocks'
 import { normalizeDirectiveFences } from '../lib/directives'
+import { normalizeQuotes } from '../lib/quotes'
 import { highlightCode } from '../lib/highlight'
 import { confirmAdultAccess, isAdultConfirmed, rejectAdultAccess } from '../lib/adultAccess'
 
@@ -158,8 +159,16 @@ function withQuoteIcons(children: ReactNode): ReactNode {
   return output
 }
 
+/** Several quotes in one box: every paragraph is a quote of its own, with its own opening/closing icons. */
+function withQuoteItems(children: ReactNode): ReactNode {
+  return Children.toArray(children).flatMap((node, index) => (
+    isValidElement(node) ? [<div key={index} className="md-quote-item">{withQuoteIcons(node)}</div>] : []
+  ))
+}
+
 function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
   const { children, className, ...rest } = props
+  const items = (rest as Record<string, unknown>)['data-quote-items'] === 'true'
 
   return (
     <div className="my-1 pt-1">
@@ -169,7 +178,7 @@ function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
       >
         <span aria-hidden="true" className="md-quote-rail pointer-events-none absolute inset-y-0 end-0 z-10" />
         <div className="quote-highlight relative text-start leading-8 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 [&>p]:relative [&>p]:z-0">
-          {withQuoteIcons(children)}
+          {items ? withQuoteItems(children) : withQuoteIcons(children)}
         </div>
       </blockquote>
     </div>
@@ -504,7 +513,7 @@ export function MarkdownRenderer({ markdown, className }: MarkdownRendererProps)
   useEffect(() => {
     let cancelled = false
 
-    void processor.process(normalizeDirectiveFences(markdown)).then(
+    void processor.process(normalizeQuotes(normalizeDirectiveFences(markdown))).then(
       (file) => {
         if (!cancelled) setRendered({ source: markdown, content: file.result as ReactNode })
       },
