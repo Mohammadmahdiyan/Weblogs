@@ -139,9 +139,14 @@
   --color-code-text: var(--code-text);
 }
 
-/* TOC honorifics are external SVG images, so use a theme-aware filter in dark mode. */
-.dark .toc-honorific-icon {
-  filter: brightness(0) invert(1);
+/* TOC honorific icons are CSS masks painted with currentColor (ArticleToc.tsx), so they follow the title colour in every theme. */
+.toc-honorific-icon {
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
 }
 
 /* ───────────── colour palettes (reader choice, `data-palette` on <html>) ─────────────

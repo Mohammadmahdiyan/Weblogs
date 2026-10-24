@@ -1,4 +1,4 @@
-import { Children, isValidElement, useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { Children, createContext, isValidElement, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown, X } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -7,6 +7,16 @@ interface AccordionItemProps {
   open?: boolean | string
   children?: ReactNode
 }
+
+const isOn = (value: unknown) => value === true || value === 'true'
+
+/** Set by an accordion in `single` mode: which item (by position) is the one open item, and who may change it. */
+interface SingleOpen {
+  index: number
+  openIndex: number | null
+  setOpenIndex: (index: number | null) => void
+}
+const SingleOpenContext = createContext<SingleOpen | null>(null)
 
 interface FaqEntry {
   name: string
@@ -39,15 +49,24 @@ function faqEntries(children: ReactNode): FaqEntry[] {
 
 export function Accordion({
   faq = false,
+  single = false,
   title,
   faqItems,
   children,
 }: {
   faq?: boolean | string
+  /** `:::accordion{single}` — opening one item closes the others (even ones written with `open`). */
+  single?: boolean | string
   title?: string
   faqItems?: string
   children?: ReactNode
 }) {
+  const isSingle = isOn(single) || single === ''
+  const items = Children.toArray(children)
+  // Several items may be written with `open`; in single mode only the first one starts open.
+  const firstOpen = items.findIndex((child) => isValidElement<{ open?: unknown }>(child) && isOn(child.props.open))
+  const [openIndex, setOpenIndex] = useState<number | null>(firstOpen >= 0 ? firstOpen : null)
+
   const isFaq = faq === true || faq === '' || faq === 'true' || title?.trim() === 'سوالات متداول'
   let parsedFaqItems: { question: string; answer: string }[] | undefined
   if (faqItems) {
@@ -93,14 +112,27 @@ export function Accordion({
 
   return (
     <div className="accordion-group not-prose my-5 grid gap-4">
-      {children}
+      {isSingle
+        ? items.map((child, index) => (
+            <SingleOpenContext.Provider key={isValidElement(child) && child.key !== null ? child.key : index} value={{ index, openIndex, setOpenIndex }}>
+              {child}
+            </SingleOpenContext.Provider>
+          ))
+        : children}
     </div>
   )
 }
 
 export function AccordionItem({ title = 'جزئیات', open = false, children }: AccordionItemProps) {
   const id = useId().replace(/:/g, '')
-  const [expanded, setExpanded] = useState(open === true || open === 'true')
+  const single = useContext(SingleOpenContext)
+  const [ownExpanded, setOwnExpanded] = useState(isOn(open))
+  // In single mode the accordion decides which item is open; otherwise every item keeps its own state.
+  const expanded = single ? single.openIndex === single.index : ownExpanded
+  const toggle = () => {
+    if (single) single.setOpenIndex(expanded ? null : single.index)
+    else setOwnExpanded((value) => !value)
+  }
   const triggerId = `accordion-trigger-${id}`
   const panelId = `accordion-panel-${id}`
 
@@ -112,7 +144,7 @@ export function AccordionItem({ title = 'جزئیات', open = false, children }
           type="button"
           aria-expanded={expanded}
           aria-controls={panelId}
-          onClick={() => setExpanded((value) => !value)}
+          onClick={toggle}
           className="accordion-trigger flex min-h-12 w-full items-center justify-between gap-3 bg-[var(--surface-strong)] px-4 py-3 text-start text-sm font-semibold text-[var(--text)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--info)]"
         >
           <span>{title}</span>

@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
-import { BookOpen } from 'lucide-react'
+import { BookOpen, ChevronDown } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { SVGProps } from 'react'
 import type { TocItem } from '../lib/toc'
 import { useMediaQuery } from '../lib/useMediaQuery'
 
+
+/** Tables of contents longer than this show only the first items until «نمایش بیشتر» is pressed. */
+const TOC_COLLAPSED_COUNT = 6
 
 const tocHonorificFiles: Record<string, string> = {
   'ص': 'sas.svg', 'ﷺ': 'sas.svg', 'صا': 'saa.svg',
@@ -20,7 +23,9 @@ function TocTitle({ title }: { title: string }) {
     const key = part.trim()
     const file = tocHonorificFiles[key]
     if (!file) return <span key={index}>{part}</span>
-    return <img key={index} src={`${import.meta.env.BASE_URL}honorifics/${file}`} alt={key} title={key} className="toc-honorific-icon mx-0.5 inline-block h-[1.35em] w-[1.35em] object-contain align-[-0.3em]" />
+    // A mask painted with `currentColor`, so the icon always has the same colour as the title (hover, active, dark mode).
+    const url = `url(${import.meta.env.BASE_URL}honorifics/${file})`
+    return <span key={index} role="img" aria-label={key} title={key} className="toc-honorific-icon mx-0.5 inline-block h-[1.35em] w-[1.35em] bg-current align-[-0.3em]" style={{ maskImage: url, WebkitMaskImage: url }} />
   })}</>
 }
 
@@ -44,10 +49,11 @@ function TocBranch({
     fill: 'none',
     stroke: 'var(--brand)',
     strokeWidth: 2,
-    strokeLinecap: 'round',
+    strokeLinecap: 'butt',
     strokeLinejoin: 'round',
   }
 
+  // The SVG is stretched to the height of its row, so y=12 (the middle of the viewBox) is always the middle of the text.
   const paths: Record<TocBranchType, string> = {
     single: 'M16 12 H2',
     first: 'M16 24 V12 H2',
@@ -60,14 +66,13 @@ function TocBranch({
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
-      width="24"
-      height="24"
+      preserveAspectRatio="none"
       aria-hidden="true"
       focusable="false"
       className={className}
       {...props}
     >
-      <path {...pathProps} d={paths[type]} />
+      <path {...pathProps} d={paths[type]} vectorEffect="non-scaling-stroke" />
     </svg>
   )
 }
@@ -171,13 +176,20 @@ export function ArticleToc({
 }) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const active = useActiveHeading(items, variant === 'side')
+  const [expanded, setExpanded] = useState(false)
 
   if (items.length === 0) return null
 
+  // A long table of contents shows the first items only, with a «نمایش بیشتر» button.
+  const collapsible = items.length > TOC_COLLAPSED_COUNT
+  const visibleItems = collapsible && !expanded ? items.slice(0, TOC_COLLAPSED_COUNT) : items
+  const hiddenCount = items.length - TOC_COLLAPSED_COUNT
+
   const list = (
-    <ul className="m-0 grid list-none gap-2 p-0">
-      {items.map((item, index) => {
-        const branchType = getBranchType(items, index)
+    <>
+    <ul className="m-0 grid list-none gap-0 p-0">
+      {visibleItems.map((item, index) => {
+        const branchType = getBranchType(visibleItems, index)
         const isChild = item.level > 2
 
         return (
@@ -188,20 +200,20 @@ export function ArticleToc({
             {isChild && (
               <TocBranch
                 type="continuation"
-                className="-ms-1 shrink-0"
+                className="-ms-1 w-6 shrink-0 self-stretch"
               />
             )}
 
             <TocBranch
               type={branchType}
-              className="-ms-1 shrink-0"
+              className="-ms-1 w-6 shrink-0 self-stretch"
             />
 
             <a
               href={`#${item.id}`}
               aria-current={active === item.id ? 'location' : undefined}
               className={clsx(
-                'min-w-0 flex-1 py-1 text-start text-sm no-underline transition-colors hover:text-[var(--brand)]',
+                'min-w-0 flex-1 py-2 text-start text-sm no-underline transition-colors hover:text-[var(--brand)]',
                 active === item.id
                   ? 'font-bold text-[var(--brand)]'
                   : 'text-[var(--text-secondary)]',
@@ -213,6 +225,18 @@ export function ArticleToc({
         )
       })}
     </ul>
+    {collapsible && (
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((value) => !value)}
+        className="mt-2 inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 text-xs font-semibold text-[var(--brand)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+      >
+        {expanded ? 'نمایش کمتر' : `نمایش بیشتر (${hiddenCount.toLocaleString('fa-IR')} مورد دیگر)`}
+        <ChevronDown aria-hidden="true" className={clsx('size-3.5 transition-transform motion-reduce:transition-none', expanded && 'rotate-180')} />
+      </button>
+    )}
+    </>
   )
 
   if (variant === 'side') {

@@ -390,7 +390,6 @@ const honorifics: Record<string, HonorificConfig> = {
   'ع': createHonorific('as.svg', 'عليه السلام'),
   'عليه السلام': createHonorific('as.svg', 'عليه السلام'),
   'عليه الصلاة والسلام': createHonorific('asws.svg', 'عليه الصلاة والسلام'),
-  'علیه السلام': createHonorific('asws.svg', 'علیه السلام'),
   'عليها السلام': createHonorific('ahas.svg', 'عليها السلام'),
   'عليهم السلام': createHonorific('amus.svg', 'عليهم السلام'),
 

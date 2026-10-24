@@ -15,6 +15,8 @@ Markdown directives are converted into accessible React components. Attribute na
 ::::
 ```
 
+Add `{single}` (`::::accordion{single}`) when only one item should be open at a time: opening an item closes the others, and if several items are written with `open`, only the first starts open.
+
 Use `{faq}` or set the accordion title to `سوالات متداول` to emit FAQPage JSON-LD.
 
 ## Alerts and Identity
