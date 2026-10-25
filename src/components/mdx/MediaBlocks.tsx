@@ -75,12 +75,17 @@ export function MarkdownVideo({
   )
 }
 
-export function VideoDirective({ src = '', poster, title, alt }: { src?: string; poster?: string; title?: string; alt?: string }) {
-  return <MarkdownVideo src={src} poster={poster} title={title ?? alt} aria-label={alt ?? title ?? 'ویدیو'} />
+/**
+ * `::video{link="./a.mp4", cover="./a.jpg"}` — `link` is the file (or URL) and `cover` the picture shown before play.
+ * The older names `src` and `poster` keep working.
+ */
+export function VideoDirective({ link, src, cover, poster, title, alt }: { link?: string; src?: string; cover?: string; poster?: string; title?: string; alt?: string }) {
+  return <MarkdownVideo src={link ?? src ?? ''} poster={cover ?? poster} title={title ?? alt} aria-label={alt ?? title ?? 'ویدیو'} />
 }
 
-export function AudioDirective({ src = '', title, alt }: { src?: string; title?: string; alt?: string }) {
-  return <audio src={src} controls preload="none" aria-label={alt ?? title ?? 'صوت'} className="not-prose my-4 w-full" />
+/** `::audio{link="./a.mp3"}` (`src` also works). */
+export function AudioDirective({ link, src, title, alt }: { link?: string; src?: string; title?: string; alt?: string }) {
+  return <audio src={link ?? src ?? ''} controls preload="none" aria-label={alt ?? title ?? 'صوت'} className="not-prose my-4 w-full" />
 }
 
 const videoExtension = /\.(mp4|webm|ogv|mov|m4v)$/i
@@ -101,8 +106,11 @@ interface GalleryItem {
  */
 function collectGalleryItems(node: ReactNode): GalleryItem[] {
   if (Array.isArray(node)) return node.flatMap(collectGalleryItems)
-  if (!isValidElement<{ src?: string; alt?: string; title?: string; poster?: string; children?: ReactNode }>(node)) return []
-  const { src, alt, title, poster } = node.props
+  if (!isValidElement<{ src?: string; link?: string; alt?: string; title?: string; poster?: string; cover?: string; children?: ReactNode }>(node)) return []
+  const { alt, title } = node.props
+  // `::video{link=… cover=…}` uses the new names; `src` / `poster` are the older ones.
+  const src = node.props.link ?? node.props.src
+  const poster = node.props.cover ?? node.props.poster
 
   if (node.type === MarkdownImage && typeof src === 'string') {
     return [{ element: node, media: { url: src, type: 'image', alt, title } }]

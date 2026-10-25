@@ -221,7 +221,7 @@ export const remarkComponents: Plugin<[], MdastRoot> = () => (tree) => {
   })
 }
 
-const urlProperties = new Set(['href', 'src', 'xlinkhref', 'action', 'formaction', 'poster', 'data'])
+const urlProperties = new Set(['href', 'src', 'xlinkhref', 'action', 'formaction', 'poster', 'link', 'cover', 'data'])
 
 function isJavascriptUrl(value: unknown): boolean {
   if (typeof value !== 'string') return false

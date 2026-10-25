@@ -13,12 +13,17 @@
  * Only text INSIDE the parentheses goes into a bubble; everything else stays ordinary text.
  * Nested parentheses are fine: `(ص)` inside a bubble does not end it, and neither does a list
  * marker such as `۱) ...`. A message whose parenthesis is never closed leaves the item untouched.
+ *
+ * A bubble may also hold pictures, videos and sound: `![](a.jpg)`, `![](a.mp4)`, `![](a.mp3)`, or
+ * `::video{link="./a.mp4", cover="./a.jpg"}` / `::audio{link="./a.mp3"}` (on their own line inside the
+ * parentheses, or in the middle of the text).
  */
 
 interface MdNode {
   type: string
   value?: string
   name?: string
+  attributes?: Record<string, string>
   children?: MdNode[]
   data?: Record<string, unknown>
 }
@@ -44,6 +49,37 @@ function persianDigits(value: string): string {
 
 const textNode = (value: string): MdNode => ({ type: 'text', value })
 
+/**
+ * `::video{…}` / `::audio{…}` written INSIDE a message, on the same line as other text:
+ * `ج1 : (ببین ::video{link="./a.mp4", cover="./a.jpg"})`. Markdown only recognises these directives on a line of
+ * their own, so here they are found by hand and turned into the same node the parser makes for a lone line.
+ */
+const MEDIA_DIRECTIVE = /::(video|audio)\{((?:"[^"]*"|'[^']*'|[^}"'])*)\}/uy
+const MEDIA_DIRECTIVE_ANYWHERE = /::(video|audio)\{((?:"[^"]*"|'[^']*'|[^}"'])*)\}/gu
+
+function parseAttributes(source: string): Record<string, string> {
+  const attributes: Record<string, string> = {}
+  for (const match of source.matchAll(/([A-Za-z_][\w-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s,}]+)))?/gu)) {
+    attributes[match[1]] = match[2] ?? match[3] ?? match[4] ?? ''
+  }
+  return attributes
+}
+
+/** Adds text that belongs to an open message; media directives in it become blocks of their own. */
+function pushMessageText(message: OpenMessage, text: string): void {
+  let last = 0
+  for (const match of text.matchAll(MEDIA_DIRECTIVE_ANYWHERE)) {
+    const before = text.slice(last, match.index)
+    if (before) message.inline.push(textNode(before))
+    const inline = trimInline(message.inline)
+    if (inline.length) message.blocks.push({ type: 'paragraph', children: inline })
+    message.inline = []
+    message.blocks.push({ type: 'leafDirective', name: match[1], attributes: parseAttributes(match[2]), children: [] })
+    last = match.index + match[0].length
+  }
+  if (last < text.length) message.inline.push(textNode(text.slice(last)))
+}
+
 /** `۱) متن` / `۲) متن`: a numbering (digit(s) after a space, text after it), not the end of the message. */
 function isListMarker(text: string, index: number): boolean {
   const before = text.slice(Math.max(0, index - 3), index)
@@ -55,6 +91,15 @@ function isListMarker(text: string, index: number): boolean {
 function findClose(text: string, from: number, open: OpenMessage): number {
   for (let index = from; index < text.length; index += 1) {
     const character = text[index]
+    if (character === ':') {
+      // The parentheses inside `::video{link="a (1).mp4"}` are part of the file name, not of the message.
+      MEDIA_DIRECTIVE.lastIndex = index
+      const media = MEDIA_DIRECTIVE.exec(text)
+      if (media) {
+        index += media[0].length - 1
+        continue
+      }
+    }
     if (character === '(') open.depth += 1
     else if (character === ')' && !isListMarker(text, index)) {
       open.depth -= 1
@@ -124,10 +169,10 @@ function scanParagraph(paragraph: MdNode, carried: OpenMessage | null, output: O
       if (open) {
         const end = findClose(text, cursor, open)
         if (end < 0) {
-          open.inline.push(textNode(text.slice(cursor)))
+          pushMessageText(open, text.slice(cursor))
           cursor = text.length
         } else {
-          if (end > cursor) open.inline.push(textNode(text.slice(cursor, end)))
+          if (end > cursor) pushMessageText(open, text.slice(cursor, end))
           finishMessage(open)
           open = null
           cursor = end + 1

@@ -99,9 +99,11 @@ The modal uses a native dialog for focus trapping and Escape-to-close. Popovers 
 ![تصویر دوم](./two.webp)
 :::
 
-::video{src="./clip.mp4" poster="./cover.webp"}
-::audio{src="./audio.ogg"}
+::video{link="./clip.mp4", cover="./cover.webp"}
+::audio{link="./audio.ogg"}
 ```
+
+`link` is the video / audio file (or an https URL) and `cover` is the picture shown before the video is played. A comma between attributes is allowed, a space works too. The older names `src` and `poster` still work.
 
 A gallery accepts photos, GIFs and videos (`![](a.mp4)` or `::video`), one per line, in any mix. They go to the lightbox as one navigable set. Layout by count at 100% font size: 1 = plain media, 2 = side by side, 3 = 2 + 1 full width, 4 = 2 × 2, 5 = 3 + 2, 6 = 3 + 3, more continue with rows of up to 3; larger font size → fewer per row, smaller → more (`src/lib/gallery.ts`). Ordinary Markdown images ending in `.mp4` or `.webm` become video players; `.mp3`, `.ogg`, `.wav`, and `.m4a` become audio players. Images and videos call the Part 5 lightbox hook.
 
@@ -279,6 +281,13 @@ Inside an accordion item, lines that look like this become chat bubbles:
 - Questions: `سوال` or `س`; answers: `جواب` or `ج`. The number is optional (`ج : (…)` works) and the colon can be `:` or `：`.
 - A marker must start a line. Only the text inside the parentheses goes into the bubble; text outside stays normal.
 - Inside a bubble you can use bold, links, lists and nested parentheses such as `(ص)`; a numbering like `۱) …` does not end the bubble.
+- A bubble can hold pictures, videos and sound: `![](a.jpg)`, `![](a.mp4)`, `![](a.mp3)`, `::video{link="./a.mp4", cover="./a.jpg"}` and `::audio{link="./a.mp3"}` — on a line of their own inside the parentheses, or in the middle of the text:
+
+  ```md
+  ج1 : (این ویدیو را ببین
+  ::video{link="./clip.mp4", cover="./cover.jpg"}
+  )
+  ```
 - If a parenthesis is never closed, the item is shown as ordinary text (nothing disappears).
 - Questions sit on the reading-start side, answers on the other side; the bubbles pop in one by one when the item opens.
 - Code: `src/lib/chat.ts` (parsing), `src/components/mdx/ChatBlocks.tsx` and the `.md-chat*` rules in `src/index.css` (look).

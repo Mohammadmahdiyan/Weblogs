@@ -130,9 +130,9 @@ console.log(message)
 این متن نمونه برای نمایش مقدمه‌ی برجسته‌ی مقاله است.
 :::
 
-::video{poster="./cover.svg"}
+::video{link="./video.mp4", cover="./cover.svg"}
 
-::audio{}
+::audio{link="./video.mp3"}
 
 :::suggested{href="/blog/married-prophet-with-ayesha" label="مقاله پیشنهادی:"}
 [عنوان مقاله‌ی نمونه](/blog/married-prophet-with-ayesha)

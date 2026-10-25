@@ -130,7 +130,7 @@ console.log(message)
 این متن نمونه برای نمایش مقدمه‌ی برجسته‌ی مقاله است.
 :::
 
-::video{poster="./cover.svg"}
+::video{cover="./cover.svg"}
 
 ::audio{}
 

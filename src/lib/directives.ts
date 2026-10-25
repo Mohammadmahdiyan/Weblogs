@@ -18,7 +18,7 @@ interface Container {
   height: number
 }
 
-export function normalizeDirectiveFences(markdown: string): string {
+function fixDirectiveFences(markdown: string): string {
   if (!markdown.includes(':::')) return markdown
 
   const lines = markdown.split('\n')
@@ -59,4 +59,38 @@ export function normalizeDirectiveFences(markdown: string): string {
     }
   }
   return lines.join('\n')
+}
+
+/** `:name{ … }` / `::name{ … }` / `:::name{ … }` with its attribute text, on one line. */
+const DIRECTIVE_ATTRIBUTES = /(:{1,3}[A-Za-z][\w-]*(?:\[[^\]\n]*\])?)\{((?:"[^"\n]*"|'[^'\n]*'|[^}"'\n])*)\}/g
+
+/**
+ * Attributes are separated by spaces, but it is natural to write a comma after a quoted value:
+ * `::video{link="./a.mp4", cover="./a.jpg"}`. The directive parser does not accept that comma (the whole line
+ * would stay plain text), so commas that follow a quoted value are turned into spaces. Code fences are untouched.
+ */
+export function normalizeDirectiveAttributes(markdown: string): string {
+  if (!markdown.includes('{') || !markdown.includes(':')) return markdown
+
+  let fence: string | null = null
+  return markdown
+    .split('\n')
+    .map((line) => {
+      const codeFence = line.match(CODE_FENCE)
+      if (codeFence) {
+        const marker = codeFence[1]
+        if (fence === null) fence = marker
+        else if (marker[0] === fence[0] && marker.length >= fence.length && line.trim() === marker) fence = null
+        return line
+      }
+      if (fence !== null || !line.includes(',')) return line
+      return line.replace(DIRECTIVE_ATTRIBUTES, (_match, head: string, attributes: string) =>
+        `${head}{${attributes.replace(/("[^"\n]*"|'[^'\n]*')(\s*),/g, '$1$2 ')}}`)
+    })
+    .join('\n')
+}
+
+/** Everything that has to be fixed in the Markdown source before it is parsed: container fences and attribute commas. */
+export function normalizeDirectiveFences(markdown: string): string {
+  return normalizeDirectiveAttributes(fixDirectiveFences(markdown))
 }

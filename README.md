@@ -342,7 +342,7 @@ export const emojis = {
 ![توضیح عکس](./one.jpg)
 ![گیف](./two.gif)
 ![توضیح ویدیو](./clip.mp4)
-::video{src="./other.webm" poster="./poster.jpg"}
+::video{link="./other.webm", cover="./cover.jpg"}
 :::
 ```
 
@@ -434,7 +434,7 @@ Set `siteUrl` in `src/site.config.ts`. Generated: `sitemap.xml`, `robots.txt`, `
 
 ## Gallery
 
-`:::gallery` takes any mix of photos, GIFs and videos (`![](a.jpg)`, `![](b.gif)`, `![](c.mp4)`, `::video{src="…"}`), one per line; click opens a lightbox that steps through the whole set. Layout by count at 100% font size: 1 = plain media (no gallery), 2 = side by side, 3 = 2 + 1 full width, 4 = 2 × 2, 5 = 3 + 2, 6 = 3 + 3, more continue with rows of up to 3 (7 = 3+2+2, 8 = 3+3+2, …). Items per row follow the reader's font size: larger text → fewer per row (6 items at 150% = 2+2+2), smaller → more (8 items at 80% = 4+4); narrow screens also reduce it so tiles never get tiny. Logic: `src/lib/gallery.ts`.
+`:::gallery` takes any mix of photos, GIFs and videos (`![](a.jpg)`, `![](b.gif)`, `![](c.mp4)`, `::video{link="…"}`), one per line; click opens a lightbox that steps through the whole set. Layout by count at 100% font size: 1 = plain media (no gallery), 2 = side by side, 3 = 2 + 1 full width, 4 = 2 × 2, 5 = 3 + 2, 6 = 3 + 3, more continue with rows of up to 3 (7 = 3+2+2, 8 = 3+3+2, …). Items per row follow the reader's font size: larger text → fewer per row (6 items at 150% = 2+2+2), smaller → more (8 items at 80% = 4+4); narrow screens also reduce it so tiles never get tiny. Logic: `src/lib/gallery.ts`.
 
 ## Troubleshooting
 

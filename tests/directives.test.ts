@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeDirectiveFences } from '../src/lib/directives.ts'
+import { normalizeDirectiveAttributes, normalizeDirectiveFences } from '../src/lib/directives.ts'
 
 const lines = (...rows: string[]) => `${rows.join('\n')}\n`
 
@@ -31,5 +31,18 @@ describe('normalizeDirectiveFences', () => {
   it('keeps Windows line endings', () => {
     const typed = [':::accordion', ':::item{title="س"}', ':::modal', ':::', ':::', ':::', ''].join('\r\n')
     expect(normalizeDirectiveFences(typed)).toBe([':::::accordion', '::::item{title="س"}', ':::modal', ':::', '::::', ':::::', ''].join('\r\n'))
+  })
+})
+
+describe('normalizeDirectiveAttributes', () => {
+  it('lets attributes be separated by a comma after a quoted value', () => {
+    expect(normalizeDirectiveAttributes('::video{link="./a.mp4", cover="./a.jpg"}')).toBe('::video{link="./a.mp4"  cover="./a.jpg"}')
+    expect(normalizeDirectiveAttributes('::audio{link="./a,b.mp3",}')).toBe('::audio{link="./a,b.mp3" }')
+  })
+
+  it('leaves normal text, unquoted values and code fences alone', () => {
+    for (const text of ['سلام, {خنده} و بعد', '::select{options=الف,ب}', ['```', '::video{link="a", cover="b"}', '```'].join('\n')]) {
+      expect(normalizeDirectiveAttributes(text)).toBe(text)
+    }
   })
 })

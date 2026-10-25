@@ -69,7 +69,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
   }
 
   rewritten = rewritten.replace(
-    /\b(src|href|poster|image)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
+    /\b(src|href|poster|image|link|cover)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
     (match, attribute: string, _whole: string, doubleQuoted: string, singleQuoted: string, unquoted: string) => {
       const original = doubleQuoted ?? singleQuoted ?? unquoted ?? ''
       const next = rewriteMediaUrl(original, slug, mediaFiles, baseUrl)

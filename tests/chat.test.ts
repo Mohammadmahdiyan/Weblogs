@@ -82,3 +82,30 @@ describe('transformChatMessages', () => {
     expect(summary(kids)).toEqual(['P:متن سوال1 : (نه)\nولی', 'CHAT[جواب|0:بله]'])
   })
 })
+
+describe('media inside a bubble', () => {
+  const directive = (name: string, attributes: Record<string, string>): Node => ({ type: 'leafDirective', name, attributes, children: [] } as Node)
+
+  it('keeps pictures / video / sound nodes inside the bubble', () => {
+    const image: Node = { type: 'image' }
+    const kids = run(item(p(t('ج1 : (ببین '), image, t(')'))))
+    const message = kids[0].children?.[0]
+    expect(message?.children?.[0].children?.map((child) => child.type)).toEqual(['text', 'image'])
+  })
+
+  it('keeps a lone ::video / ::audio line between the parentheses in the bubble', () => {
+    const kids = run(item(p(t('ج1 : (ببین')), directive('video', { link: 'a.mp4' }), p(t(')'))))
+    const blocks = kids[0].children?.[0].children ?? []
+    expect(blocks.map((block) => block.type)).toEqual(['paragraph', 'leafDirective'])
+  })
+
+  it('turns ::video{…} / ::audio{…} written in the middle of the text into media blocks', () => {
+    const kids = run(item(p(t('ج1 : (ببین ::video{link="a (1).mp4", cover="c.jpg"} و گوش کن ::audio{link="b.mp3"} تمام) بیرون'))))
+    const blocks = kids[0].children?.[0].children ?? []
+    expect(blocks.map((block) => block.type)).toEqual(['paragraph', 'leafDirective', 'paragraph', 'leafDirective', 'paragraph'])
+    expect(blocks[1]).toMatchObject({ name: 'video', attributes: { link: 'a (1).mp4', cover: 'c.jpg' } })
+    expect(blocks[3]).toMatchObject({ name: 'audio', attributes: { link: 'b.mp3' } })
+    expect(plain(blocks[4])).toBe('تمام')
+    expect(plain(kids[1])).toBe('بیرون')
+  })
+})

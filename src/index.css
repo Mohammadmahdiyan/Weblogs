@@ -325,6 +325,11 @@ body { overflow-x: clip; }
 .md-chat-text :is(ul) { list-style: disc; }
 .md-chat-text :is(ol) { list-style: decimal; }
 .md-chat-text img { max-width: 100%; border-radius: var(--radius-sm); }
+/* Pictures, videos and sound inside a bubble: the bubble gets a real width (it would otherwise shrink to the text). */
+.md-chat-bubble:has(video, audio, img, iframe) { width: min(100% - 2.75rem, 24rem); }
+.md-chat-text :is(video, audio, iframe) { display: block; width: 100%; max-width: 100%; }
+.md-chat-text video { max-height: 60vh; border-radius: var(--radius-sm); }
+.md-chat-text > button { display: flex; width: 100%; max-width: 100%; }
 
 /* The bubbles pop in one after another each time the accordion opens */
 .accordion-item[data-open='true'] .md-chat-row {
