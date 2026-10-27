@@ -19,9 +19,9 @@ describe('telegramFromMarkdown', () => {
     expect(html).toMatch(/<a href="https?:\/\/[^"]+\/blog\/a">مقاله<\/a>/)
   })
 
-  it('makes headings bold, lists with bullets, writes only the name of an image and drops relative links', () => {
+  it('makes headings bold, lists with bullets, writes only the file name of an image and drops relative links', () => {
     const { text } = telegramFromMarkdown('## عنوان\n\n- الف\n- ب\n\n![تصویر](./a.jpg) [محلی](#x)')
-    expect(text).toBe('**عنوان**\n\n• الف\n• ب\n\nتصویر محلی')
+    expect(text).toBe('**عنوان**\n\n• الف\n• ب\n\na.jpg محلی')
   })
 
   it('puts a quote with blank lines (>> … <<) in ONE quote', () => {
@@ -43,10 +43,14 @@ describe('telegramPart', () => {
     expect(part?.payload.text).toBe('**یک**\n\nمتن یک\n\n**زیر**\n\nمتن زیر')
   })
 
-  it('copies a quote or a paragraph by itself, and nothing for an unknown offset', () => {
+  it('copies a quote by itself, and nothing for an unknown offset', () => {
     expect(telegramPart(markdown, offsetOf(markdown, '> نقل'))).toMatchObject({ kind: 'quote', payload: { text: '> نقل' } })
-    expect(telegramPart(markdown, offsetOf(markdown, 'متن دو'))?.payload.text).toBe('متن دو')
     expect(telegramPart(markdown, 9999)).toBeNull()
+  })
+
+  it('stops a ## section at the next ## but keeps its ### parts', () => {
+    expect(telegramPart(markdown, offsetOf(markdown, '## دو'))?.payload.text).toBe('**دو**\n\nمتن دو\n\n> نقل')
+    expect(telegramPart(markdown, offsetOf(markdown, '### زیر'))?.payload.text).toBe('**زیر**\n\nمتن زیر')
   })
 })
 
@@ -68,8 +72,18 @@ describe('enters and images', () => {
     expect(telegramFromMarkdown('> نقل\nادامه').text).toBe('> نقل\n> ادامه')
   })
 
-  it('writes only the name of an image (alt, else title, else file name), one per line', () => {
-    expect(telegramFromMarkdown('![نام عکس](./a.jpg)\n![](./photos/my%20pic.png)').text).toBe('نام عکس\nmy pic')
-    expect(telegramFromMarkdown('متن ![](x.png) ادامه').text).toBe('متن x ادامه')
+  it('writes only the file name (with extension) of a picture, video or sound — never the alt text', () => {
+    expect(telegramFromMarkdown('![عکس پروژه](./17hazar-in-qadir-top-site.png)').text).toBe('17hazar-in-qadir-top-site.png')
+    expect(telegramFromMarkdown('![](./photos/my%20pic.png?v=2)').text).toBe('my pic.png')
+    expect(telegramFromMarkdown('![](./a.mp4)').text).toBe('a.mp4')
+    expect(telegramFromMarkdown('::video{link="./clip.mp4", cover="./c.jpg"}').text).toBe('clip.mp4')
+    expect(telegramFromMarkdown('::audio{link="https://example.com/x/music.mp3"}').text).toBe('music.mp3')
+  })
+
+  it('numbers pictures from the top when there are several', () => {
+    const two = '![shikh-sadogh-s188](./sadoq-ravayeat-qadir.jpg)\n![کلینی در کافی جلد 4](./kolane-eid-qadir.jpg)'
+    expect(telegramFromMarkdown(two).text).toBe('1. sadoq-ravayeat-qadir.jpg\n2. kolane-eid-qadir.jpg')
+    expect(telegramFromMarkdown('متن\n\n![](a.png)\n\nمتن دو\n\n![](b.png)').text).toBe('متن\n\n1. a.png\n\nمتن دو\n\n2. b.png')
+    expect(telegramFromMarkdown('![](a.png)\n\n::video{link="v.mp4"}').text).toBe('a.png\n\nv.mp4')
   })
 })

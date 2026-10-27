@@ -161,11 +161,10 @@ export const remarkHeadingLevels: Plugin<[], MdastRoot> = () => (tree) => {
 }
 
 /**
- * Gives the blocks a reader can pick in «کپی بخش‌به‌بخش» (headings, paragraphs, quotes, lists, tables and accordion
- * items) a `data-src` attribute with their start offset in the source text; src/lib/telegram.ts finds the block again
- * from it. Runs after remarkComponents so the attribute joins the properties the directives already have.
+ * Gives headings and quotes a `data-src` attribute with their start offset in the source text: clicking one copies
+ * its section / the quote for Telegram, and src/lib/telegram.ts finds the block again from that offset. Runs after remarkComponents so the attribute joins the properties the directives already have.
  */
-const PICKABLE_BLOCKS = new Set(['heading', 'paragraph', 'blockquote', 'list', 'table', 'containerDirective'])
+const PICKABLE_BLOCKS = new Set(['heading', 'blockquote'])
 
 export const remarkSourceOffsets: Plugin<[], MdastRoot> = () => (tree) => {
   visit(tree, (node) => {

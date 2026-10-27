@@ -25,12 +25,16 @@ export interface TelegramPayload {
   text: string
 }
 
-export type TelegramPartKind = 'section' | 'quote' | 'list' | 'table' | 'accordion' | 'text'
+export type TelegramPartKind = 'section' | 'quote'
 
 // ───────────────────────────── a small tree of what Telegram can show
 
+type MediaKind = 'image' | 'video' | 'audio'
+
 type Inline =
   | string
+  /** A picture / video / sound is written as its file name (numbered when there are several of the same kind). */
+  | { kind: 'media'; media: MediaKind; name: string; number?: number }
   | { kind: 'b' | 'i' | 'u' | 's' | 'code' | 'spoiler'; children: Inline[] }
   | { kind: 'a'; href: string; children: Inline[] }
 
@@ -121,16 +125,24 @@ const HTML_FORMAT: Record<string, 'b' | 'i' | 'u' | 's' | 'code'> = {
 }
 const HTML_TAG = /^<\s*(\/)?\s*([a-z][a-z0-9]*)\b[^>]*?(\/)?\s*>$/i
 
-/** A picture cannot be pasted as text, so only its name is written: its alt text, else its title, else the file name. */
-function imageName(node: MdNode): string {
-  const named = (node.alt ?? '').trim() || (node.title ?? '').trim()
-  if (named) return named
-  const file = (node.url ?? '').split(/[?#]/)[0].split('/').pop() ?? ''
+const VIDEO_FILE = /\.(mp4|webm|mov|m4v|ogv)$/i
+const AUDIO_FILE = /\.(mp3|ogg|oga|wav|m4a|aac|opus|flac)$/i
+
+/** The file name of a link, with its extension: `./folder/my%20pic.png?v=2` → `my pic.png`. */
+function fileName(url: string): string {
+  const last = url.split(/[?#]/)[0].split('/').pop() ?? ''
   try {
-    return decodeURIComponent(file).replace(/\.[A-Za-z0-9]{2,5}$/, '')
+    return decodeURIComponent(last)
   } catch {
-    return file.replace(/\.[A-Za-z0-9]{2,5}$/, '')
+    return last
   }
+}
+
+/** A picture, video or sound cannot be pasted as text, so only the name of its file is written. */
+function mediaOf(url: string, fallback: string, kind?: MediaKind): Inline {
+  const name = fileName(url) || fallback
+  const media: MediaKind = kind ?? (VIDEO_FILE.test(name) ? 'video' : AUDIO_FILE.test(name) ? 'audio' : 'image')
+  return { kind: 'media', media, name }
 }
 
 function inlines(nodes: MdNode[] = []): Inline[] {
@@ -164,7 +176,8 @@ function inlines(nodes: MdNode[] = []): Inline[] {
         } else if (HTML_FORMAT[name] && !tag[3]) stack.push({ kind: HTML_FORMAT[name], children: [] })
         break
       }
-      case 'image': case 'imageReference': push(imageName(node)); break
+      case 'image': push(mediaOf(node.url ?? '', (node.alt ?? '').trim() || (node.title ?? '').trim())); break
+      case 'imageReference': break
       case 'footnoteReference': break
       default: push(inlines(node.children))
     }
@@ -219,8 +232,8 @@ function blocksOf(node: MdNode): Block[] {
       const children = node.children ?? []
       const onlyImages = children.some((child) => child.type === 'image') && children.every((child) => child.type === 'image' || (child.type === 'text' && !(child.value ?? '').trim()) || child.type === 'break')
       if (onlyImages) {
-        const names = children.filter((child) => child.type === 'image').map(imageName).filter(Boolean)
-        return names.length ? text(joinLines(names.map((name) => [name]))) : []
+        const files = children.filter((child) => child.type === 'image').map((child): Inline => mediaOf(child.url ?? '', (child.alt ?? '').trim()))
+        return text(joinLines(files.map((file) => [file])))
       }
       return text(trimEdges(inlines(children)))
     }
@@ -257,7 +270,8 @@ function blocksOf(node: MdNode): Block[] {
     }
     case 'leafDirective': {
       const url = mediaUrl(node)
-      if (['youtube', 'aparat', 'instagram', 'embed', 'video', 'audio'].includes(node.name ?? '') && /^https?:\/\//i.test(url)) return text([url])
+      if (node.name === 'video' || node.name === 'audio') return url ? text([mediaOf(url, '', node.name)]) : []
+      if (['youtube', 'aparat', 'instagram', 'embed'].includes(node.name ?? '') && /^https?:\/\//i.test(url)) return text([url])
       return []
     }
     case 'containerDirective': {
@@ -282,8 +296,11 @@ function blocksOf(node: MdNode): Block[] {
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const escapeAttribute = (value: string) => escapeHtml(value).replace(/"/g, '&quot;')
 
+const mediaLabel = (item: { name: string; number?: number }) => (item.number ? `${item.number}. ${item.name}` : item.name)
+
 function inlineHtml(item: Inline): string {
   if (typeof item === 'string') return escapeHtml(item).replace(/\n/g, '<br>')
+  if (item.kind === 'media') return escapeHtml(mediaLabel(item))
   const inner = item.children.map(inlineHtml).join('')
   if (item.kind === 'a') return `<a href="${escapeAttribute(item.href)}">${inner}</a>`
   if (item.kind === 'spoiler') return `<tg-spoiler>${inner}</tg-spoiler>`
@@ -310,6 +327,7 @@ const MARKERS = { b: '**', i: '__', s: '~~', code: '`', spoiler: '||' } as const
 
 function inlineText(item: Inline): string {
   if (typeof item === 'string') return item
+  if (item.kind === 'media') return mediaLabel(item)
   const inner = item.children.map(inlineText).join('')
   if (item.kind === 'u') return inner
   if (item.kind === 'a') return inner.trim() === item.href ? item.href : `${inner} (${item.href})`
@@ -327,7 +345,30 @@ function blockText(block: Block): string {
 
 const joinText = (blocks: Block[]): string => blocks.map(blockText).join('\n\n')
 
+/** Pictures (and, separately, videos and sounds) are numbered 1., 2., … from the top, but only when there are several. */
+function numberMedia(blocks: Block[]): void {
+  const found: Record<MediaKind, Extract<Inline, { kind: 'media' }>[]> = { image: [], video: [], audio: [] }
+  const walkInline = (items: Inline[]) => {
+    for (const item of items) {
+      if (typeof item === 'string') continue
+      if (item.kind === 'media') found[item.media].push(item)
+      else walkInline(item.children)
+    }
+  }
+  const walk = (list: Block[]) => {
+    for (const block of list) {
+      if (block.kind === 'text') walkInline(block.content)
+      else if (block.kind === 'quote') walk(block.blocks)
+    }
+  }
+  walk(blocks)
+  for (const items of Object.values(found)) {
+    if (items.length > 1) items.forEach((item, index) => { item.number = index + 1 })
+  }
+}
+
 function payloadOf(blocks: Block[]): TelegramPayload {
+  numberMedia(blocks)
   const meaningful = blocks.filter((block) => block.kind !== 'text' || block.content.some((item) => typeof item !== 'string' || item.trim() !== ''))
   return { html: joinHtml(meaningful), text: joinText(meaningful).trim() }
 }
@@ -339,8 +380,8 @@ export function telegramFromMarkdown(markdown: string): TelegramPayload {
   return payloadOf(blocksOf(parse(markdown)))
 }
 
-/** Block types a click can pick (they carry `data-src`, see `remarkSourceOffsets` in markdown.ts). */
-const PICKABLE = new Set(['heading', 'paragraph', 'blockquote', 'list', 'table', 'containerDirective'])
+/** Block types a click can copy: headings and quotes (they carry `data-src`, see `remarkSourceOffsets` in markdown.ts). */
+const PICKABLE = new Set(['heading', 'blockquote'])
 
 function locate(node: MdNode, offset: number): { node: MdNode; siblings: MdNode[]; index: number } | null {
   const children = node.children ?? []
@@ -355,7 +396,7 @@ function locate(node: MdNode, offset: number): { node: MdNode; siblings: MdNode[
 
 /**
  * One part of the article, chosen by where it starts in the source: a heading gives its whole section (up to the
- * next heading of the same or a higher level); a quote, paragraph, list, table or accordion item gives itself.
+ * next heading of the same or a higher level, so `##` includes its `###` parts); a quote gives itself.
  */
 export function telegramPart(markdown: string, offset: number): { payload: TelegramPayload; kind: TelegramPartKind } | null {
   const found = locate(parse(markdown), offset)
@@ -363,16 +404,13 @@ export function telegramPart(markdown: string, offset: number): { payload: Teleg
 
   const { node, siblings, index } = found
   let nodes = [node]
-  let kind: TelegramPartKind = 'text'
+  let kind: TelegramPartKind = 'quote'
 
   if (node.type === 'heading') {
     kind = 'section'
     const end = siblings.findIndex((sibling, position) => position > index && sibling.type === 'heading' && (sibling.depth ?? 6) <= (node.depth ?? 6))
     nodes = siblings.slice(index, end < 0 ? undefined : end)
-  } else if (node.type === 'blockquote') kind = 'quote'
-  else if (node.type === 'list') kind = 'list'
-  else if (node.type === 'table') kind = 'table'
-  else if (node.type === 'containerDirective') kind = 'accordion'
+  }
 
   const payload = payloadOf(nodes.flatMap(blocksOf))
   return payload.text ? { payload, kind } : null

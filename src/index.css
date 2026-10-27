@@ -340,10 +340,5 @@ body { overflow-x: clip; }
   .accordion-item[data-open='true'] .md-chat-row { animation: none; }
 }
 
-/* «کپی بخش‌به‌بخش» (TelegramCopy.tsx): while the mode is on, the block under the pointer is outlined. */
-[data-copy-mode], [data-copy-mode] * { cursor: copy; }
-[data-copy-target] {
-  outline: 2px dashed var(--brand);
-  outline-offset: 4px;
-  border-radius: var(--radius-sm);
-}
+/* Headings and quotes copy their section / themselves for Telegram when clicked (TelegramCopy.tsx). */
+.article-lang :is(h2, h3, h4, h5, h6, blockquote)[data-src] { cursor: copy; }
