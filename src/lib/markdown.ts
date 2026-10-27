@@ -18,6 +18,7 @@ import { splitInline } from './inline.ts'
 import { transformChatMessages } from './chat.ts'
 import { emojiFile, isEmoji } from './emojiRegistry.ts'
 import { ITEMS_MARKER } from './quotes.ts'
+import { honorifics } from './honorifics.ts'
 
 type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
   'mdx-honorific'?: import('react').ComponentType<{
@@ -156,6 +157,22 @@ export const remarkHeadingLevels: Plugin<[], MdastRoot> = () => (tree) => {
   if (!hasLevelOne) return
   visit(tree, 'heading', (node) => {
     node.depth = Math.min(6, node.depth + 1) as 1 | 2 | 3 | 4 | 5 | 6
+  })
+}
+
+/**
+ * Gives the blocks a reader can pick in «کپی بخش‌به‌بخش» (headings, paragraphs, quotes, lists, tables and accordion
+ * items) a `data-src` attribute with their start offset in the source text; src/lib/telegram.ts finds the block again
+ * from it. Runs after remarkComponents so the attribute joins the properties the directives already have.
+ */
+const PICKABLE_BLOCKS = new Set(['heading', 'paragraph', 'blockquote', 'list', 'table', 'containerDirective'])
+
+export const remarkSourceOffsets: Plugin<[], MdastRoot> = () => (tree) => {
+  visit(tree, (node) => {
+    const offset = node.position?.start.offset
+    if (offset === undefined || !PICKABLE_BLOCKS.has(node.type)) return
+    const target = node as { data?: { hProperties?: Record<string, unknown> } }
+    target.data = { ...target.data, hProperties: { ...target.data?.hProperties, dataSrc: String(offset) } }
   })
 }
 
@@ -351,98 +368,6 @@ const remarkInlineExtras: Plugin<[], MdastRoot> = () => (tree) => {
  * are intentionally left untouched.
  */
 
-type HonorificConfig = {
-  file: string
-  label: string
-  width?: string
-  height?: string
-  verticalAlign?: string
-}
-
-
-const DEFAULT_HONORIFIC_SIZE = '1.8em'
-const DEFAULT_HONORIFIC_ALIGN = '-0.4em'
-const SMALL_HONORIFIC_SIZE = '1.2em'
-const SMALL_HONORIFIC_ALIGN = '-0.15em'
-const MEDIUM_HONORIFIC_SIZE = '1.5em'
-const MEDIUM_HONORIFIC_ALIGN = '-0.25em'
-
-const createHonorific = (
-  file: string,
-  label: string,
-  size = DEFAULT_HONORIFIC_SIZE,
-  verticalAlign = DEFAULT_HONORIFIC_ALIGN,
-): HonorificConfig => ({
-  file,
-  label,
-  width: size,
-  height: size,
-  verticalAlign,
-})
-
-const honorifics: Record<string, HonorificConfig> = {
-  // درود بر پیامبر ﷺ
-  'ص': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
-  'ﷺ': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
-  'صلى الله عليه وسلم': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
-
-  // سلام بر پیامبران
-  'ع': createHonorific('as.svg', 'عليه السلام'),
-  'عليه السلام': createHonorific('as.svg', 'عليه السلام'),
-  'عليه الصلاة والسلام': createHonorific('asws.svg', 'عليه الصلاة والسلام'),
-  'عليها السلام': createHonorific('ahas.svg', 'عليها السلام'),
-  'عليهم السلام': createHonorific('amus.svg', 'عليهم السلام'),
-
-  // رضایت خداوند از صحابه
-  'رض': createHonorific('radu.svg', 'رضي الله عنه'),
-  'رضي الله عنه': createHonorific('radu.svg', 'رضي الله عنه'),
-  'رضي الله عنها': createHonorific('rada.svg', 'رضي الله عنها'),
-  'رضي الله عنهما': createHonorific('raduma.svg', 'رضي الله عنهما'),
-  'رضي الله عنهم': createHonorific('radum.svg', 'رضي الله عنهم'),
-  'رضي الله عنهن': createHonorific('radunna.svg', 'رضي الله عنهن'),
-
-  // رحمت خداوند
-  'رح': createHonorific('rahimahu.svg', 'رحمه الله'),
-  'رحمه الله': createHonorific('rahimahu.svg', 'رحمه الله'),
-  'رحمها الله': createHonorific('rahimaha.svg', 'رحمها الله', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
-  'رحمهم الله': createHonorific('rahimahum.svg', 'رحمهم الله'),
-  'رحمهما الله': createHonorific('rahimahuma.svg', 'رحمهما الله'),
-  'رحمهن الله': createHonorific('rahimahunna.svg', 'رحمهن الله'),
-
-  // عبارات مربوط به خداوند
-  'جل جلاله': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'عز وجل': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'جل وعلا': createHonorific('jwa.svg', 'جل وعلا', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'سبحانه وتعالى': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'تبارك وتعالى': createHonorific('twt.svg', 'تبارك وتعالى', '1.5em', '-0.25em'),
-
-  // اختصارات مؤنث و جمع
-  'رضها': createHonorific('rada.svg', 'رضي الله عنها'),
-  'رضهما': createHonorific('raduma.svg', 'رضي الله عنهما'),
-  'رضهم': createHonorific('radum.svg', 'رضي الله عنهم'),
-  'رضهن': createHonorific('radunna.svg', 'رضي الله عنهن'),
-
-  'رحها': createHonorific('rahimaha.svg', 'رحمها الله', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
-  'رحهم': createHonorific('rahimahum.svg', 'رحمهم الله'),
-  'رحهما': createHonorific('rahimahuma.svg', 'رحمهما الله'),
-  'رحهن': createHonorific('rahimahunna.svg', 'رحمهن الله'),
-
-  // اختصارات عبارات مربوط به خداوند
-  'جل': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'عز': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'سبح': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'تبارك': createHonorific('twt.svg', 'تبارك وتعالى', '1.6em', '-0.25em'),
-
-    // درود بر پیامبر و خاندان ایشان
-  'صا': createHonorific('saa.svg', 'صلى الله عليه و آله'),
-  'صلى الله عليه و آله': createHonorific('saa.svg', 'صلى الله عليه و آله'),
-
-  // حفظه الله
-  'حف': createHonorific('haf.svg', 'حفظه الله'),
-  'حفظه الله': createHonorific('haf.svg', 'حفظه الله'),
-}
-
-
 const honorificPattern = new RegExp(
   `\\(\\s*(${Object.keys(honorifics).sort((a, b) => b.length - a.length).map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\s*\\)`,
   'g',
@@ -530,6 +455,7 @@ export function createMarkdownProcessor(components: MarkdownComponents) {
     .use(remarkHonorifics)
     .use(remarkHeadingLevels)
     .use(remarkComponents)
+    .use(remarkSourceOffsets)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     .use(rehypeSlug)

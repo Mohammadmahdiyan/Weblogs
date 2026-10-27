@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, ChevronLeft, ShieldAlert } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
@@ -16,6 +16,7 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer'
 import { ArticleLayout } from '../layouts'
 import { Basmala } from '../components/Basmala'
 import { IncompleteNotice } from '../components/IncompleteNotice'
+import { TelegramCopy } from '../components/TelegramCopy'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
 
@@ -113,6 +114,7 @@ export function ArticlePage() {
   const { slug = '' } = useParams()
   const article = articles.find((item) => item.slug === slug)
   const adultConfirmed = useAdultAccess()
+  const bodyRef = useRef<HTMLDivElement>(null)
   const [bodyState, setBodyState] = useState<{ slug: string; markdown?: string; error?: boolean } | null>(null)
   const markdown = bodyState?.slug === slug ? bodyState.markdown ?? null : null
   const bodyError = (bodyState?.slug === slug && bodyState.error === true) || Boolean(article && !articleBodies[article.slug])
@@ -212,11 +214,13 @@ export function ArticlePage() {
 
           {tocReady && <ArticleToc items={toc} variant="box" />}
 
-          <div className="article-lang" lang={article.lang} dir={article.dir}>
+          <div ref={bodyRef} className="article-lang" lang={article.lang} dir={article.dir}>
             {bodyError && <p role="alert" className="text-[var(--danger)]">بارگذاری متن مقاله ممکن نشد.</p>}
             {markdown === null && !bodyError && <div aria-busy="true" className="my-6 grid gap-4"><div className="h-6 w-2/5 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 w-5/6 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /></div>}
             {markdown !== null && <MarkdownRenderer markdown={markdown} className="[&_h2]:scroll-mt-24" />}
           </div>
+
+          {markdown !== null && <TelegramCopy markdown={markdown} bodyRef={bodyRef} />}
 
           {article.incomplete && markdown !== null && <IncompleteNotice title={article.title} />}
 

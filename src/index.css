@@ -339,3 +339,11 @@ body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   .accordion-item[data-open='true'] .md-chat-row { animation: none; }
 }
+
+/* «کپی بخش‌به‌بخش» (TelegramCopy.tsx): while the mode is on, the block under the pointer is outlined. */
+[data-copy-mode], [data-copy-mode] * { cursor: copy; }
+[data-copy-target] {
+  outline: 2px dashed var(--brand);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}

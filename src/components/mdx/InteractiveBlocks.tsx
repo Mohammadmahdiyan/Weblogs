@@ -5,6 +5,8 @@ import { clsx } from 'clsx'
 interface AccordionItemProps {
   title?: string
   open?: boolean | string
+  /** Start offset of the item in the Markdown source (see remarkSourceOffsets); used by «کپی بخش‌به‌بخش». */
+  'data-src'?: string
   children?: ReactNode
 }
 
@@ -123,7 +125,7 @@ export function Accordion({
   )
 }
 
-export function AccordionItem({ title = 'جزئیات', open = false, children }: AccordionItemProps) {
+export function AccordionItem({ title = 'جزئیات', open = false, 'data-src': dataSrc, children }: AccordionItemProps) {
   const id = useId().replace(/:/g, '')
   const single = useContext(SingleOpenContext)
   const [ownExpanded, setOwnExpanded] = useState(isOn(open))
@@ -137,7 +139,7 @@ export function AccordionItem({ title = 'جزئیات', open = false, children }
   const panelId = `accordion-panel-${id}`
 
   return (
-    <section data-open={expanded} className="accordion-item overflow-hidden rounded-[var(--radius-sm)] bg-[var(--surface-alt)]">
+    <section data-open={expanded} data-src={dataSrc} className="accordion-item overflow-hidden rounded-[var(--radius-sm)] bg-[var(--surface-alt)]">
       <h3 className="m-0">
         <button
           id={triggerId}
