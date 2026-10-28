@@ -52,3 +52,18 @@ describe('parseBlog', () => {
     expect(parseBlog('---\nreadingTime: 7\n---\n# T', 'x.md').readingTime).toBe(7)
   })
 })
+
+describe('show', () => {
+  const page = (frontmatter: string) => `---\n${frontmatter}\n---\n\n# عنوان\n\nمتن`
+
+  it('is true unless the article says show: false', () => {
+    expect(parseBlog(page('tags: [الف]'), 'a.md').show).toBeUndefined()
+    expect(parseBlog(page('show: true'), 'a.md').show).toBeUndefined()
+    expect(parseBlog(page('show: false'), 'a.md').show).toBe(false)
+    expect(parseBlog(page('show: false'), 'a.md').ignoredKeys).toEqual([])
+  })
+
+  it('must be true or false', () => {
+    expect(() => parseBlog(page('show: "no"'), 'a.md')).toThrow('"show" must be true or false')
+  })
+})

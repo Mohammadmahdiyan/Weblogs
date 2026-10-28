@@ -55,3 +55,11 @@ export function pickIndex(count: number, avoid: number | null = null, random: ()
   const pool = Array.from({ length: count }, (_, index) => index).filter((index) => index !== avoid)
   return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))]
 }
+
+/** Message sent to the author by a visitor of a page the author has hidden (`show: false`). `{url}` is the page address. */
+export const UNLOCK_MESSAGE = 'السلام علیکم 🌹\nاین صفحه قفل است و اجازهٔ نمایشش داده نشده: {url}\nاگر امکانش هست قفلش را باز کنید. ممنون 🙏'
+
+/** Opens the author's chat with the «please unlock this page» message already typed in. */
+export function unlockUrl(username: string, pageUrl: string): string {
+  return `https://t.me/${username}?text=${encodeURIComponent(UNLOCK_MESSAGE.split('{url}').join(pageUrl))}`
+}

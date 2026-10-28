@@ -17,6 +17,8 @@ interface PreparedArticle {
   body: string
   mediaFiles: MediaFile[]
   articleDirectory: string
+  /** false when the article says `show: false` (hidden from the online site). */
+  show: boolean
 }
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -231,7 +233,7 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     ...(registered?.published === true ? {} : { incomplete: true }),
   }
 
-  return { meta, body, mediaFiles, articleDirectory }
+  return { meta, body, mediaFiles, articleDirectory, show: blog.show !== false }
 }
 
 function xmlEscape(value: string): string {
@@ -320,6 +322,9 @@ async function buildContent(): Promise<void> {
     .filter((entry) => !isProduction || !entry.name.startsWith('_'))
     .sort((left, right) => left.name.localeCompare(right.name))
   const articles: PreparedArticle[] = []
+  // Articles with `show: false`: left out of the online build completely (no page text, no media, no search,
+  // no sitemap); only their address is kept so the site can answer «the admin does not allow this page».
+  const hiddenSlugs: string[] = []
   const dates = await readDates()
   const seenSlugs = new Map<string, string>()
 
@@ -340,6 +345,10 @@ async function buildContent(): Promise<void> {
       fail(indexPath, `duplicate slug "${article.meta.slug}"; already used by ${relativeFilePath(duplicatePath)}`)
     }
     seenSlugs.set(article.meta.slug, indexPath)
+    if (isProduction && !article.show) {
+      hiddenSlugs.push(article.meta.slug)
+      continue
+    }
     articles.push(article)
   }
 
@@ -390,6 +399,8 @@ async function buildContent(): Promise<void> {
   await writeFile(path.join(generatedRoot, 'articles.json'), `${JSON.stringify(metadata, null, 2)}\n`, 'utf8')
   await writeFile(path.join(generatedRoot, 'search-index.json'), `${JSON.stringify(searchIndex, null, 2)}\n`, 'utf8')
   await writeFile(path.join(generatedRoot, 'bodies.ts'), bodyModule, 'utf8')
+  await writeFile(path.join(generatedRoot, 'hidden.json'), `${JSON.stringify(hiddenSlugs.sort(), null, 2)}\n`, 'utf8')
+  if (hiddenSlugs.length > 0) console.log(`Hidden online (show: false): ${hiddenSlugs.join(', ')}`)
 
   console.table(metadata.map((article) => ({
     slug: article.slug,

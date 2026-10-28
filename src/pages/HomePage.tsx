@@ -1,4 +1,3 @@
-import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Headphones, Play } from 'lucide-react'
 import articlesJson from '../generated/articles.json'
@@ -6,6 +5,7 @@ import searchJson from '../generated/search-index.json'
 import type { ArticleMeta, SearchEntry } from '../lib/types'
 import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
+import { ArticlePagination } from '../components/ArticlePagination'
 import { ArticleSearch } from '../components/ArticleSearch'
 import { FontControls } from '../components/FontControls'
 import { AdultArticleNotice } from '../components/AdultArticleNotice'
@@ -15,6 +15,8 @@ import { ImageWithFallback } from '../components/ImageWithFallback'
 
 const allArticles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
 const searchIndex = searchJson as SearchEntry[]
+/** Articles on one page of the home list. */
+const PAGE_SIZE = 6
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(`${date}T12:00:00`))
@@ -67,7 +69,7 @@ function ArticleCard({ article, adultConfirmed }: { article: ArticleMeta; adultC
 }
 
 export function HomePage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const adultConfirmed = useAdultAccess()
   usePageMeta({
     title: siteConfig.siteName,
@@ -84,8 +86,21 @@ export function HomePage() {
       },
     },
   })
-  const [visibleCount, setVisibleCount] = useState(12)
-  const visibleArticles = useMemo(() => allArticles.slice(0, visibleCount), [visibleCount])
+  // The page number lives in `?page=` so Back works and a page can be shared; changing it does not reload anything.
+  const pageCount = Math.max(1, Math.ceil(allArticles.length / PAGE_SIZE))
+  const currentPage = Math.min(pageCount, Math.max(1, Number.parseInt(searchParams.get('page') ?? '', 10) || 1))
+  const visibleArticles = allArticles.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  function goToPage(page: number) {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      if (page <= 1) next.delete('page')
+      else next.set('page', String(page))
+      return next
+    })
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.requestAnimationFrame(() => document.getElementById('articles')?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }))
+  }
 
   return (
     <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -109,7 +124,7 @@ export function HomePage() {
         ) : (
           <p className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-6 text-center text-[var(--text-secondary)]">هنوز مقاله‌ای منتشر نشده است.</p>
         )}
-        {visibleCount < allArticles.length && <div className="mt-8 text-center"><button type="button" onClick={() => setVisibleCount((count) => count + 12)} className="rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 py-2.5 text-sm font-semibold text-[var(--brand-contrast)] hover:bg-[var(--brand-dark)]">نمایش مقاله‌های بیشتر</button></div>}
+        <ArticlePagination pageCount={pageCount} current={currentPage} onChange={goToPage} />
       </section>
     </main>
   )

@@ -73,7 +73,17 @@ async function main(): Promise<void> {
     await mkdir(target, { recursive: true })
     await writeFile(path.join(target, 'index.html'), html, 'utf8')
   }
-  console.log(`Prerendered meta for ${articles.length} article(s).`)
+
+  // Pages hidden with `show: false`: a plain copy of the app shell (no article text, not indexed), so the
+  // address opens the app, which then shows the «the admin does not allow this page» screen.
+  const hidden = JSON.parse(await readFile(path.join(projectRoot, 'src', 'generated', 'hidden.json'), 'utf8')) as string[]
+  for (const slug of hidden) {
+    const html = template.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(siteConfig.siteName)}</title>\n    <meta name="robots" content="noindex, nofollow" />`)
+    const target = path.join(distRoot, 'blog', slug)
+    await mkdir(target, { recursive: true })
+    await writeFile(path.join(target, 'index.html'), html, 'utf8')
+  }
+  console.log(`Prerendered meta for ${articles.length} article(s); ${hidden.length} hidden page(s).`)
 }
 
 main().catch((error: unknown) => {

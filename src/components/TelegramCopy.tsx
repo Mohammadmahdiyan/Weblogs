@@ -71,12 +71,12 @@ export function TelegramCopy({ markdown, bodyRef }: { markdown: string; bodyRef:
 
   return (
     <>
-      <div className="not-prose mt-10 flex">
+      <div className="not-prose mt-10 flex justify-center">
         <button
           type="button"
           onClick={copyArticle}
           title="کپی متن مقاله برای تلگرام (با کلیک روی هر عنوان یا نقل‌قول هم فقط همان بخش کپی می‌شود)"
-          className="md-button inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-[var(--brand-foreground)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)] hover:cursor-pointer"
+          className="md-button inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-[var(--brand-foreground)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]"
         >
           <Copy aria-hidden="true" className="size-4" />
           کپی متن مقاله

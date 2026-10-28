@@ -17,6 +17,8 @@ import { ArticleLayout } from '../layouts'
 import { Basmala } from '../components/Basmala'
 import { IncompleteNotice } from '../components/IncompleteNotice'
 import { TelegramCopy } from '../components/TelegramCopy'
+import hiddenJson from '../generated/hidden.json'
+import { HiddenArticlePage } from './HiddenArticlePage'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
 
@@ -174,7 +176,7 @@ export function ArticlePage() {
     return () => { cancelled = true }
   }, [article, adultConfirmed])
 
-  if (!article) return <NotFoundPage />
+  if (!article) return (hiddenJson as string[]).includes(slug) ? <HiddenArticlePage slug={slug} /> : <NotFoundPage />
 
   if (article.adult === true && !adultConfirmed) {
     return (

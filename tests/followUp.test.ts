@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FOLLOW_UP_MESSAGES, fillTitle, followUpUrl, pickIndex, telegramUsername } from '../src/lib/followUp.ts'
+import { FOLLOW_UP_MESSAGES, fillTitle, followUpUrl, pickIndex, telegramUsername, unlockUrl } from '../src/lib/followUp.ts'
 
 describe('follow-up messages', () => {
   it('has 25 short messages that all mention the article title', () => {
@@ -45,5 +45,13 @@ describe('pickIndex', () => {
   it('stays in range', () => {
     expect(pickIndex(25, null, () => 0.9999)).toBe(24)
     expect(pickIndex(1, 0)).toBe(0)
+  })
+})
+
+describe('unlockUrl', () => {
+  it('opens the author chat with the page address in the message', () => {
+    const url = unlockUrl('someone', 'https://example.com/blog/secret')
+    expect(url.startsWith('https://t.me/someone?text=')).toBe(true)
+    expect(decodeURIComponent(url)).toContain('https://example.com/blog/secret')
   })
 })
