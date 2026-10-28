@@ -71,7 +71,7 @@ export function TelegramCopy({ markdown, bodyRef }: { markdown: string; bodyRef:
 
   return (
     <>
-      <div className="not-prose mt-10 flex justify-center">
+      <div className="not-prose mt-10 flex">
         <button
           type="button"
           onClick={copyArticle}
