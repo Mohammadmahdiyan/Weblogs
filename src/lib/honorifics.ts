@@ -41,8 +41,9 @@ export const honorifics: Record<string, HonorificConfig> = {
 
   // سلام بر پیامبران
   'ع': createHonorific('as.svg', 'عليه السلام'),
-  'عليه السلام': createHonorific('as.svg', 'عليه السلام'),
+  'عليه سلام': createHonorific('as.svg', 'عليه السلام'),
   'عليه الصلاة والسلام': createHonorific('asws.svg', 'عليه الصلاة والسلام'),
+  'علیه السلام': createHonorific('asws.svg', 'عليه الصلاة والسلام'),
   'عليها السلام': createHonorific('ahas.svg', 'عليها السلام'),
   'عليهم السلام': createHonorific('amus.svg', 'عليهم السلام'),
 
