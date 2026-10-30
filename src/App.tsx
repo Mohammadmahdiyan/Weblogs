@@ -26,8 +26,10 @@ export default function App() {
       <RouteEffects />
       <Suspense fallback={<LoadingScreen />}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/blog/:slug" element={<ArticlePage />} />
+          <Route path="/" element={<HomePage key="blog" />} />
+          <Route path="/blog/:slug" element={<ArticlePage key="blog" />} />
+          <Route path="/books" element={<HomePage key="books" collection="books" />} />
+          <Route path="/books/:slug" element={<ArticlePage key="books" collection="books" />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

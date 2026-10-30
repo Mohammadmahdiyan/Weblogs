@@ -27,6 +27,7 @@ dist-ssr
 .cache/
 src/generated/
 public/content/
+public/story-media/
 public/sitemap.xml
 public/rss.xml
 public/robots.txt

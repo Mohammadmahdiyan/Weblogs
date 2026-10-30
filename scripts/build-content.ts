@@ -10,6 +10,8 @@ import siteConfig from '../src/site.config.ts'
 import { detectProvider, parseYouTubeId, youtubePoster } from '../src/lib/embed.ts'
 import { markdownToPlainText } from '../src/lib/plainText.ts'
 import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, prepareVideoForBrowser, type MediaFile } from './lib/media.ts'
+import { allCollections, type Collection } from './lib/collections.ts'
+import { buildStory } from './lib/story.ts'
 import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
 
 interface PreparedArticle {
@@ -22,8 +24,6 @@ interface PreparedArticle {
 }
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const blogRoot = path.join(projectRoot, 'content', 'blog')
-const publicContentRoot = path.join(projectRoot, 'public', 'content')
 const generatedRoot = path.join(projectRoot, 'src', 'generated')
 const mediaCacheRoot = path.join(projectRoot, '.cache', 'media')
 const baseUrl = '/Weblogs/'
@@ -43,7 +43,7 @@ function excerptFrom(markdown: string): string {
   return Array.from(plainText(markdown)).slice(0, 160).join('')
 }
 
-function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[]): string {
+function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[], mediaDir: string): string {
   const tree = unified().use(remarkParse).parse(body)
   const edits: { start: number; end: number; replacement: string }[] = []
 
@@ -52,7 +52,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
     const { start, end } = node.position
     if (start.offset === undefined || end.offset === undefined) return
 
-    const replacement = rewriteMediaUrl(node.url, slug, mediaFiles, baseUrl)
+    const replacement = rewriteMediaUrl(node.url, slug, mediaFiles, baseUrl, mediaDir)
     if (replacement === node.url) return
 
     const rawNode = body.slice(start.offset, end.offset)
@@ -75,7 +75,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
     /\b(src|href|poster|image|link|cover)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
     (match, attribute: string, _whole: string, doubleQuoted: string, singleQuoted: string, unquoted: string) => {
       const original = doubleQuoted ?? singleQuoted ?? unquoted ?? ''
-      const next = rewriteMediaUrl(original, slug, mediaFiles, baseUrl)
+      const next = rewriteMediaUrl(original, slug, mediaFiles, baseUrl, mediaDir)
       if (next === original) return match
       const quote = doubleQuoted !== undefined ? '"' : singleQuoted !== undefined ? "'" : ''
       return `${attribute}=${quote}${next}${quote}`
@@ -86,7 +86,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
     /\b(srcset)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
     (match, attribute: string, _whole: string, doubleQuoted: string, singleQuoted: string, unquoted: string) => {
       const original = doubleQuoted ?? singleQuoted ?? unquoted ?? ''
-      const next = rewriteSrcset(original, slug, mediaFiles, baseUrl)
+      const next = rewriteSrcset(original, slug, mediaFiles, baseUrl, mediaDir)
       if (next === original) return match
       const quote = doubleQuoted !== undefined ? '"' : singleQuoted !== undefined ? "'" : ''
       return `${attribute}=${quote}${next}${quote}`
@@ -99,6 +99,7 @@ function rewriteSrcset(
   slug: string,
   mediaFiles: MediaFile[],
   base = '/',
+  mediaDir = 'content',
 ): string {
   function rewriteCandidate(candidate: string): string {
     const leading = candidate.match(/^\s*/)?.[0] ?? ''
@@ -107,7 +108,7 @@ function rewriteSrcset(
     const separator = trimmed.search(/\s/)
     const url = separator === -1 ? trimmed : trimmed.slice(0, separator)
     const descriptor = separator === -1 ? '' : trimmed.slice(separator)
-    return `${leading}${rewriteMediaUrl(url, slug, mediaFiles, base)}${descriptor}${trailing}`
+    return `${leading}${rewriteMediaUrl(url, slug, mediaFiles, base, mediaDir)}${descriptor}${trailing}`
   }
 
   let result = ''
@@ -165,7 +166,7 @@ function embedCover(url: string): NonNullable<ArticleMeta['cover']> {
   }
 }
 
-async function prepareArticle(articleDirectory: string, dates: DatesRegistry): Promise<PreparedArticle> {
+async function prepareArticle(articleDirectory: string, dates: DatesRegistry, collection: Collection): Promise<PreparedArticle> {
   const indexPath = path.join(articleDirectory, 'index.md')
   const label = relativeFilePath(indexPath)
   const folderName = path.basename(articleDirectory)
@@ -208,7 +209,7 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     )
   }
 
-  const body = rewriteMarkdownMedia(blog.body, slug, mediaFiles)
+  const body = rewriteMarkdownMedia(blog.body, slug, mediaFiles, collection.mediaDir)
   const words = blog.body.trim().split(/\s+/).filter(Boolean).length
   const meta: ArticleMeta = {
     slug,
@@ -220,7 +221,7 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry): P
     suggestions: blog.suggestions,
     cover: coverFile?.type
       ? {
-          url: `${baseUrl}content/${encodeURIComponent(slug)}/${encodeMediaPath(coverFile.relativePath)}`,
+          url: `${baseUrl}${collection.mediaDir}/${encodeURIComponent(slug)}/${encodeMediaPath(coverFile.relativePath)}`,
           type: coverFile.type,
         }
       : blog.coverEmbed
@@ -242,7 +243,7 @@ function xmlEscape(value: string): string {
 }
 
 /** sitemap.xml, robots.txt, rss.xml and _headers (CSP frame-src). Needs `siteUrl` in src/site.config.ts. */
-async function writeSiteFiles(metadata: ArticleMeta[]): Promise<void> {
+async function writeSiteFiles(metadata: ArticleMeta[], bookMetadata: ArticleMeta[]): Promise<void> {
   const publicRoot = path.join(projectRoot, 'public')
   const base = (typeof siteConfig.siteUrl === 'string' ? siteConfig.siteUrl : '').replace(/\/+$/, '')
   if (!base) throw new Error('src/site.config.ts: siteUrl must be a non-empty URL string.')
@@ -253,6 +254,8 @@ async function writeSiteFiles(metadata: ArticleMeta[]): Promise<void> {
   const urls = [
     { loc: `${base}/`, lastmod: metadata[0]?.updated },
     ...metadata.map((article) => ({ loc: `${base}/blog/${article.slug}`, lastmod: article.updated })),
+    { loc: `${base}/books`, lastmod: bookMetadata[0]?.updated },
+    ...bookMetadata.map((book) => ({ loc: `${base}/books/${book.slug}`, lastmod: book.updated })),
   ]
   const sitemap = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -308,11 +311,17 @@ async function writeSiteFiles(metadata: ArticleMeta[]): Promise<void> {
   ])
 }
 
-async function buildContent(): Promise<void> {
-  const isProduction = process.argv.includes('--production')
+interface BuiltCollection {
+  collection: Collection
+  metadata: ArticleMeta[]
+  articles: PreparedArticle[]
+}
+
+/** Builds one collection (blog or books): validates it, copies its media and writes its generated files. */
+async function buildCollection(collection: Collection, isProduction: boolean): Promise<BuiltCollection> {
   let entries: Dirent[]
   try {
-    entries = await readdir(blogRoot, { withFileTypes: true })
+    entries = await readdir(collection.root, { withFileTypes: true })
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') entries = []
     else throw error
@@ -323,14 +332,14 @@ async function buildContent(): Promise<void> {
     .filter((entry) => !isProduction || !entry.name.startsWith('_'))
     .sort((left, right) => left.name.localeCompare(right.name))
   const articles: PreparedArticle[] = []
-  // Articles with `show: false`: left out of the online build completely (no page text, no media, no search,
+  // Items with `show: false`: left out of the online build completely (no page text, no media, no search,
   // no sitemap); only their address is kept so the site can answer «the admin does not allow this page».
   const hiddenSlugs: string[] = []
-  const dates = await readDates()
+  const dates = await readDates(collection.datesFile)
   const seenSlugs = new Map<string, string>()
 
   for (const directory of directories) {
-    const articleDirectory = path.join(blogRoot, directory.name)
+    const articleDirectory = path.join(collection.root, directory.name)
     const indexPath = path.join(articleDirectory, 'index.md')
     try {
       await stat(indexPath)
@@ -339,7 +348,7 @@ async function buildContent(): Promise<void> {
       throw error
     }
 
-    const article = await prepareArticle(articleDirectory, dates)
+    const article = await prepareArticle(articleDirectory, dates, collection)
 
     const duplicatePath = seenSlugs.get(article.meta.slug)
     if (duplicatePath) {
@@ -369,15 +378,16 @@ async function buildContent(): Promise<void> {
     }
   })
 
-  await rm(publicContentRoot, { recursive: true, force: true })
-  await mkdir(publicContentRoot, { recursive: true })
-  const bodiesDirectory = path.join(generatedRoot, 'bodies')
+  const publicRoot = path.join(projectRoot, 'public', collection.mediaDir)
+  await rm(publicRoot, { recursive: true, force: true })
+  await mkdir(publicRoot, { recursive: true })
+  const bodiesDirectory = path.join(generatedRoot, collection.files.bodiesDir)
   await rm(bodiesDirectory, { recursive: true, force: true })
   await mkdir(bodiesDirectory, { recursive: true })
   await mkdir(generatedRoot, { recursive: true })
 
   for (const article of articles) {
-    const destinationRoot = path.join(publicContentRoot, article.meta.slug)
+    const destinationRoot = path.join(publicRoot, article.meta.slug)
     for (const media of article.mediaFiles) {
       const destination = path.join(destinationRoot, ...media.relativePath.split('/'))
       await mkdir(path.dirname(destination), { recursive: true })
@@ -394,21 +404,22 @@ async function buildContent(): Promise<void> {
   }
 
   const bodyImports = articles
-    .map(({ meta }) => `  ${JSON.stringify(meta.slug)}: () => import('./bodies/${meta.slug}.md?raw'),`)
+    .map(({ meta }) => `  ${JSON.stringify(meta.slug)}: () => import('./${collection.files.bodiesDir}/${meta.slug}.md?raw'),`)
     .join('\n')
   const bodyModule = [
-    'export const articleBodies: Record<string, () => Promise<{ default: string }>> = {',
+    `export const ${collection.files.bodiesExport}: Record<string, () => Promise<{ default: string }>> = {`,
     bodyImports,
     '}',
     '',
   ].join('\n')
 
-  await writeFile(path.join(generatedRoot, 'articles.json'), `${JSON.stringify(metadata, null, 2)}\n`, 'utf8')
-  await writeFile(path.join(generatedRoot, 'search-index.json'), `${JSON.stringify(searchIndex, null, 2)}\n`, 'utf8')
-  await writeFile(path.join(generatedRoot, 'bodies.ts'), bodyModule, 'utf8')
-  await writeFile(path.join(generatedRoot, 'hidden.json'), `${JSON.stringify(hiddenSlugs.sort(), null, 2)}\n`, 'utf8')
-  if (hiddenSlugs.length > 0) console.log(`Hidden online (show: false): ${hiddenSlugs.join(', ')}`)
+  await writeFile(path.join(generatedRoot, collection.files.meta), `${JSON.stringify(metadata, null, 2)}\n`, 'utf8')
+  await writeFile(path.join(generatedRoot, collection.files.search), `${JSON.stringify(searchIndex, null, 2)}\n`, 'utf8')
+  await writeFile(path.join(generatedRoot, collection.files.bodiesModule), bodyModule, 'utf8')
+  await writeFile(path.join(generatedRoot, collection.files.hidden), `${JSON.stringify(hiddenSlugs.sort(), null, 2)}\n`, 'utf8')
+  if (hiddenSlugs.length > 0) console.log(`Hidden online (${collection.id}, show: false): ${hiddenSlugs.join(', ')}`)
 
+  console.log(`\n[${collection.id}]`)
   console.table(metadata.map((article) => ({
     slug: article.slug,
     title: article.title,
@@ -418,7 +429,27 @@ async function buildContent(): Promise<void> {
     suggestions: article.suggestions.length,
   })))
 
-  await writeSiteFiles(metadata)
+  return { collection, metadata, articles }
+}
+
+async function buildContent(): Promise<void> {
+  const isProduction = process.argv.includes('--production')
+  const built: BuiltCollection[] = []
+  for (const collection of allCollections) built.push(await buildCollection(collection, isProduction))
+  const blog = built.find((item) => item.collection.id === 'blog') as BuiltCollection
+  const books = built.find((item) => item.collection.id === 'books') as BuiltCollection
+
+  await buildStory({
+    isProduction,
+    baseUrl,
+    articles: blog.metadata.flatMap((meta) => {
+      const prepared = blog.articles.find((article) => article.meta.slug === meta.slug)
+      return prepared ? [{ meta, body: prepared.body }] : []
+    }),
+    plainText,
+  })
+
+  await writeSiteFiles(blog.metadata, books.metadata)
 }
 
 buildContent().catch((error: unknown) => {

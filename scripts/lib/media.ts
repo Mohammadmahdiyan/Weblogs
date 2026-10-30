@@ -59,6 +59,8 @@ export function rewriteMediaUrl(
   slug: string,
   mediaFiles: MediaFile[],
   base = '/',
+  /** Folder inside public/ the item's media is published under (`content` for the blog, `content-books` for books). */
+  mediaDir = 'content',
 ): string {
   const suffixIndex = value.search(/[?#]/)
   const pathname = suffixIndex === -1 ? value : value.slice(0, suffixIndex)
@@ -78,7 +80,7 @@ export function rewriteMediaUrl(
   const normalizedBase = base.replace(/^\/+|\/+$/g, '')
   const prefix = normalizedBase ? `/${normalizedBase}` : ''
 
-  return `${prefix}/content/${encodeURIComponent(slug)}/${encodeMediaPath(normalizedPath)}${suffix}`
+  return `${prefix}/${mediaDir}/${encodeURIComponent(slug)}/${encodeMediaPath(normalizedPath)}${suffix}`
 }
 
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, BookOpen, Copy, Link2, Send, Share2, X } from 'lucide-react'
 import type { ArticleMeta } from '../lib/types'
+import type { SiteCollection } from '../lib/collections'
 import siteConfig from '../site.config'
 import { AdultArticleNotice } from './AdultArticleNotice'
 import { ImageWithFallback } from './ImageWithFallback'
@@ -16,14 +17,15 @@ function SidebarCard({ title, icon, children }: { title: string; icon: React.Rea
   )
 }
 
-export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[]; article: ArticleMeta }) {
+export function ArticleSidebar({ articles, article, collection }: { articles: ArticleMeta[]; article: ArticleMeta; collection: SiteCollection }) {
+  const route = collection.route
   const [copied, setCopied] = useState(false)
   const adultConfirmed = useAdultAccess()
   const articleIndex = articles.findIndex((item) => item.slug === article.slug)
   const previous = articles.slice(Math.max(0, articleIndex - 5), articleIndex).reverse()
   const next = articles.slice(articleIndex + 1, articleIndex + 6)
   const latest = articles.slice(0, 5)
-  const currentUrl = `${siteConfig.siteUrl}/blog/${article.slug}`
+  const currentUrl = `${siteConfig.siteUrl}${route}/${article.slug}`
   const encodedUrl = encodeURIComponent(currentUrl)
   const encodedTitle = encodeURIComponent(article.title)
 
@@ -35,21 +37,21 @@ export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[];
 
   return (
     <aside aria-label="اطلاعات تکمیلی مقاله" className="grid content-start gap-4">
-      <SidebarCard title="جدیدترین نوشته‌ها" icon={<BookOpen aria-hidden="true" className="size-4" />}>
+      <SidebarCard title={collection.text.latest} icon={<BookOpen aria-hidden="true" className="size-4" />}>
         <ul className="m-0 grid list-none gap-2 p-0">
-          {latest.map((item) => <li key={item.slug}><Link to={`/blog/${item.slug}`} aria-label={item.adult && !adultConfirmed ? 'مشاهده مقاله +۱۸' : item.title} className="block rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2.5 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.adult && !adultConfirmed ? <span className="relative block"><span className="block select-none blur-sm">{item.title}</span><span className="absolute inset-0 flex items-center justify-center"><AdultArticleNotice compact /></span></span> : item.title}</Link></li>)}
+          {latest.map((item) => <li key={item.slug}><Link to={`${route}/${item.slug}`} aria-label={item.adult && !adultConfirmed ? 'مشاهده مقاله +۱۸' : item.title} className="block rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2.5 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.adult && !adultConfirmed ? <span className="relative block"><span className="block select-none blur-sm">{item.title}</span><span className="absolute inset-0 flex items-center justify-center"><AdultArticleNotice compact /></span></span> : item.title}</Link></li>)}
         </ul>
       </SidebarCard>
 
-      {previous.length > 0 && <SidebarCard title="مقالات پیشین" icon={<ArrowRight aria-hidden="true" className="size-4 rtl:rotate-180" />}>
+      {previous.length > 0 && <SidebarCard title={collection.text.previous} icon={<ArrowRight aria-hidden="true" className="size-4 rtl:rotate-180" />}>
         <ul className="m-0 grid list-none gap-3 p-0">
-          {previous.map((item) => <li key={item.slug}><ArticleNeighbor article={item} current={item.slug === article.slug} /></li>)}
+          {previous.map((item) => <li key={item.slug}><ArticleNeighbor article={item} current={item.slug === article.slug} route={route} /></li>)}
         </ul>
       </SidebarCard>}
 
-      {next.length > 0 && <SidebarCard title="مقالات بعدی" icon={<ArrowLeft aria-hidden="true" className="size-4 rtl:rotate-180" />}>
+      {next.length > 0 && <SidebarCard title={collection.text.next} icon={<ArrowLeft aria-hidden="true" className="size-4 rtl:rotate-180" />}>
         <ul className="m-0 grid list-none gap-3 p-0">
-          {next.map((item) => <li key={item.slug}><ArticleNeighbor article={item} current={item.slug === article.slug} /></li>)}
+          {next.map((item) => <li key={item.slug}><ArticleNeighbor article={item} current={item.slug === article.slug} route={route} /></li>)}
         </ul>
       </SidebarCard>}
 
@@ -74,11 +76,11 @@ export function ArticleSidebar({ articles, article }: { articles: ArticleMeta[];
   )
 }
 
-function ArticleNeighbor({ article, current }: { article: ArticleMeta; current: boolean }) {
+function ArticleNeighbor({ article, current, route }: { article: ArticleMeta; current: boolean; route: string }) {
   const adultConfirmed = useAdultAccess()
   const censored = article.adult === true && !adultConfirmed
   return (
-    <Link to={`/blog/${article.slug}`} aria-current={current ? 'page' : undefined} className="flex items-center gap-3 rounded-[var(--radius-sm)] bg-[var(--surface-alt)] p-2.5 text-start no-underline hover:bg-[var(--surface-strong)]">
+    <Link to={`${route}/${article.slug}`} aria-current={current ? 'page' : undefined} className="flex items-center gap-3 rounded-[var(--radius-sm)] bg-[var(--surface-alt)] p-2.5 text-start no-underline hover:bg-[var(--surface-strong)]">
       {article.cover?.type === 'image' && <ImageWithFallback src={article.cover.url} alt="" loading="lazy" decoding="async" className={`size-12 shrink-0 rounded-[var(--radius-sm)] object-cover ${censored ? 'blur-md' : ''}`} fallbackClassName={`!aspect-square size-12 shrink-0 rounded-[var(--radius-sm)] ${censored ? 'blur-md' : ''}`} />}
       <span className="relative line-clamp-2 text-sm leading-6 text-[var(--text)]">{censored ? <><span className="block select-none blur-sm">{article.title}</span><span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold">حاوی جملات +۱۸</span></> : article.title}</span>
     </Link>

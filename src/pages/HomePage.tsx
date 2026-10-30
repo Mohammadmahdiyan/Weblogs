@@ -1,8 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { Headphones, Play } from 'lucide-react'
-import articlesJson from '../generated/articles.json'
-import searchJson from '../generated/search-index.json'
-import type { ArticleMeta, SearchEntry } from '../lib/types'
+import type { ArticleMeta } from '../lib/types'
+import { siteCollections, type CollectionId } from '../lib/collections'
 import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
 import { ArticlePagination } from '../components/ArticlePagination'
@@ -13,8 +12,6 @@ import { useAdultAccess } from '../lib/adultAccess'
 import { NoImage } from '../components/NoImage'
 import { ImageWithFallback } from '../components/ImageWithFallback'
 
-const allArticles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
-const searchIndex = searchJson as SearchEntry[]
 /** Articles on one page of the home list. */
 const PAGE_SIZE = 6
 
@@ -40,20 +37,20 @@ function ArticleCover({ article }: { article: ArticleMeta }) {
   return <NoImage/>
 }
 
-function ArticleCard({ article, adultConfirmed }: { article: ArticleMeta; adultConfirmed: boolean }) {
+function ArticleCard({ article, adultConfirmed, route }: { article: ArticleMeta; adultConfirmed: boolean; route: string }) {
   const censored = article.adult === true && !adultConfirmed
   const hasCover = true
   return (
     <article className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5">
       {hasCover && (
-        <Link to={`/blog/${article.slug}`} aria-label={censored ? 'مشاهده مقاله +۱۸' : `خواندن ${article.title}`} className="relative block overflow-hidden bg-[var(--surface-alt)]">
+        <Link to={`${route}/${article.slug}`} aria-label={censored ? 'مشاهده مقاله +۱۸' : `خواندن ${article.title}`} className="relative block overflow-hidden bg-[var(--surface-alt)]">
           {censored ? <div className="relative aspect-video overflow-hidden"><div className="pointer-events-none scale-110 blur-xl" aria-hidden="true"><ArticleCover article={article} /></div><div className="absolute inset-0 grid place-items-center bg-[var(--surface)]/75"><AdultArticleNotice compact /></div></div> : <ArticleCover article={article} />}
         </Link>
       )}
-      {censored && !hasCover && <Link to={`/blog/${article.slug}`} aria-label="مشاهده مقاله +۱۸" className="block border-b border-[var(--border-light)] bg-[var(--surface-alt)] no-underline"><AdultArticleNotice /></Link>}
+      {censored && !hasCover && <Link to={`${route}/${article.slug}`} aria-label="مشاهده مقاله +۱۸" className="block border-b border-[var(--border-light)] bg-[var(--surface-alt)] no-underline"><AdultArticleNotice /></Link>}
       <div className="min-w-0 flex-1 p-4 sm:p-5">
         <h2 className="mb-2 text-start text-lg font-bold leading-8">
-          <Link to={`/blog/${article.slug}`} className="text-[var(--text)] no-underline hover:text-[var(--brand)]">{censored ? <span className="relative block"><span className="block select-none blur-sm">{article.title}</span><span className="absolute inset-0 flex items-center justify-center"><AdultArticleNotice compact /></span></span> : article.title}</Link>
+          <Link to={`${route}/${article.slug}`} className="text-[var(--text)] no-underline hover:text-[var(--brand)]">{censored ? <span className="relative block"><span className="block select-none blur-sm">{article.title}</span><span className="absolute inset-0 flex items-center justify-center"><AdultArticleNotice compact /></span></span> : article.title}</Link>
         </h2>
         <p className="mb-4 line-clamp-3 text-start text-sm leading-7 text-[var(--text-secondary)]">{censored ? <span className="relative block"><span className="block select-none blur-sm">{article.description}</span><span className="absolute inset-0 flex items-center justify-center"><span className="rounded bg-[var(--surface)]/90 px-2 py-1 text-xs font-semibold">حاوی جملات +۱۸</span></span></span> : article.description}</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted)]">
@@ -68,12 +65,15 @@ function ArticleCard({ article, adultConfirmed }: { article: ArticleMeta; adultC
   )
 }
 
-export function HomePage() {
+/** The home page (blog list) and, with `collection="books"`, the books page: same search, same list, same pages. */
+export function HomePage({ collection = 'blog' }: { collection?: CollectionId }) {
+  const { items: allArticles, searchIndex, route, text } = siteCollections[collection]
+  const isBooks = collection === 'books'
   const [searchParams, setSearchParams] = useSearchParams()
   const adultConfirmed = useAdultAccess()
   usePageMeta({
-    title: siteConfig.siteName,
-    description: siteConfig.siteDescription,
+    title: isBooks ? text.pageTitle : siteConfig.siteName,
+    description: isBooks ? text.pageDescription : siteConfig.siteDescription,
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
@@ -81,7 +81,7 @@ export function HomePage() {
       url: siteConfig.siteUrl,
       potentialAction: {
         '@type': 'SearchAction',
-        target: `${siteConfig.siteUrl}/?q={search_term_string}`,
+        target: `${siteConfig.siteUrl}${isBooks ? '/books' : '/'}?q={search_term_string}`,
         'query-input': 'required name=search_term_string',
       },
     },
@@ -105,9 +105,10 @@ export function HomePage() {
   return (
     <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
       <section className="mb-10 text-center sm:mb-14">
-        <h1 className="mb-3 text-3xl font-extrabold leading-tight sm:text-4xl">{siteConfig.siteName}</h1>
-        <p className="mx-auto mb-7 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">{siteConfig.siteDescription}</p>
-        <ArticleSearch articles={allArticles} searchIndex={searchIndex} initialQuery={searchParams.get('q') ?? ''} />
+        <h1 className="mb-3 text-3xl font-extrabold leading-tight sm:text-4xl">{isBooks ? text.pageTitle : siteConfig.siteName}</h1>
+        <p className="mx-auto mb-7 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">{isBooks ? text.pageDescription : siteConfig.siteDescription}</p>
+        {/* key: switching between blog and books starts a fresh search box */}
+        <ArticleSearch key={collection} articles={allArticles} searchIndex={searchIndex} initialQuery={searchParams.get('q') ?? ''} basePath={route} />
         <div className="mt-5 flex justify-center">
           <FontControls />
         </div>
@@ -115,14 +116,14 @@ export function HomePage() {
 
       <section id="articles" aria-labelledby="articles-heading">
         <div className="mb-5">
-          <h2 id="articles-heading" className="m-0 text-start text-xl font-bold">همه مقاله‌ها</h2>
+          <h2 id="articles-heading" className="m-0 text-start text-xl font-bold">{text.listHeading}</h2>
         </div>
         {visibleArticles.length ? (
           <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-            {visibleArticles.map((article) => <ArticleCard key={article.slug} article={article} adultConfirmed={adultConfirmed} />)}
+            {visibleArticles.map((article) => <ArticleCard key={article.slug} article={article} adultConfirmed={adultConfirmed} route={route} />)}
           </div>
         ) : (
-          <p className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-6 text-center text-[var(--text-secondary)]">هنوز مقاله‌ای منتشر نشده است.</p>
+          <p className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-6 text-center text-[var(--text-secondary)]">{text.empty}</p>
         )}
         <ArticlePagination pageCount={pageCount} current={currentPage} onChange={goToPage} />
       </section>

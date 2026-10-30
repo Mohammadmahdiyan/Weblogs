@@ -1,8 +1,11 @@
 import { useEffect, type RefObject } from 'react'
 import { Copy } from 'lucide-react'
 import { ToastContainer, toast } from 'react-toastify'
-import { copyToClipboard } from '../lib/clipboard'
-import { telegramFromMarkdown, telegramPart, type TelegramPartKind, type TelegramPayload } from '../lib/telegram'
+import { copyToClipboard, isTouchDevice } from '../lib/clipboard'
+import { telegramFromMarkdown, telegramPart, type TelegramOptions, type TelegramPartKind, type TelegramPayload } from '../lib/telegram'
+
+/** Telegram on phones takes only the plain text, which has no typed markup for quotes: wrap them in « … » there. */
+const telegramOptions = (): TelegramOptions => ({ plainQuote: isTouchDevice() ? 'guillemets' : 'marker' })
 
 const PART_LABEL: Record<TelegramPartKind, string> = { section: 'بخش', quote: 'نقل‌قول' }
 
@@ -47,7 +50,7 @@ export function TelegramCopy({ markdown, bodyRef }: { markdown: string; bodyRef:
       if (!element || !body.contains(element)) return
 
       try {
-        const part = telegramPart(markdown, Number(element.dataset.src))
+        const part = telegramPart(markdown, Number(element.dataset.src), telegramOptions())
         if (!part) throw new Error(`No copyable block starts at offset ${element.dataset.src}.`)
         void copy(part.payload, `«${PART_LABEL[part.kind]}»`)
       } catch (error) {
@@ -62,7 +65,7 @@ export function TelegramCopy({ markdown, bodyRef }: { markdown: string; bodyRef:
 
   function copyArticle() {
     try {
-      void copy(telegramFromMarkdown(markdown), 'متن مقاله')
+      void copy(telegramFromMarkdown(markdown, telegramOptions()), 'متن مقاله')
     } catch (error) {
       console.error('Converting the article for Telegram failed:', error)
       toast.error('کپی کردن متن با شکست مواجه شد. دلیلش در کنسول مرورگر نوشته شده است.')

@@ -21,11 +21,11 @@ export interface ContentMatch {
  * Link to an article; after a content search it also carries the text to jump to and, when the reader
  * stepped to a later occurrence with the arrows, which occurrence (0-based `occurrence`, written 1-based).
  */
-export function articleHref(slug: string, contentTerm = '', occurrence = 0): string {
+export function articleHref(slug: string, contentTerm = '', occurrence = 0, basePath = '/blog'): string {
   const term = contentTerm.trim()
-  if (!term) return `/blog/${slug}`
+  if (!term) return `${basePath}/${slug}`
   const index = occurrence > 0 ? `&${FIND_INDEX_PARAM}=${Math.floor(occurrence) + 1}` : ''
-  return `/blog/${slug}?${FIND_PARAM}=${encodeURIComponent(term)}${index}`
+  return `${basePath}/${slug}?${FIND_PARAM}=${encodeURIComponent(term)}${index}`
 }
 
 /** Reads the 0-based occurrence out of the `n` query value (missing / invalid → 0). */

@@ -17,6 +17,14 @@ export interface SiteConfig {
   embedAllowlist: string[]
   /** false = never request the YouTube poster image (no third-party request before a click). */
   embedPoster: boolean
+  /**
+   * Your profile picture. Used in the header story ring and on the answer side of chat accordions.
+   * `avatar`: a file inside `public/` (e.g. 'profile.jpg' → public/profile.jpg) or a full https URL.
+   * Leave it '' to show a letter instead of a picture.
+   */
+  profile: { name: string; avatar: string }
+  /** Daily story (header ring). See «استوری» in README.md. */
+  story: { enabled: boolean; slideSeconds: number }
 }
 
 const siteConfig: SiteConfig = {
@@ -33,10 +41,12 @@ const siteConfig: SiteConfig = {
   nav: [
     { label: 'خانه', href: '/' },
     { label: 'همه مقاله‌ها', href: '/#articles' },
+    { label: 'کتاب‌ها', href: '/books' },
   ],
   footerLinks: [
     { label: 'خانه', href: '/' },
     { label: 'همه مقاله‌ها', href: '/#articles' },
+    { label: 'کتاب‌ها', href: '/books' },
   ],
   social: [
     {
@@ -54,6 +64,15 @@ const siteConfig: SiteConfig = {
     // 'hadith.example.org',
   ],
   embedPoster: true,
+  profile: {
+    name: 'وبلاگ اسلامی',
+    avatar: 'profile.jpg',
+  },
+  story: {
+    enabled: true,
+    // Time each picture / text stays on screen.
+    slideSeconds: 6,
+  },
 }
 
 export default siteConfig

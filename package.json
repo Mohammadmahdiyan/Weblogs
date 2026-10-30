@@ -17,7 +17,14 @@
     "publishBlog": "tsx scripts/blog-cli.ts publish",
     "deleteBlog": "tsx scripts/blog-cli.ts delete",
     "createTest": "tsx scripts/blog-cli.ts create-test",
-    "deleteTest": "tsx scripts/blog-cli.ts delete-test"
+    "deleteTest": "tsx scripts/blog-cli.ts delete-test",
+    "publishStory": "tsx scripts/story-cli.ts publish",
+    "cleanStory": "tsx scripts/story-cli.ts clean",
+    "deleteStory": "tsx scripts/story-cli.ts delete",
+    "publishBook": "tsx scripts/blog-cli.ts publish-book",
+    "deleteBook": "tsx scripts/blog-cli.ts delete-book",
+    "createTestBook": "tsx scripts/blog-cli.ts create-test-book",
+    "deleteTestBook": "tsx scripts/blog-cli.ts delete-test-book"
   },
   "dependencies": {
     "clsx": "^2.1.1",

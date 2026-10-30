@@ -73,10 +73,11 @@ export type DatesRegistry = Record<string, BlogDates>
 
 const isoDate = /^\d{4}-\d{2}-\d{2}$/
 
-export async function readDates(): Promise<DatesRegistry> {
+export async function readDates(file: string = datesFile): Promise<DatesRegistry> {
+  const name = `content/${path.basename(file)}`
   let raw: string
   try {
-    raw = await readFile(datesFile, 'utf8')
+    raw = await readFile(file, 'utf8')
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return {}
     throw error
@@ -86,17 +87,17 @@ export async function readDates(): Promise<DatesRegistry> {
   try {
     parsed = JSON.parse(raw)
   } catch (error) {
-    throw new Error('content/blog-dates.json is not valid JSON. It is maintained by the blog commands; fix or delete it.', { cause: error })
+    throw new Error(`${name} is not valid JSON. It is maintained by the blog commands; fix or delete it.`, { cause: error })
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new Error('content/blog-dates.json must be an object of { "<folder>": { "date", "updated" } }')
+    throw new Error(`${name} must be an object of { "<folder>": { "date", "updated" } }`)
   }
 
   const registry: DatesRegistry = {}
   for (const [slug, value] of Object.entries(parsed as Record<string, unknown>)) {
     const entry = value as Partial<BlogDates> | null
     if (!entry || typeof entry.date !== 'string' || !isoDate.test(entry.date)) {
-      throw new Error(`content/blog-dates.json: "${slug}" needs "date": "YYYY-MM-DD"`)
+      throw new Error(`${name}: "${slug}" needs "date": "YYYY-MM-DD"`)
     }
     const updated = typeof entry.updated === 'string' && isoDate.test(entry.updated) ? entry.updated : entry.date
     registry[slug] = {
@@ -110,9 +111,9 @@ export async function readDates(): Promise<DatesRegistry> {
   return registry
 }
 
-export async function writeDates(registry: DatesRegistry): Promise<void> {
+export async function writeDates(registry: DatesRegistry, file: string = datesFile): Promise<void> {
   const sorted = Object.fromEntries(Object.entries(registry).sort(([left], [right]) => left.localeCompare(right)))
-  await writeFile(datesFile, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
+  await writeFile(file, `${JSON.stringify(sorted, null, 2)}\n`, 'utf8')
 }
 
 // ───────────────────────── markdown parsing ─────────────────────────

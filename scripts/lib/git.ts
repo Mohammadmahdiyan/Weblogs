@@ -1,8 +1,11 @@
 import { spawnSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 import { projectRoot } from './blog.ts'
+import type { CollectionId } from './collections.ts'
 
-function pathsFor(slugs: string[]): string[] {
-  return ['content/blog-dates.json', ...[...new Set(slugs)].map((slug) => `content/blog/${slug}`)]
+function pathsFor(slugs: string[], collection: CollectionId): string[] {
+  return [`content/${collection}-dates.json`, ...[...new Set(slugs)].map((slug) => `content/${collection}/${slug}`)]
 }
 
 function git(args: string[], quiet = false): { status: number; stdout: string; stderr: string } {
@@ -20,8 +23,16 @@ function git(args: string[], quiet = false): { status: number; stdout: string; s
 }
 
 /** Commit and push only blog content and its date registry; unrelated staged files are excluded. */
-export function pushBlogChanges(commitMessage: string, slugs: string[]): boolean {
-  const paths = pathsFor(slugs)
+export function pushBlogChanges(commitMessage: string, slugs: string[], collection: CollectionId = 'blog'): boolean {
+  return pushPaths(commitMessage, pathsFor(slugs, collection), collection === 'books' ? 'book' : 'blog')
+}
+
+/** Commit and push only the daily story folder and its state file. */
+export function pushStoryChanges(commitMessage: string): boolean {
+  return pushPaths(commitMessage, ['story', 'content/story-state.json'], 'story')
+}
+
+function pushPaths(commitMessage: string, requestedPaths: string[], what: string): boolean {
   const insideRepo = git(['rev-parse', '--is-inside-work-tree'], true)
   if (insideRepo.status !== 0 || insideRepo.stdout.trim() !== 'true') {
     console.error('✖ Git repository not found. Open this project from its cloned Git repository.')
@@ -50,10 +61,16 @@ export function pushBlogChanges(commitMessage: string, slugs: string[]): boolean
     return false
   }
 
+  // `git add` fails on a path that neither exists nor was ever tracked (e.g. a story state file never written).
+  const paths = requestedPaths.filter((target) => existsSync(path.join(projectRoot, target)) || git(['ls-files', '--', target], true).stdout.trim() !== '')
+  if (paths.length === 0) {
+    console.log(`ℹ No ${what} changes to commit.`)
+    return true
+  }
   if (git(['add', '-A', '--', ...paths]).status !== 0) return false
   const staged = git(['diff', '--cached', '--quiet', '--', ...paths], true)
   if (staged.status === 0) {
-    console.log('ℹ No blog changes to commit.')
+    console.log(`ℹ No ${what} changes to commit.`)
     return true
   }
   if (staged.status !== 1) return false
@@ -62,7 +79,13 @@ export function pushBlogChanges(commitMessage: string, slugs: string[]): boolean
     console.error('✖ Git commit failed. Check your Git user.name and user.email settings.')
     return false
   }
-  if (git(['push', 'origin', 'main']).status !== 0) {
+  let pushed = git(['push', 'origin', 'main']).status === 0
+  if (!pushed) {
+    // GitHub's daily story cleanup also commits to main, so the remote may be ahead: update and try once more.
+    console.log('ℹ Push was rejected; updating from GitHub and retrying once…')
+    if (git(['pull', '--rebase', '--autostash', 'origin', 'main']).status === 0) pushed = git(['push', 'origin', 'main']).status === 0
+  }
+  if (!pushed) {
     console.error('✖ Commit created locally, but git push failed. Check your connection and GitHub authentication, then run git push origin main.')
     return false
   }

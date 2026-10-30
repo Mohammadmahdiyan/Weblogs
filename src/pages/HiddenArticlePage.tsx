@@ -6,12 +6,12 @@ import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
 
 /** Shown for an article whose md says `show: false`: its text is not part of the online site at all. */
-export function HiddenArticlePage({ slug }: { slug: string }) {
+export function HiddenArticlePage({ slug, basePath = '/blog' }: { slug: string; basePath?: string }) {
   usePageMeta({ title: 'این صفحه قفل است', description: 'مدیر اجازهٔ نمایش این صفحه را نمی‌دهد.' })
   const href = useMemo(() => {
     const username = telegramUsername(siteConfig.social)
-    return username ? unlockUrl(username, `${siteConfig.siteUrl.replace(/\/$/, '')}/blog/${slug}`) : null
-  }, [slug])
+    return username ? unlockUrl(username, `${siteConfig.siteUrl.replace(/\/$/, '')}${basePath}/${slug}`) : null
+  }, [slug, basePath])
 
   return (
     <main id="main-content" className="mx-auto grid min-h-[55vh] max-w-3xl content-center justify-items-center px-4 py-16 text-center">

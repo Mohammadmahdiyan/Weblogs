@@ -9,6 +9,7 @@ import { StyleSwitcher } from './StyleSwitcher'
 import type { ArticleMeta } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
 import { useDismissibleDetails } from '../lib/useDismissibleDetails'
+import { StoryButton } from './Stories'
 
 function SiteLink({ href, children, className, onClick }: { href: string; children: ReactNode; className?: string; onClick?: () => void }) {
   return href.startsWith('/')
@@ -108,6 +109,7 @@ function Header() {
                 </div>
               </details>
             </div>
+            <StoryButton />
             <StyleSwitcher />
             <button type="button" onClick={() => setDrawerOpen(true)} aria-label="بازکردن فهرست" className="inline-flex size-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] text-[var(--text)] hover:bg-[var(--surface-alt)] md:hidden">
               <Menu aria-hidden="true" className="size-5" />

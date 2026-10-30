@@ -34,7 +34,7 @@ function SnippetText({ snippet }: { snippet: ContentMatch }) {
 
 const stepButtonClass = 'inline-flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:bg-[var(--surface-strong)] hover:text-[var(--brand)] focus-visible:outline-2 focus-visible:outline-[var(--info)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--text-secondary)]'
 
-export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { articles: ArticleMeta[]; searchIndex: SearchEntry[]; initialQuery?: string }) {
+export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePath = '/blog' }: { articles: ArticleMeta[]; searchIndex: SearchEntry[]; initialQuery?: string; basePath?: string }) {
   const navigate = useNavigate()
   const adultConfirmed = useAdultAccess()
   const safeArticles = articles
@@ -118,9 +118,9 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
   // After a content search the article opens scrolled to (and highlighting) the found text.
   const occurrenceOf = (result: SearchResult) => Math.min(occurrences[result.entry.slug] ?? 0, Math.max(0, (result.matches?.length ?? 1) - 1))
   const hrefFor = (result: SearchResult) => {
-    if (!contentSearch) return articleHref(result.entry.slug)
+    if (!contentSearch) return articleHref(result.entry.slug, '', 0, basePath)
     const index = occurrenceOf(result)
-    return articleHref(result.entry.slug, contentQuery, result.matches ? bodyOccurrence(result.matches, index, result.titleLength ?? 0) : 0)
+    return articleHref(result.entry.slug, contentQuery, result.matches ? bodyOccurrence(result.matches, index, result.titleLength ?? 0) : 0, basePath)
   }
   function stepOccurrence(result: SearchResult, step: -1 | 1) {
     const last = (result.matches?.length ?? 1) - 1
@@ -143,7 +143,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '' }: { ar
       return
     }
     const decision = decideSubmit(safeArticles, query, visibleResults.map((result) => ({ slug: result.entry.slug, score: result.score })))
-    if (decision.action === 'navigate' && !contentSearch) navigate(`/blog/${decision.slug}`)
+    if (decision.action === 'navigate' && !contentSearch) navigate(`${basePath}/${decision.slug}`)
     else setOpen(true)
   }
 

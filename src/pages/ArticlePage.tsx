@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, ChevronLeft, ShieldAlert } from 'lucide-react'
-import articlesJson from '../generated/articles.json'
-import { articleBodies } from '../generated/bodies'
 import type { ArticleMeta } from '../lib/types'
+import { siteCollections, type CollectionId, type SiteCollection } from '../lib/collections'
 import { buildToc } from '../lib/toc'
 import { FIND_INDEX_PARAM, FIND_PARAM, parseOccurrence } from '../lib/contentSearch'
 import { useFindInPage } from '../lib/findInPage'
@@ -17,12 +16,9 @@ import { ArticleLayout } from '../layouts'
 import { Basmala } from '../components/Basmala'
 import { IncompleteNotice } from '../components/IncompleteNotice'
 import { TelegramCopy } from '../components/TelegramCopy'
-import hiddenJson from '../generated/hidden.json'
 import { HiddenArticlePage } from './HiddenArticlePage'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
-
-const articles = [...articlesJson as ArticleMeta[]].sort((first, second) => second.date.localeCompare(first.date))
 
 
 function AdultContentGate({ onYes }: { onYes: () => void }) {
@@ -92,9 +88,9 @@ function ReadingProgress() {
   return <div aria-hidden="true" className="fixed inset-x-0 top-0 z-50 h-1 bg-transparent"><div className="h-full bg-[var(--brand-bright)] transition-[width]" style={{ width: `${progress}%` }} /></div>
 }
 
-function RelatedArticles({ article }: { article: ArticleMeta }) {
+function RelatedArticles({ article, collection }: { article: ArticleMeta; collection: SiteCollection }) {
   const adultConfirmed = useAdultAccess()
-  const related = articles
+  const related = collection.items
     .filter((item) => item.slug !== article.slug)
     .map((item) => ({ article: item, score: item.tags.filter((tag) => article.tags.includes(tag)).length }))
     .sort((first, second) => second.score - first.score || second.article.date.localeCompare(first.article.date))
@@ -104,15 +100,18 @@ function RelatedArticles({ article }: { article: ArticleMeta }) {
 
   return (
     <section aria-labelledby="related-heading" className="surface-card mt-6 p-5 sm:p-7">
-      <h2 id="related-heading" className="mb-4 flex items-center gap-2 text-start text-lg font-bold"><BookOpen aria-hidden="true" className="size-5 text-[var(--brand)]" />مقالات مرتبط</h2>
+      <h2 id="related-heading" className="mb-4 flex items-center gap-2 text-start text-lg font-bold"><BookOpen aria-hidden="true" className="size-5 text-[var(--brand)]" />{collection.text.related}</h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        {items.map((item) => <Link key={item.slug} to={`/blog/${item.slug}`} className="line-clamp-2 rounded-[var(--radius-sm)] border border-transparent bg-[var(--surface-alt)] p-4 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : item.title}</Link>)}
+        {items.map((item) => <Link key={item.slug} to={`${collection.route}/${item.slug}`} className="line-clamp-2 rounded-[var(--radius-sm)] border border-transparent bg-[var(--surface-alt)] p-4 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : item.title}</Link>)}
       </div>
     </section>
   )
 }
 
-export function ArticlePage() {
+/** One item page: an article (`/blog/:slug`) or, with `collection="books"`, a book (`/books/:slug`). */
+export function ArticlePage({ collection: collectionId = 'blog' }: { collection?: CollectionId }) {
+  const collection = siteCollections[collectionId]
+  const { items: articles, bodies: articleBodies, route } = collection
   const { slug = '' } = useParams()
   const article = articles.find((item) => item.slug === slug)
   const adultConfirmed = useAdultAccess()
@@ -126,7 +125,7 @@ export function ArticlePage() {
   useFindInPage(searchParams.get(FIND_PARAM), markdown !== null, parseOccurrence(searchParams.get(FIND_INDEX_PARAM)))
   const articleIndex = articles.findIndex((item) => item.slug === slug)
 
-  const pageUrl = `${siteConfig.siteUrl}/blog/${slug}`
+  const pageUrl = `${siteConfig.siteUrl}${route}/${slug}`
   const imageUrl = article?.cover?.type === 'image'
     ? article.cover.url
     : article?.cover?.type === 'embed' ? article.cover.poster : undefined
@@ -149,15 +148,16 @@ export function ArticlePage() {
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'خانه', item: siteConfig.siteUrl },
-          { '@type': 'ListItem', position: 2, name: article.title, item: pageUrl },
+          ...(collectionId === 'books' ? [{ '@type': 'ListItem', position: 2, name: collection.text.breadcrumb, item: `${siteConfig.siteUrl}/books` }] : []),
+          { '@type': 'ListItem', position: collectionId === 'books' ? 3 : 2, name: article.title, item: pageUrl },
         ],
       },
     ]
-  }, [article, imageUrl, pageUrl])
+  }, [article, collection, collectionId, imageUrl, pageUrl])
 
   usePageMeta({
-    title: article?.title ?? 'مقاله پیدا نشد',
-    description: article?.description ?? 'مقاله‌ی درخواستی پیدا نشد.',
+    title: article?.title ?? collection.text.notFoundTitle,
+    description: article?.description ?? (collectionId === 'books' ? 'کتاب درخواستی پیدا نشد.' : 'مقاله‌ی درخواستی پیدا نشد.'),
     image: imageUrl,
     type: 'article',
     jsonLd,
@@ -174,9 +174,9 @@ export function ArticlePage() {
       if (!cancelled) setBodyState({ slug: article.slug, error: true })
     })
     return () => { cancelled = true }
-  }, [article, adultConfirmed])
+  }, [article, adultConfirmed, articleBodies])
 
-  if (!article) return (hiddenJson as string[]).includes(slug) ? <HiddenArticlePage slug={slug} /> : <NotFoundPage />
+  if (!article) return collection.hidden.includes(slug) ? <HiddenArticlePage slug={slug} basePath={route} /> : <NotFoundPage />
 
   if (article.adult === true && !adultConfirmed) {
     return (
@@ -193,12 +193,12 @@ export function ArticlePage() {
   return (
     <>
       <ReadingProgress />
-      <ArticleLayout sidebar={<ArticleSidebar articles={articles} article={article} />}>
+      <ArticleLayout sidebar={<ArticleSidebar articles={articles} article={article} collection={collection} />}>
         <article className="article-card text-[var(--text)]">
           <nav aria-label="مسیر صفحه" className="mb-4 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
             <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>
             <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
-            <Link to="/#articles" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">همه مقاله‌ها</Link>
+            <Link to={collectionId === 'books' ? '/books' : '/#articles'} className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">{collection.text.breadcrumb}</Link>
             <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
             <span aria-current="page" className="max-w-full truncate">{article.title}</span>
           </nav>
@@ -239,10 +239,10 @@ export function ArticlePage() {
           </div>}
         </article>
 
-        <RelatedArticles article={article} />
+        <RelatedArticles article={article} collection={collection} />
         <nav aria-label="پیمایش مقاله‌ها" className="mt-4 grid gap-3 sm:grid-cols-2">
-          {previous ? <ArticleNavItem article={previous} direction="previous" /> : <span />}
-          {next ? <ArticleNavItem article={next} direction="next" /> : <span />}
+          {previous ? <ArticleNavItem article={previous} direction="previous" collection={collection} /> : <span />}
+          {next ? <ArticleNavItem article={next} direction="next" collection={collection} /> : <span />}
         </nav>
       </ArticleLayout>
     </>
@@ -253,12 +253,12 @@ function MetaValue({ label, value }: { label: string; value: string }) {
   return <div className="min-w-0"><span className="mb-1 block text-[10px] text-[var(--muted)] sm:text-xs">{label}</span><span className="block truncate text-xs text-[var(--text)] sm:text-sm">{value}</span></div>
 }
 
-function ArticleNavItem({ article, direction }: { article: ArticleMeta; direction: 'previous' | 'next' }) {
+function ArticleNavItem({ article, direction, collection }: { article: ArticleMeta; direction: 'previous' | 'next'; collection: SiteCollection }) {
   // The list is sorted newest → oldest, so "previous" is the newer article.
-  const label = direction === 'previous' ? 'مقاله جدیدتر' : 'مقاله قدیمی‌تر'
+  const label = direction === 'previous' ? collection.text.newer : collection.text.older
   const adultConfirmed = useAdultAccess()
   return (
-    <Link to={`/blog/${article.slug}`} className="surface-card flex min-w-0 items-center gap-3 p-4 text-start no-underline hover:border-[var(--brand)]">
+    <Link to={`${collection.route}/${article.slug}`} className="surface-card flex min-w-0 items-center gap-3 p-4 text-start no-underline hover:border-[var(--brand)]">
       {direction === 'previous' && <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />}
       <span className="min-w-0 flex-1"><span className="block text-xs text-[var(--muted)]">{label}</span><span className="mt-1 line-clamp-2 block text-sm font-semibold text-[var(--text)]">{article.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : article.title}</span></span>
       {direction === 'next' && <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rotate-180 rtl:rotate-0" />}

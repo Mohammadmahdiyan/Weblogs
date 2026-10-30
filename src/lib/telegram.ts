@@ -25,6 +25,17 @@ export interface TelegramPayload {
   text: string
 }
 
+export interface TelegramOptions {
+  /**
+   * How a quote is written in the PLAIN text.
+   *  - `marker` (default): every line starts with `> `. Telegram Desktop turns the HTML into a real quote, so this
+   *    only shows in plain-text places.
+   *  - `guillemets`: the quote is wrapped in « … ». Telegram on phones ignores the HTML half of the clipboard and
+   *    has no typed markup for quotes, so a `>` would stay as a stray character there; «…» reads naturally.
+   */
+  plainQuote?: 'marker' | 'guillemets'
+}
+
 export type TelegramPartKind = 'section' | 'quote'
 
 // ───────────────────────────── a small tree of what Telegram can show
@@ -337,13 +348,15 @@ function inlineText(item: Inline): string {
   return parts[2] ? `${parts[1]}${marker}${parts[2]}${marker}${parts[3]}` : inner
 }
 
-function blockText(block: Block): string {
+function blockText(block: Block, quote: TelegramOptions['plainQuote']): string {
   if (block.kind === 'text') return block.content.map(inlineText).join('')
   if (block.kind === 'pre') return `\`\`\`\n${block.text}\n\`\`\``
-  return joinText(block.blocks).split('\n').map((line) => (line ? `> ${line}` : '>')).join('\n')
+  const inner = joinText(block.blocks, quote)
+  if (quote === 'guillemets') return `«${inner.trim()}»`
+  return inner.split('\n').map((line) => (line ? `> ${line}` : '>')).join('\n')
 }
 
-const joinText = (blocks: Block[]): string => blocks.map(blockText).join('\n\n')
+const joinText = (blocks: Block[], quote: TelegramOptions['plainQuote']): string => blocks.map((block) => blockText(block, quote)).join('\n\n')
 
 /** Pictures (and, separately, videos and sounds) are numbered 1., 2., … from the top, but only when there are several. */
 function numberMedia(blocks: Block[]): void {
@@ -367,17 +380,17 @@ function numberMedia(blocks: Block[]): void {
   }
 }
 
-function payloadOf(blocks: Block[]): TelegramPayload {
+function payloadOf(blocks: Block[], options: TelegramOptions = {}): TelegramPayload {
   numberMedia(blocks)
   const meaningful = blocks.filter((block) => block.kind !== 'text' || block.content.some((item) => typeof item !== 'string' || item.trim() !== ''))
-  return { html: joinHtml(meaningful), text: joinText(meaningful).trim() }
+  return { html: joinHtml(meaningful), text: joinText(meaningful, options.plainQuote ?? 'marker').trim() }
 }
 
 // ───────────────────────────── public API
 
 /** The whole article. */
-export function telegramFromMarkdown(markdown: string): TelegramPayload {
-  return payloadOf(blocksOf(parse(markdown)))
+export function telegramFromMarkdown(markdown: string, options: TelegramOptions = {}): TelegramPayload {
+  return payloadOf(blocksOf(parse(markdown)), options)
 }
 
 /** Block types a click can copy: headings and quotes (they carry `data-src`, see `remarkSourceOffsets` in markdown.ts). */
@@ -398,7 +411,7 @@ function locate(node: MdNode, offset: number): { node: MdNode; siblings: MdNode[
  * One part of the article, chosen by where it starts in the source: a heading gives its whole section (up to the
  * next heading of the same or a higher level, so `##` includes its `###` parts); a quote gives itself.
  */
-export function telegramPart(markdown: string, offset: number): { payload: TelegramPayload; kind: TelegramPartKind } | null {
+export function telegramPart(markdown: string, offset: number, options: TelegramOptions = {}): { payload: TelegramPayload; kind: TelegramPartKind } | null {
   const found = locate(parse(markdown), offset)
   if (!found) return null
 
@@ -412,6 +425,6 @@ export function telegramPart(markdown: string, offset: number): { payload: Teleg
     nodes = siblings.slice(index, end < 0 ? undefined : end)
   }
 
-  const payload = payloadOf(nodes.flatMap(blocksOf))
+  const payload = payloadOf(nodes.flatMap(blocksOf), options)
   return payload.text ? { payload, kind } : null
 }

@@ -28,6 +28,8 @@ describe('findContentMatch', () => {
 describe('articleHref', () => {
   it('links to the article, adding the text to jump to after a content search', () => {
     expect(articleHref('a')).toBe('/blog/a')
+    expect(articleHref('a', '', 0, '/books')).toBe('/books/a')
+    expect(articleHref('a', 'x', 1, '/books')).toBe('/books/a?find=x&n=2')
     expect(articleHref('a', ' سلیم بن قیس ')).toBe(`/blog/a?find=${encodeURIComponent('سلیم بن قیس')}`)
   })
 })
