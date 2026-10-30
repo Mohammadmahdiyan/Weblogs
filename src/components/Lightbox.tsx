@@ -18,6 +18,7 @@ import {
   type OpenLightbox,
   type RegisterLightboxMedia,
 } from '../lib/lightbox'
+import { ensureVideoAudible } from '../lib/videoAudio'
 
 interface RegisteredMedia {
   id: string
@@ -119,6 +120,7 @@ function LightboxDialog({
   }, [])
 
   useEffect(() => {
+    ensureVideoAudible(videoRef.current)
     videoRef.current?.play().catch(() => undefined)
   }, [activeMedia.url, activeMedia.type])
 
@@ -276,6 +278,7 @@ function LightboxDialog({
             controls
             playsInline
             autoPlay
+            onLoadedMetadata={(event) => ensureVideoAudible(event.currentTarget)}
             aria-label={activeMedia.alt || activeMedia.title || 'ویدیو'}
             className="max-h-full max-w-full rounded-[var(--radius-sm)]"
           />

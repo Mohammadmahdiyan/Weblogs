@@ -1,4 +1,8 @@
+import { execFile } from 'node:child_process'
 import path from 'node:path'
+import { promisify } from 'node:util'
+
+const execFileAsync = promisify(execFile)
 
 export type MediaType = 'image' | 'video' | 'audio'
 
@@ -74,3 +78,28 @@ export function rewriteMediaUrl(
   return `${prefix}/content/${encodeURIComponent(slug)}/${encodeMediaPath(normalizedPath)}${suffix}`
 }
 
+
+
+/** Audio codecs every mainstream browser plays inside mp4 / webm / ogv. */
+const browserSafeAudioCodecs = new Set(['aac', 'mp3', 'opus', 'vorbis', 'flac'])
+
+/**
+ * Dev-time sanity check for a video file: returns a warning when it has no audio track at all, or an audio
+ * codec browsers cannot decode (AC-3, DTS, PCM …), which plays silently. Needs `ffprobe` (ships with ffmpeg);
+ * if it is not installed the check is silently skipped. Never throws.
+ */
+export async function videoAudioWarning(filePath: string): Promise<string | null> {
+  try {
+    const { stdout } = await execFileAsync('ffprobe', [
+      '-v', 'error', '-select_streams', 'a', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', filePath,
+    ], { timeout: 15_000 })
+    const codecs = stdout.split(/\r?\n/).map((line) => line.trim().toLowerCase()).filter(Boolean)
+    if (codecs.length === 0) return 'has no audio track (the file itself is silent)'
+    if (!codecs.some((codec) => browserSafeAudioCodecs.has(codec))) {
+      return `audio codec "${codecs.join(', ')}" is not playable in browsers (re-encode to AAC)`
+    }
+    return null
+  } catch {
+    return null
+  }
+}

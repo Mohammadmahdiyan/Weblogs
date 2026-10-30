@@ -9,7 +9,7 @@ import type { ArticleMeta, SearchEntry } from '../src/lib/types.ts'
 import siteConfig from '../src/site.config.ts'
 import { detectProvider, parseYouTubeId, youtubePoster } from '../src/lib/embed.ts'
 import { markdownToPlainText } from '../src/lib/plainText.ts'
-import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, type MediaFile } from './lib/media.ts'
+import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, videoAudioWarning, type MediaFile } from './lib/media.ts'
 import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
 
 interface PreparedArticle {
@@ -381,6 +381,10 @@ async function buildContent(): Promise<void> {
       const destination = path.join(destinationRoot, ...media.relativePath.split('/'))
       await mkdir(path.dirname(destination), { recursive: true })
       await copyFile(media.sourcePath, destination)
+      if (media.type === 'video') {
+        const warning = await videoAudioWarning(media.sourcePath)
+        if (warning) console.warn(`[media] ${article.meta.slug}/${media.relativePath}: ${warning}`)
+      }
     }
 
     await writeFile(path.join(bodiesDirectory, `${article.meta.slug}.md`), article.body, 'utf8')

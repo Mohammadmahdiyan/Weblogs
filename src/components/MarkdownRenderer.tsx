@@ -4,11 +4,13 @@ import {
   isValidElement,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentPropsWithoutRef,
   type ReactElement,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
 import { Copy, ExternalLink, Link2, Quote } from 'lucide-react'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
@@ -382,6 +384,9 @@ function Spoiler({
   const [revealed, setRevealed] = useState(false)
   const [askAge, setAskAge] = useState(false)
   const [showAnimationText, setShowAnimationText] = useState(false)
+  // Screen position (viewport px) the floating phrase starts from: the top of the first line of the censored text.
+  const [phraseAnchor, setPhraseAnchor] = useState<{ x: number; y: number } | null>(null)
+  const coverRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!showAnimationText) return
@@ -390,6 +395,18 @@ function Spoiler({
   }, [showAnimationText])
 
   function revealText() {
+    // Measure before the cover unmounts. The phrase is rendered in a portal on <body> (not inside the text),
+    // because quotes use `overflow-hidden` (to clip their side rail) and would cut the phrase off.
+    const rect = coverRef.current?.getClientRects()[0]
+    if (rect) {
+      const margin = 72
+      setPhraseAnchor({
+        x: Math.min(Math.max(rect.left + rect.width / 2, margin), Math.max(window.innerWidth - margin, margin)),
+        y: rect.top,
+      })
+    } else {
+      setPhraseAnchor(null)
+    }
     setRevealed(true)
     setShowAnimationText(true)
   }
@@ -419,17 +436,22 @@ function Spoiler({
   return (
     <span className="spoiler-wrap">
       {revealed ? <span className="spoiler-revealed">{children}</span> : (
-        <button type="button" className="spoiler-cover" onClick={reveal} aria-label="نمایش متن سانسورشده">
+        <button ref={coverRef} type="button" className="spoiler-cover" onClick={reveal} aria-label="نمایش متن سانسورشده">
           <span aria-hidden="true" className="spoiler-hidden-text">{children}</span>
           <span className="sr-only">برای نمایش متن کلیک کنید</span>
         </button>
       )}
-      {showAnimationText && revealed && phrase.length > 0 && (
-        <span className="spoiler-animation-phrase" aria-hidden="true">
+      {showAnimationText && revealed && phraseAnchor && phrase.length > 0 && typeof document !== 'undefined' && createPortal(
+        <span
+          className="spoiler-animation-phrase"
+          aria-hidden="true"
+          style={{ left: phraseAnchor.x, top: phraseAnchor.y }}
+        >
           {phrase}
-        </span>
+        </span>,
+        document.body,
       )}
-      {askAge && (
+      {askAge && typeof document !== 'undefined' && createPortal(
         <span className="spoiler-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAskAge(false) }}>
           <span className="spoiler-dialog" role="dialog" aria-modal="true" aria-labelledby="spoiler-age-title">
             <span className="spoiler-dialog-icon" aria-hidden="true">18+</span>
@@ -440,7 +462,8 @@ function Spoiler({
               <button type="button" className="spoiler-no" onClick={declineAge}>خیر</button>
             </span>
           </span>
-        </span>
+        </span>,
+        document.body,
       )}
     </span>
   )

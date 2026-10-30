@@ -110,10 +110,12 @@
 .spoiler-cover:hover .spoiler-hidden-text, .spoiler-cover:focus-visible .spoiler-hidden-text { filter: blur(.38em); opacity: .72; }
 .spoiler-revealed { animation: spoiler-reveal 300ms ease-out both; }
 .spoiler-animation-phrase {
-  position: absolute;
-  z-index: 2;
+  /* Rendered in a portal on <body>; left/top (viewport px) are set inline from the censored text's position. */
+  position: fixed;
+  z-index: 1000;
   top: 0;
-  left: 50%;
+  left: 0;
+  font-family: var(--app-font-family);
   max-width: min(80vw, 28rem);
   padding: .16em .55em;
   border: 1px solid var(--border-light);

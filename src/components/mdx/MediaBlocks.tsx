@@ -2,6 +2,7 @@ import { Children, isValidElement, useEffect, useId, useRef, useState, type Comp
 import { clsx } from 'clsx'
 import { useFont } from '../../lib/font'
 import { galleryRows } from '../../lib/gallery'
+import { ensureVideoAudible, isVideoControlsClick } from '../../lib/videoAudio'
 import { ImageWithFallback } from '../ImageWithFallback'
 import { LightboxContext, useLightbox, useLightboxRegistration, type LightboxMedia, type OpenLightbox } from '../../lib/lightbox'
 
@@ -57,6 +58,8 @@ export function MarkdownVideo({
     return registerMedia(id, { url: src, type: 'video', alt: title, title, poster: poster ?? undefined }, videoRef.current)
   }, [id, poster, registerMedia, src, title])
 
+  useEffect(() => { ensureVideoAudible(videoRef.current) }, [src])
+
   return (
     <video
       ref={videoRef}
@@ -66,9 +69,23 @@ export function MarkdownVideo({
       title={title}
       controls
       playsInline
+      preload="metadata"
+      onLoadedMetadata={(event) => {
+        props.onLoadedMetadata?.(event)
+        ensureVideoAudible(event.currentTarget)
+      }}
+      onPlay={(event) => {
+        props.onPlay?.(event)
+        ensureVideoAudible(event.currentTarget)
+      }}
       onClick={(event) => {
         onClick?.(event)
-        if (src) openLightbox({ url: src, type: 'video', alt: title, title, poster: poster ?? undefined })
+        if (!src) return
+        const video = event.currentTarget
+        // Pressing the control bar (play, volume, timeline) must not also open the enlarged view.
+        if (isVideoControlsClick(video, event.clientY)) return
+        video.pause() // the enlarged view plays its own copy; never two soundtracks at once
+        openLightbox({ url: src, type: 'video', alt: title, title, poster: poster ?? undefined })
       }}
       className={clsx('my-4 max-h-[80vh] w-full rounded-[var(--radius-sm)] bg-[var(--surface-strong)]', className)}
     />

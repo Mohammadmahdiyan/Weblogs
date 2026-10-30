@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ArticleMeta } from '../lib/types'
 import { useLightbox, useLightboxRegistration } from '../lib/lightbox'
+import { ensureVideoAudible, isVideoControlsClick } from '../lib/videoAudio'
 import { AudioPlayer } from './AudioPlayer'
 import { SafeEmbed } from './mdx/SafeEmbed'
 import { ImageWithFallback } from './ImageWithFallback'
@@ -66,7 +67,14 @@ export function CoverMedia({ cover, title }: CoverMediaProps) {
           playsInline
           preload="metadata"
           aria-label={title}
-          onClick={() => openLightbox({ url: cover.url, type: 'video', alt: title, title })}
+          onLoadedMetadata={(event) => ensureVideoAudible(event.currentTarget)}
+          onPlay={(event) => ensureVideoAudible(event.currentTarget)}
+          onClick={(event) => {
+            const video = event.currentTarget
+            if (isVideoControlsClick(video, event.clientY)) return
+            video.pause()
+            openLightbox({ url: cover.url, type: 'video', alt: title, title })
+          }}
           className="size-full cursor-zoom-in object-contain"
         />
       </div>
