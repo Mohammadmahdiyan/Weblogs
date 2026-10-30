@@ -66,7 +66,7 @@ const siteConfig: SiteConfig = {
   embedPoster: true,
   profile: {
     name: 'وبلاگ اسلامی',
-    avatar: 'profile.jpg',
+    avatar: '',
   },
   story: {
     enabled: true,
