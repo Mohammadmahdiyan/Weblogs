@@ -9,7 +9,7 @@ import type { ArticleMeta, SearchEntry } from '../src/lib/types.ts'
 import siteConfig from '../src/site.config.ts'
 import { detectProvider, parseYouTubeId, youtubePoster } from '../src/lib/embed.ts'
 import { markdownToPlainText } from '../src/lib/plainText.ts'
-import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, videoAudioWarning, type MediaFile } from './lib/media.ts'
+import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, prepareVideoForBrowser, type MediaFile } from './lib/media.ts'
 import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
 
 interface PreparedArticle {
@@ -25,6 +25,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const blogRoot = path.join(projectRoot, 'content', 'blog')
 const publicContentRoot = path.join(projectRoot, 'public', 'content')
 const generatedRoot = path.join(projectRoot, 'src', 'generated')
+const mediaCacheRoot = path.join(projectRoot, '.cache', 'media')
 const baseUrl = '/Weblogs/'
 function relativeFilePath(filePath: string): string {
   return path.relative(projectRoot, filePath).split(path.sep).join('/')
@@ -380,10 +381,12 @@ async function buildContent(): Promise<void> {
     for (const media of article.mediaFiles) {
       const destination = path.join(destinationRoot, ...media.relativePath.split('/'))
       await mkdir(path.dirname(destination), { recursive: true })
-      await copyFile(media.sourcePath, destination)
       if (media.type === 'video') {
-        const warning = await videoAudioWarning(media.sourcePath)
-        if (warning) console.warn(`[media] ${article.meta.slug}/${media.relativePath}: ${warning}`)
+        const prepared = await prepareVideoForBrowser(media.sourcePath, mediaCacheRoot)
+        await copyFile(prepared.filePath, destination)
+        if (prepared.message) console.warn(`[media] ${article.meta.slug}/${media.relativePath}: ${prepared.message}`)
+      } else {
+        await copyFile(media.sourcePath, destination)
       }
     }
 
