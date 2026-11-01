@@ -9,11 +9,10 @@ import { ArticleSearch } from '../components/ArticleSearch'
 import { FontControls } from '../components/FontControls'
 import { AdultArticleNotice } from '../components/AdultArticleNotice'
 import { useAdultAccess } from '../lib/adultAccess'
+import { useMediaQuery } from '../lib/useMediaQuery'
+import { pageSizeFor } from '../lib/pageSize'
 import { NoImage } from '../components/NoImage'
 import { ImageWithFallback } from '../components/ImageWithFallback'
-
-/** Articles on one page of the home list. */
-const PAGE_SIZE = 6
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(`${date}T12:00:00`))
@@ -86,10 +85,13 @@ export function HomePage({ collection = 'blog' }: { collection?: CollectionId })
       },
     },
   })
+  const wide = useMediaQuery('(min-width: 1024px)')
+  const medium = useMediaQuery('(min-width: 640px)')
+  const pageSize = pageSizeFor(wide, medium)
   // The page number lives in `?page=` so Back works and a page can be shared; changing it does not reload anything.
-  const pageCount = Math.max(1, Math.ceil(allArticles.length / PAGE_SIZE))
+  const pageCount = Math.max(1, Math.ceil(allArticles.length / pageSize))
   const currentPage = Math.min(pageCount, Math.max(1, Number.parseInt(searchParams.get('page') ?? '', 10) || 1))
-  const visibleArticles = allArticles.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+  const visibleArticles = allArticles.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   function goToPage(page: number) {
     setSearchParams((previous) => {
