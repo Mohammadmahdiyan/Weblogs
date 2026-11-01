@@ -1,4 +1,4 @@
-import type { BookPageMeta } from './types'
+import type { BookPageMeta } from './types.ts'
 
 /** Jump sizes, smallest first: 1, 10, 100, 1000, 10000 pages. */
 export const PAGE_STEPS = [1, 10, 100, 1000, 10000] as const
