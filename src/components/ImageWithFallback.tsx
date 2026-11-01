@@ -25,6 +25,10 @@ export function ImageWithFallback({
 
   return (
     <img
+      // Many image hosts (CDNs, image-sharing sites) refuse requests that carry another site's address in the
+      // Referer header ("hotlink protection"), which would show the placeholder. Sending no Referer fixes those hosts
+      // and also keeps readers' visits private. A caller can still override it.
+      referrerPolicy="no-referrer"
       {...props}
       src={src}
       alt={alt}

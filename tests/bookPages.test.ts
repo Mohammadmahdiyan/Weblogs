@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bookNavigation, jumpLabel, parsePageParam, stopPath } from '../src/lib/bookPages.ts'
+import { bookNavigation, jumpLabel, lastPageHint, parsePageParam, parseTypedPage, stopPath } from '../src/lib/bookPages.ts'
 
 const pages = (count: number) => Array.from({ length: count }, (_, index) => ({ number: index + 1 }))
 
@@ -68,5 +68,27 @@ describe('labels and paths', () => {
     expect(parsePageParam('0')).toBeNaN()
     expect(parsePageParam('abc')).toBeNaN()
     expect(parsePageParam('007')).toBeNaN()
+  })
+})
+
+describe('first / last and the go-to box', () => {
+  it('knows the first and last numbered page (not the introduction)', () => {
+    const navigation = bookNavigation(pages(100), 50)
+    expect(navigation?.first.number).toBe(1)
+    expect(navigation?.last.number).toBe(100)
+  })
+
+  it('uses the last page as the hint, without a thousands separator', () => {
+    expect(lastPageHint(bookNavigation(pages(100), 1)!.last)).toBe((100).toLocaleString('fa-IR'))
+    expect(lastPageHint(bookNavigation(pages(4000), 1)!.last)).toBe('۴۰۰۰')
+  })
+
+  it('reads typed numbers in any digit style', () => {
+    expect(parseTypedPage('۱۲۰')).toBe(120)
+    expect(parseTypedPage('٣٤')).toBe(34)
+    expect(parseTypedPage(' 7 ')).toBe(7)
+    expect(parseTypedPage('')).toBeNaN()
+    expect(parseTypedPage('1.5')).toBeNaN()
+    expect(parseTypedPage('abc')).toBeNaN()
   })
 })

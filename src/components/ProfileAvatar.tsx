@@ -8,5 +8,5 @@ export function ProfileAvatar({ fallback, className }: { fallback: string; class
   const [failed, setFailed] = useState(false)
   const src = assetUrl(siteConfig.profile.avatar)
   if (!src || failed) return <span className={className}>{fallback}</span>
-  return <img src={src} alt="" draggable={false} onError={() => setFailed(true)} className={clsx('size-full rounded-full object-cover', className)} />
+  return <img referrerPolicy="no-referrer" src={src} alt="" draggable={false} onError={() => setFailed(true)} className={clsx('size-full rounded-full object-cover', className)} />
 }

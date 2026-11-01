@@ -25,7 +25,7 @@ function SlideBody({ slide, onReady, onNavigate, onScroll }: {
   onScroll: () => void
 }) {
   if (slide.kind === 'image') {
-    return <img src={slide.src} alt="تصویر استوری" draggable={false} onLoad={onReady} onError={onReady} className="story-image" />
+    return <img referrerPolicy="no-referrer" src={slide.src} alt="تصویر استوری" draggable={false} onLoad={onReady} onError={onReady} className="story-image" />
   }
 
   return (

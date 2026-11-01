@@ -249,6 +249,7 @@ function LightboxDialog({
       >
         {activeMedia.type === 'image' ? (
           <img
+            referrerPolicy="no-referrer"
             src={activeMedia.url}
             alt={activeMedia.alt ?? ''}
             draggable={false}

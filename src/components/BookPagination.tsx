@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { clsx } from 'clsx'
-import { bookNavigation, jumpLabel, stopPath, type PageJump } from '../lib/bookPages'
+import { bookNavigation, jumpLabel, lastPageHint, parseTypedPage, stopPath, type PageJump } from '../lib/bookPages'
 import type { BookPageMeta } from '../lib/types'
 
 const buttonClass = 'inline-flex min-h-10 items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold text-[var(--text)] no-underline hover:border-[var(--brand)] hover:text-[var(--brand)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)] sm:text-sm'
@@ -18,7 +18,7 @@ export function BookPagination({ bookPath, pages, current }: { bookPath: string;
   const navigation = bookNavigation(pages, current)
   if (!navigation) return null
 
-  const { back, forward, position, total, stops } = navigation
+  const { back, forward, position, total, stops, first, last } = navigation
   const pageCount = stops.length - 1
 
   function jump(item: PageJump, direction: 'back' | 'forward') {
@@ -33,9 +33,9 @@ export function BookPagination({ bookPath, pages, current }: { bookPath: string;
 
   function goTo(event: FormEvent) {
     event.preventDefault()
-    const number = Number(target.replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))).trim())
+    const number = parseTypedPage(target)
     const stop = stops.find((item) => item.number === number)
-    if (!Number.isInteger(number) || !stop) {
+    if (!stop) {
       setMissing(true)
       return
     }
@@ -54,16 +54,19 @@ export function BookPagination({ bookPath, pages, current }: { bookPath: string;
         {position.toLocaleString('fa-IR')} از {pageCount.toLocaleString('fa-IR')} صفحه
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
+        {current !== first.number && <Link to={stopPath(bookPath, first)} aria-label={`رفتن به اولین صفحه (${lastPageHint(first)})`} className={buttonClass}>اولین</Link>}
         {back.map((item) => jump(item, 'back'))}
         {forward.map((item) => jump(item, 'forward'))}
+        {current !== last.number && <Link to={stopPath(bookPath, last)} aria-label={`رفتن به آخرین صفحه (${lastPageHint(last)})`} className={buttonClass}>آخرین</Link>}
       </div>
       {total > 2 && (
         <form onSubmit={goTo} className="flex flex-wrap items-center justify-center gap-2 text-sm">
-          <label htmlFor="book-goto" className="text-[var(--text-secondary)]">رفتن به صفحهٔ</label>
+          <label htmlFor="book-goto" className="text-[var(--text-secondary)]">برو به</label>
           <input
             id="book-goto"
             inputMode="numeric"
             autoComplete="off"
+            placeholder={lastPageHint(last)}
             value={target}
             onChange={(event) => { setTarget(event.target.value); setMissing(false) }}
             aria-invalid={missing}
@@ -71,7 +74,7 @@ export function BookPagination({ bookPath, pages, current }: { bookPath: string;
             className="w-24 rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-center text-[var(--text)] outline-none focus-visible:border-[var(--brand)]"
           />
           <button type="submit" className={buttonClass}>برو</button>
-          {missing && <span id="book-goto-error" role="alert" className="text-xs text-[var(--danger)]">این صفحه وجود ندارد.</span>}
+          {missing && <span id="book-goto-error" role="alert" className="text-xs text-[var(--danger)]">چنین صفحه‌ای نیست (آخرین صفحه: {lastPageHint(last)}).</span>}
         </form>
       )}
     </nav>

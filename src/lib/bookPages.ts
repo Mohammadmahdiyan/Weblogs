@@ -20,6 +20,9 @@ export interface BookNavigation {
   position: number
   total: number
   stops: PageStop[]
+  /** The first and the last numbered page (the introduction is not a numbered page). */
+  first: PageStop
+  last: PageStop
   /** Back jumps, from the biggest step to 1 (so they sit next to «previous» in reading order). */
   back: PageJump[]
   /** Forward jumps, from 1 to the biggest step. */
@@ -44,7 +47,7 @@ export function bookNavigation(pages: readonly BookPageMeta[] | undefined, curre
     if (position - step >= 0) back.unshift({ step, to: stops[position - step] })
     if (position + step <= stops.length - 1) forward.push({ step, to: stops[position + step] })
   }
-  return { position, total: stops.length, stops, back, forward }
+  return { position, total: stops.length, stops, first: stops[1], last: stops[stops.length - 1], back, forward }
 }
 
 /** Persian label of a jump: «صفحه بعد», «ده صفحه قبل», «۱۰۰ صفحه بعد»… */
@@ -63,4 +66,18 @@ export function stopPath(bookPath: string, stop: PageStop): string {
 export function parsePageParam(value: string | undefined): number | undefined {
   if (value === undefined) return undefined
   return /^[1-9]\d{0,5}$/.test(value) ? Number(value) : Number.NaN
+}
+
+/** The page number shown as the hint of the «go to page» box: the last page (100 pages → 100, 4000 → 4000). */
+export function lastPageHint(last: PageStop): string {
+  return last.number === null ? '' : last.number.toLocaleString('fa-IR', { useGrouping: false })
+}
+
+/** Reads a typed page number, accepting Persian and Arabic digits. NaN when it is not a whole number. */
+export function parseTypedPage(value: string): number {
+  const latin = value
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .trim()
+  return /^\d{1,6}$/.test(latin) ? Number(latin) : Number.NaN
 }
