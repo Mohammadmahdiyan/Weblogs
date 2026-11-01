@@ -12,6 +12,13 @@ export interface ArticleCover {
   poster?: string
 }
 
+/** One page file (`pages/<number>.md`) of a book. */
+export interface BookPageMeta {
+  number: number
+  /** Optional chapter / page title from the file's frontmatter `title:`. */
+  title?: string
+}
+
 export interface ArticleMeta {
   slug: string
   title: string
@@ -30,6 +37,8 @@ export interface ArticleMeta {
   adult?: boolean
   /** true until the author runs `npm run publishBlog -- <name>`; the page then ends with a «not finished» notice. */
   incomplete?: boolean
+  /** Books only: the page files, ascending. Missing = a single-page book (just index.md). */
+  pages?: BookPageMeta[]
 }
 
 export interface SearchEntry {
@@ -38,4 +47,6 @@ export interface SearchEntry {
   phrases: string[]
   /** Plain searchable article body, used only by the explicit content:: search mode. */
   content?: string
+  /** Book pages: found only by the «محتوا::» search, never by title. */
+  contentOnly?: boolean
 }

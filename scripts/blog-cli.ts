@@ -1,4 +1,4 @@
-import { readFile, readdir, rm, mkdir, copyFile, writeFile } from 'node:fs/promises'
+import { cp, readFile, rm, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import {
   exists,
@@ -115,9 +115,7 @@ async function createTest(): Promise<void> {
   }
 
   await mkdir(testDirectory, { recursive: true })
-  for (const file of await readdir(templateRoot)) {
-    await copyFile(path.join(templateRoot, file), path.join(testDirectory, file))
-  }
+  await cp(templateRoot, testDirectory, { recursive: true })
   // The long-standing blog fixture refers to this image in its gallery; create a tiny valid PNG if absent.
   if (!isBook) {
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/WQAAAABJRU5ErkJggg==', 'base64')

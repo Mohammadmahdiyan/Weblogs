@@ -362,55 +362,74 @@ body { overflow-x: clip; }
 }
 
 .story-overlay {
-  position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; background: rgb(0 0 0 / 0.86);
-  backdrop-filter: blur(6px); animation: story-fade 180ms ease-out both;
+  position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+  background: rgb(0 0 0 / 0.86); backdrop-filter: blur(6px); animation: story-fade 180ms ease-out both;
 }
+.story-nav {
+  display: grid; place-items: center; flex: none; width: 2.75rem; height: 2.75rem; border: 0; border-radius: 9999px;
+  background: rgb(255 255 255 / 0.14); color: #fff; cursor: pointer;
+}
+.story-nav:hover:not(:disabled) { background: rgb(255 255 255 / 0.28); }
+.story-nav:disabled { opacity: 0.3; cursor: default; }
+@media (max-width: 640px) { .story-nav { display: none; } }
+
 .story-stage {
+  --story-ink: var(--text);
+  --story-ink-soft: color-mix(in srgb, var(--text) 24%, transparent);
+  --story-top: var(--surface);
   position: relative; width: min(100vw, 26rem); height: min(100dvh, 46rem); overflow: hidden; border-radius: 1rem;
-  background: #000; color: #fff; user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+  background: var(--surface); color: var(--text); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   animation: story-pop 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
+.story-stage[data-tone='dark'] { --story-ink: #fff; --story-ink-soft: rgb(255 255 255 / 0.35); --story-top: #000; background: #000; color: #fff; }
 @media (max-width: 520px) { .story-stage { width: 100vw; height: 100dvh; border-radius: 0; } }
 .story-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 
-.story-card {
-  position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; padding: 5.5rem 1.75rem 2.5rem;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--brand) 38%, #000), color-mix(in srgb, var(--brand) 72%, #000));
+/* A long story scrolls: smooth, with a soft fade where the text goes under the header and off the bottom. */
+.story-scroll {
+  position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+  padding: 5.25rem 1.4rem 3rem; outline: none; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 30%, transparent) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 3.6rem, #000 5.4rem, #000 calc(100% - 2rem), transparent);
+  mask-image: linear-gradient(to bottom, transparent 3.6rem, #000 5.4rem, #000 calc(100% - 2rem), transparent);
 }
-.story-card-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.28; filter: blur(2px); }
-.story-card-text { position: relative; z-index: 4; display: grid; gap: 0.9rem; max-height: 100%; overflow: hidden; text-align: center; pointer-events: none; }
-.story-kicker { margin: 0; font-size: 0.8rem; font-weight: 700; opacity: 0.8; }
-.story-title { margin: 0; font-size: 1.6rem; font-weight: 800; line-height: 1.8; }
-.story-text { margin: 0; font-size: 1.1rem; line-height: 2.1; }
-.story-card-text :is(a, .story-cta), .story-caption a { pointer-events: auto; }
-.story-link { color: #fff; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; pointer-events: auto; }
+.story-scroll:focus-visible { box-shadow: inset 0 0 0 2px var(--info); }
+.story-scroll::-webkit-scrollbar { width: 6px; }
+.story-scroll::-webkit-scrollbar-thumb { border-radius: 9999px; background: color-mix(in srgb, var(--text) 28%, transparent); }
+.story-scroll::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text) 45%, transparent); }
+/* Short stories sit in the middle; long ones start at the top and scroll. */
+.story-md { display: grid; min-height: 100%; align-content: safe center; gap: 1rem; background: transparent; text-align: start; }
+.story-md .article-body { font-size: 1rem; }
+.story-md img { max-width: 100%; height: auto; pointer-events: none; }
+.story-kicker { margin: 0; font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); }
 .story-cta {
-  justify-self: center; margin-top: 0.5rem; padding: 0.75rem 1.6rem; border-radius: 9999px; background: #fff; color: #111;
-  font-weight: 800; text-decoration: none;
+  justify-self: center; margin-top: 0.75rem; padding: 0.7rem 1.6rem; border-radius: 9999px; background: var(--brand);
+  color: var(--brand-contrast); font-weight: 800; text-decoration: none;
 }
-.story-caption {
-  position: absolute; inset-inline: 0; bottom: 0; z-index: 4; padding: 4rem 1.25rem 1.5rem; text-align: center; font-size: 1rem;
-  line-height: 2; background: linear-gradient(to top, rgb(0 0 0 / 0.82), transparent); pointer-events: none;
-}
+.story-skeleton { display: grid; gap: 0.7rem; }
+.story-skeleton span { display: block; height: 0.9rem; border-radius: 0.4rem; background: var(--surface-strong); animation: story-pulse 1.2s ease-in-out infinite; }
+.story-skeleton span:nth-child(2) { width: 85%; }
+.story-skeleton span:nth-child(3) { width: 60%; }
 
-/* Two invisible halves: tap = next / previous (reading direction), press and hold = pause. */
-.story-zone { position: absolute; top: 5rem; bottom: 0; z-index: 3; width: 50%; padding: 0; border: 0; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.story-zone-prev { inset-inline-start: 0; }
-.story-zone-next { inset-inline-end: 0; }
-
-.story-top { position: absolute; inset-inline: 0; top: 0; z-index: 5; display: grid; gap: 0.6rem; padding: 0.7rem 0.8rem 2rem; background: linear-gradient(to bottom, rgb(0 0 0 / 0.55), transparent); pointer-events: none; }
+.story-top { position: absolute; inset-inline: 0; top: 0; z-index: 5; display: grid; gap: 0.6rem; padding: 0.7rem 0.8rem 1.6rem; color: var(--story-ink); pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--story-top) 92%, transparent) 55%, transparent); }
+.story-stage[data-tone='dark'] .story-top { background: linear-gradient(to bottom, rgb(0 0 0 / 0.55), transparent); }
 .story-bars { display: flex; gap: 0.25rem; }
-.story-bar { flex: 1; height: 3px; overflow: hidden; border-radius: 9999px; background: rgb(255 255 255 / 0.35); }
-.story-bar-fill { display: block; height: 100%; border-radius: inherit; background: #fff; }
+.story-bar { flex: 1; height: 3px; overflow: hidden; border-radius: 9999px; background: var(--story-ink-soft); }
+.story-bar-fill { display: block; height: 100%; border-radius: inherit; background: var(--story-ink); }
 .story-bar-run { width: 0; animation: story-progress linear forwards; }
 .story-head { display: flex; align-items: center; gap: 0.55rem; }
-.story-head-avatar { display: grid; place-items: center; flex: none; width: 2.1rem; height: 2.1rem; overflow: hidden; border-radius: 9999px; background: rgb(255 255 255 / 0.2); font-weight: 800; }
+.story-head-avatar { display: grid; place-items: center; flex: none; width: 2.1rem; height: 2.1rem; overflow: hidden; border-radius: 9999px; background: var(--story-ink-soft); font-weight: 800; }
 .story-head-name { font-size: 0.9rem; font-weight: 800; }
 .story-head-meta { flex: 1; font-size: 0.75rem; opacity: 0.75; }
-.story-close { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 0; border-radius: 9999px; background: transparent; color: #fff; cursor: pointer; pointer-events: auto; }
-.story-close:hover { background: rgb(255 255 255 / 0.16); }
+.story-close { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 0; border-radius: 9999px; background: transparent; color: var(--story-ink); cursor: pointer; pointer-events: auto; }
+.story-close:hover { background: var(--story-ink-soft); }
 
 @keyframes story-progress { from { width: 0; } to { width: 100%; } }
 @keyframes story-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes story-pop { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .story-overlay, .story-stage { animation: none; } .story-ring { transition: none; } }
+@keyframes story-pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) {
+  .story-overlay, .story-stage { animation: none; }
+  .story-ring { transition: none; }
+  .story-scroll { scroll-behavior: auto; }
+}

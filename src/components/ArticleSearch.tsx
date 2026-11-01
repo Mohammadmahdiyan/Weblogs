@@ -50,7 +50,8 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
   const [occurrences, setOccurrences] = useState<Record<string, number>>({})
   const listboxId = 'article-search-results'
 
-  const normalizedEntries = useMemo(() => safeSearchIndex.map((entry) => ({
+  // Book pages (contentOnly) are found only by the «محتوا::» search, never by title.
+  const normalizedEntries = useMemo(() => safeSearchIndex.filter((entry) => !entry.contentOnly).map((entry) => ({
     ...entry,
     phrases: entry.phrases.map(normalizeSearchText),
   })), [safeSearchIndex])
@@ -200,7 +201,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
                 const total = matches?.length ?? 0
                 const current = occurrenceOf(result)
                 const snippet = matches?.[current]
-                const restricted = !adultConfirmed && articles.some((article) => article.slug === entry.slug && article.adult === true)
+                const restricted = !adultConfirmed && articles.some((article) => article.slug === entry.slug.split('/')[0] && article.adult === true)
                 return (
                 <li key={entry.slug} className="flex items-stretch gap-1">
                   <button

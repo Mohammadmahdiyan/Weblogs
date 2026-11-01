@@ -50,8 +50,15 @@ async function main(): Promise<void> {
     const articles = await readJson<ArticleMeta[]>(target.meta)
     totalItems += articles.length
 
-    for (const article of articles) {
-      const url = `${base}/${target.route}/${article.slug}`
+    for (const item of articles) {
+    // A book is written to disk once for its introduction and once per page file (`/books/<book>/<page>`).
+    const variants = [
+      { sub: '', label: item.title },
+      ...(item.pages ?? []).map((page) => ({ sub: String(page.number), label: `${item.title} — صفحه ${page.number}` })),
+    ]
+    for (const variant of variants) {
+      const article = { ...item, title: variant.label }
+      const url = `${base}/${target.route}/${item.slug}${variant.sub ? `/${variant.sub}` : ''}`
       const title = `${article.title} | ${siteConfig.siteName}`
       const image = article.cover?.type === 'image'
         ? new URL(article.cover.url, base).toString()
@@ -89,9 +96,10 @@ async function main(): Promise<void> {
         .replace(/<div id="root">[\s\S]*<\/div>(?=\s*(?:<script[^>]*><\/script>\s*)*<\/body>)/, `<div id="root">${staticMarkup}</div>\n  <noscript>${staticMarkup}</noscript>`)
       if (!html.includes('class="prerender"')) throw new Error('prerender: could not find <div id="root"> in dist/index.html')
 
-      const folder = path.join(distRoot, target.route, article.slug)
+      const folder = path.join(distRoot, target.route, item.slug, variant.sub)
       await mkdir(folder, { recursive: true })
       await writeFile(path.join(folder, 'index.html'), html, 'utf8')
+    }
     }
 
     // Pages hidden with `show: false`: a plain copy of the app shell (no text, not indexed), so the address opens

@@ -93,3 +93,10 @@ export const siteCollections: Record<CollectionId, SiteCollection> = {
     },
   },
 }
+
+/** The text of one book page (published as a plain file by the build, so a book can have thousands of pages). */
+export async function fetchBookPage(slug: string, page: number): Promise<string> {
+  const response = await fetch(`${import.meta.env.BASE_URL}content-books/${encodeURIComponent(slug)}/pages/${page}.md`)
+  if (!response.ok) throw new Error(`page ${page} of ${slug}: HTTP ${response.status}`)
+  return response.text()
+}

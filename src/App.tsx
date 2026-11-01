@@ -30,6 +30,7 @@ export default function App() {
           <Route path="/blog/:slug" element={<ArticlePage key="blog" />} />
           <Route path="/books" element={<HomePage key="books" collection="books" />} />
           <Route path="/books/:slug" element={<ArticlePage key="books" collection="books" />} />
+          <Route path="/books/:slug/:page" element={<ArticlePage key="books" collection="books" />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

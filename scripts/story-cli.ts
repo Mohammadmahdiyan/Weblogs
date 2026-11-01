@@ -19,8 +19,7 @@ function fail(message: string): never {
 /** `npm run publishStory`: the pictures + .md currently in /story become TODAY's story. */
 async function publish(): Promise<void> {
   const folder = await readStoryFolder()
-  if (!storyFolderHasContent(folder)) fail('The story folder is empty. Put pictures (jpg, png, webp, gif…) and/or one .md file in /story first.')
-  if (folder.ignored.length > 0) console.warn(`! Ignored (only pictures and .md are used): ${folder.ignored.join(', ')}`)
+  if (!storyFolderHasContent(folder)) fail('The story folder is empty. Put one .md file per story (index.md, index1.md …) and/or pictures in /story first.')
 
   const previous = await readStoryState()
   await writeStoryState({ date: storyToday(), publishedAt: new Date().toISOString() })
@@ -28,7 +27,7 @@ async function publish(): Promise<void> {
     await writeStoryState(previous)
     fail('Content build failed; the story was not published and GitHub was not updated.')
   }
-  console.log(`✔ Story published for ${storyToday()}: ${folder.images.length} picture(s), ${folder.captions.length} caption(s). It stays up until midnight (Asia/Tehran).`)
+  console.log(`✔ Story published for ${storyToday()}: ${folder.markdown.length} story file(s), ${folder.images.length} picture file(s). It stays up until midnight (Asia/Tehran).`)
   if (!pushStoryChanges(`story: ${storyToday()}`)) process.exitCode = 1
 }
 

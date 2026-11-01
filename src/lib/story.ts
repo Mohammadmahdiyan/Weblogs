@@ -6,17 +6,22 @@ export interface StoryLink {
   label: string
 }
 
+/** One story = one screen in the viewer (and one segment of the progress bar). */
 export interface StorySlide {
-  /** `image`: a picture (+ optional caption). `text`: a coloured card with text. `link`: the closing «open the article» card. */
-  kind: 'image' | 'text' | 'link'
-  /** Picture URL (kind image), or an optional background picture (kind text). */
+  /** `image`: one picture shown whole. `markdown`: rich text, scrolls when long (images, quotes, spoilers… all work). */
+  kind: 'image' | 'markdown'
+  /** kind image: picture URL. */
   src?: string
-  /** Small line above the text. */
+  /** kind markdown: the story text. */
+  markdown?: string
+  /** Small line above the text, e.g. the article a section comes from. */
   kicker?: string
-  title?: string
-  /** Text. A few inline Markdown bits work: **bold** and [label](url). */
-  caption?: string
+  /** Closing button, e.g. «open the article». */
   link?: StoryLink
+  /** Length of the text (characters): longer text stays on screen longer. */
+  textLength: number
+  /** From the story file's `seconds:`; replaces the automatic time. */
+  seconds?: number
 }
 
 export interface StoryData {
@@ -56,9 +61,8 @@ export function markStorySeen(id: string): void {
   }
 }
 
-/** Seconds a slide stays: the configured time, longer for long text (about 14 characters per second). */
+/** Seconds a story stays: its own `seconds`, else the configured time, longer for long text (≈15 characters/second). */
 export function slideSeconds(slide: StorySlide, base: number): number {
-  if (slide.kind === 'image' && !slide.caption) return base
-  const length = (slide.title?.length ?? 0) + (slide.caption?.length ?? 0)
-  return Math.min(18, Math.max(base, Math.ceil(length / 14)))
+  if (slide.seconds && slide.seconds > 0) return slide.seconds
+  return Math.min(60, Math.max(base, Math.ceil(slide.textLength / 15)))
 }

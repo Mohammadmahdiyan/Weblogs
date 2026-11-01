@@ -2,25 +2,35 @@
   Daily story (the ring in the header).
 
   Author flow:
-    1. put pictures and one .md file in /story
+    1. put story files in /story
     2. `npm run publishStory`            → the story is for TODAY (Asia/Tehran), committed and pushed
     3. the next day it disappears: the daily GitHub Actions run deletes everything in /story
        (`npm run cleanStory`), and even if that run is late the build ignores an old story.
   Nothing in /story → a section of a random article is shown instead (the same one all day).
 
-  /story contents:
-    pictures  jpg jpeg png webp gif avif svg, shown in file-name order (1.jpg, 2.jpg … ; numbers sort naturally)
-    .md       the captions. Split captions with a line containing only ---
-              caption 1 → picture 1, caption 2 → picture 2 … Extra captions become text slides.
-              Pictures without a caption are simply shown.
+  ONE FILE = ONE STORY (a segment of the progress bar). Files are shown in name order (numbers sort naturally):
+    index.md                   → one story
+    index.md index1.md index2.md → three stories
+  A story file is ordinary Markdown (text, **bold**, quotes, ||spoilers||, images, links …) and scrolls when it is
+  long. Pictures it uses (`![](./photo.jpg)`) live in /story too. A picture file no .md uses becomes a story by
+  itself (full-screen picture).
+
+  Optional frontmatter in a story file:
+    show: false          the story ring is not shown at all that day (the files are still deleted after the day)
+    blog: <article>/<section>   show a section of a blog article instead of the file's own text, e.g.
+                         blog: غدیر ، عید سیاسی/شاید بگویند      (article title or folder name / heading text)
+                         The same line alone as the file's whole text works too.
+    seconds: 12          how long this story stays (default: automatic from the text length)
 
   State lives OUTSIDE the folder (content/story-state.json) because the folder is wiped.
 */
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import matter from 'gray-matter'
 import type { ArticleMeta } from '../../src/lib/types.ts'
 import type { StoryData, StorySlide } from '../../src/lib/story.ts'
+import { encodeMediaPath, isAbsoluteUrl, normalizeMediaPath, prepareVideoForBrowser } from './media.ts'
 
 export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 export const storyRoot = path.join(projectRoot, 'story')
@@ -32,6 +42,7 @@ const STORY_TIME_ZONE = 'Asia/Tehran'
 /** Iran has no daylight saving time since 2022, so the offset is fixed. */
 const STORY_UTC_OFFSET = '+03:30'
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif', '.svg'])
+const mediaCacheRoot = path.join(projectRoot, '.cache', 'media')
 
 // ───────────────────────── dates ─────────────────────────
 
@@ -77,38 +88,55 @@ export async function writeStoryState(state: StoryState | null): Promise<void> {
 
 const naturalCompare = new Intl.Collator('en', { numeric: true, sensitivity: 'base' }).compare
 
+export interface StoryMarkdownFile {
+  name: string
+  data: Record<string, unknown>
+  body: string
+}
+
 export interface StoryFolder {
+  /** Every .md file at the top of /story. */
+  markdown: StoryMarkdownFile[]
+  /** Every picture file at the top of /story (some may be used inside .md files). */
   images: string[]
-  captions: string[]
-  /** Files that are neither pictures nor .md (ignored, but worth a warning). */
-  ignored: string[]
+  /** Every file under /story (posix paths relative to it): the pool the .md files can point to. */
+  files: Set<string>
+}
+
+async function walkFiles(directory: string, prefix = ''): Promise<string[]> {
+  const found: string[] = []
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (entry.name.startsWith('.')) continue
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name
+    if (entry.isDirectory()) found.push(...(await walkFiles(path.join(directory, entry.name), relative)))
+    else if (entry.isFile()) found.push(relative)
+  }
+  return found
 }
 
 export async function readStoryFolder(): Promise<StoryFolder> {
-  let entries: string[]
+  let all: string[]
   try {
-    entries = (await readdir(storyRoot, { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name)
+    all = (await walkFiles(storyRoot)).sort(naturalCompare)
   } catch {
-    return { images: [], captions: [], ignored: [] }
+    return { markdown: [], images: [], files: new Set() }
   }
-  const visible = entries.filter((name) => !name.startsWith('.')).sort(naturalCompare)
-  const images = visible.filter((name) => imageExtensions.has(path.extname(name).toLowerCase()))
-  const markdown = visible.filter((name) => path.extname(name).toLowerCase() === '.md')
-  const ignored = visible.filter((name) => !images.includes(name) && !markdown.includes(name))
-
-  const captions: string[] = []
-  for (const name of markdown) {
-    const text = (await readFile(path.join(storyRoot, name), 'utf8')).replace(/^\uFEFF/, '')
-    for (const part of text.split(/^[ \t]*---[ \t]*$/m)) {
-      const caption = part.trim()
-      if (caption) captions.push(caption)
+  const top = all.filter((name) => !name.includes('/'))
+  const markdown: StoryMarkdownFile[] = []
+  for (const name of top.filter((file) => path.extname(file).toLowerCase() === '.md')) {
+    const source = (await readFile(path.join(storyRoot, name), 'utf8')).replace(/^\uFEFF/, '')
+    try {
+      const parsed = matter(source)
+      markdown.push({ name, data: parsed.data as Record<string, unknown>, body: parsed.content.trim() })
+    } catch (error) {
+      throw new Error(`story/${name}: invalid frontmatter (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`, { cause: error })
     }
   }
-  return { images, captions, ignored }
+  return { markdown, images: top.filter((file) => imageExtensions.has(path.extname(file).toLowerCase())), files: new Set(all) }
 }
 
 export function storyFolderHasContent(folder: StoryFolder): boolean {
-  return folder.images.length > 0 || folder.captions.length > 0
+  return folder.markdown.length > 0 || folder.images.length > 0
 }
 
 /** Deletes everything inside /story (keeping the folder itself, with a .gitkeep so Git keeps it). */
@@ -140,6 +168,105 @@ export async function cleanExpiredStory(force = false): Promise<boolean> {
   return removed > 0 || state !== null
 }
 
+// ───────────────────────── article sections ─────────────────────────
+
+/** Comparison key for Persian / Arabic text: same letters, no ZWNJ, diacritics, punctuation or case differences. */
+export function normalizeKey(value: string): string {
+  return value
+    .normalize('NFKC')
+    .replace(/[\u200c\u200d\u064b-\u0652\u0640]/g, '')
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+export interface ArticleSection {
+  level: number
+  /** Heading text without markup. */
+  heading: string
+  /** The section as Markdown: its heading line, then everything up to the next heading of the same or a higher level. */
+  markdown: string
+}
+
+/** Splits a Markdown body at its `##`…`####` headings (fenced code is skipped). */
+export function parseSections(body: string, plainText: (markdown: string) => string): ArticleSection[] {
+  const lines = body.split(/\r?\n/)
+  const headings: { index: number; level: number; raw: string }[] = []
+  let fence: string | null = null
+  lines.forEach((line, index) => {
+    const fenceMatch = line.match(/^\s{0,3}(`{3,}|~{3,})/)
+    if (fenceMatch) {
+      const marker = fenceMatch[1][0]
+      if (fence === null) fence = marker
+      else if (fence === marker) fence = null
+      return
+    }
+    if (fence !== null) return
+    const heading = line.match(/^(#{2,4})[ \t]+(.+?)[ \t]*#*[ \t]*$/)
+    if (heading) headings.push({ index, level: heading[1].length, raw: heading[2] })
+  })
+
+  return headings.map((heading, position) => {
+    const end = headings.slice(position + 1).find((next) => next.level <= heading.level)?.index ?? lines.length
+    return {
+      level: heading.level,
+      heading: plainText(heading.raw),
+      markdown: lines.slice(heading.index, end).join('\n').trim(),
+    }
+  })
+}
+
+export interface ArticleSource {
+  meta: ArticleMeta
+  body: string
+}
+
+/** Finds an article by its folder name or title (exact first, then a unique partial match). */
+function findArticle(articles: ArticleSource[], query: string): ArticleSource | null {
+  const key = normalizeKey(query)
+  if (!key) return null
+  const exact = articles.filter(({ meta }) => normalizeKey(meta.slug) === key || normalizeKey(meta.title) === key)
+  if (exact.length === 1) return exact[0]
+  if (exact.length > 1) return null
+  const partial = articles.filter(({ meta }) => normalizeKey(meta.title).includes(key))
+  return partial.length === 1 ? partial[0] : null
+}
+
+function findSection(sections: ArticleSection[], query: string): ArticleSection | null {
+  const key = normalizeKey(query)
+  if (!key) return null
+  const exact = sections.filter((section) => normalizeKey(section.heading) === key)
+  if (exact.length > 0) return exact[0]
+  const partial = sections.filter((section) => normalizeKey(section.heading).includes(key))
+  return partial.length === 1 ? partial[0] : null
+}
+
+/**
+ * `article title / section heading` → that section. Every `/` is tried as the separator, so titles and headings
+ * that contain a slash still work. Returns null when no article matches (not an article link at all); throws when
+ * the article exists but the section does not, listing the headings you can use.
+ */
+export function resolveSectionLink(
+  reference: string,
+  articles: ArticleSource[],
+  plainText: (markdown: string) => string,
+  where: string,
+): { article: ArticleSource; section: ArticleSection } | null {
+  for (let index = reference.indexOf('/'); index !== -1; index = reference.indexOf('/', index + 1)) {
+    const article = findArticle(articles, reference.slice(0, index))
+    if (!article) continue
+    const sections = parseSections(article.body, plainText)
+    const section = findSection(sections, reference.slice(index + 1))
+    if (section) return { article, section }
+    const available = sections.map((item) => `  - ${item.heading}`).join('\n') || '  (the article has no ## sections)'
+    throw new Error(`${where}: article "${article.meta.title}" has no section "${reference.slice(index + 1).trim()}". Sections you can use:\n${available}`)
+  }
+  return null
+}
+
 // ───────────────────────── fallback: a section of a random article ─────────────────────────
 
 /** Small deterministic random generator: the same date always picks the same article and section. */
@@ -159,63 +286,7 @@ function seededRandom(seed: string): () => number {
   }
 }
 
-interface Section {
-  heading: string
-  text: string
-}
-
-/** Splits an article body at its `## ` headings and keeps sections that read well on their own. */
-function readableSections(body: string, plainText: (markdown: string) => string): Section[] {
-  const sections: Section[] = []
-  let fence: string | null = null
-  let heading: string | null = null
-  let lines: string[] = []
-
-  const flush = () => {
-    if (heading === null) return
-    const raw = lines.join('\n')
-    // Never put censored (||spoiler||) or 18+ wording into a story, and skip sections made of embeds / components.
-    if (/\|\|/.test(raw) || /\{متن انیمیشن/.test(raw)) return
-    const text = plainText(raw)
-    if (text.length >= 140) sections.push({ heading: plainText(heading), text })
-  }
-
-  for (const line of body.split(/\r?\n/)) {
-    const fenceMatch = line.match(/^\s{0,3}(`{3,}|~{3,})/)
-    if (fenceMatch) {
-      const marker = fenceMatch[1][0]
-      if (fence === null) fence = marker
-      else if (fence === marker) fence = null
-    }
-    const heading2 = fence === null ? line.match(/^##[ \t]+(.+?)[ \t]*#*[ \t]*$/) : null
-    if (heading2) {
-      flush()
-      heading = heading2[1]
-      lines = []
-    } else {
-      lines.push(line)
-    }
-  }
-  flush()
-  return sections
-}
-
-/** About `max` characters, cut at the end of a sentence when possible, else at a word. */
-function excerpt(text: string, max = 380): string {
-  if (text.length <= max) return text
-  const window = text.slice(0, max)
-  const sentenceEnd = Math.max(window.lastIndexOf('. '), window.lastIndexOf('؟ '), window.lastIndexOf('! '), window.lastIndexOf('؛ '))
-  if (sentenceEnd >= max * 0.55) return window.slice(0, sentenceEnd + 1).trim()
-  const wordEnd = window.lastIndexOf(' ')
-  return `${window.slice(0, wordEnd > 0 ? wordEnd : max).trim()}…`
-}
-
-interface FallbackInput {
-  meta: ArticleMeta
-  body: string
-}
-
-function articleStory(date: string, articles: FallbackInput[], plainText: (markdown: string) => string, isProduction: boolean): StoryData | null {
+function articleStory(date: string, articles: ArticleSource[], plainText: (markdown: string) => string, isProduction: boolean): StoryData | null {
   const random = seededRandom(date)
   // Adult-gated articles never appear; in production unfinished articles don't either.
   const pool = articles.filter(({ meta }) => !meta.adult && (!isProduction || !meta.incomplete))
@@ -225,25 +296,139 @@ function articleStory(date: string, articles: FallbackInput[], plainText: (markd
     ;[order[index], order[swap]] = [order[swap], order[index]]
   }
 
-  for (const { meta, body } of order) {
-    const sections = readableSections(body, plainText)
+  for (const article of order) {
+    // Whole `##` sections that read well on their own: enough text, not so long that a story becomes a chapter.
+    const sections = parseSections(article.body, plainText).filter((section) => {
+      if (section.level !== 2 || section.markdown.length > 4000) return false
+      return plainText(section.markdown).length >= 140
+    })
     if (sections.length === 0) continue
     const section = sections[Math.floor(random() * sections.length)]
-    const cover = meta.cover?.type === 'image' ? meta.cover.url : undefined
-    const href = `/blog/${meta.slug}?find=${encodeURIComponent(section.heading)}`
     return {
-      id: `${date}:article:${meta.slug}`,
+      id: `${date}:article:${article.meta.slug}`,
       source: 'article',
       date,
       expiresAt: storyDayEnd(date),
-      slides: [
-        { kind: 'text', kicker: 'از مقاله‌های وبلاگ', title: meta.title, caption: section.heading, ...(cover ? { src: cover } : {}) },
-        { kind: 'text', kicker: section.heading, caption: excerpt(section.text) },
-        { kind: 'link', title: 'ادامه را در خود مقاله بخوانید', link: { href, label: 'خواندن مقاله' } },
-      ],
+      slides: [sectionSlide(article, section, plainText)],
     }
   }
   return null
+}
+
+function sectionSlide(article: ArticleSource, section: ArticleSection, plainText: (markdown: string) => string): StorySlide {
+  return {
+    kind: 'markdown',
+    markdown: section.markdown,
+    kicker: article.meta.title,
+    link: { href: `/blog/${article.meta.slug}?find=${encodeURIComponent(section.heading)}`, label: 'خواندن مقاله' },
+    textLength: plainText(section.markdown).length,
+  }
+}
+
+// ───────────────────────── the owner's story folder ─────────────────────────
+
+const knownKeys = new Set(['show', 'blog', 'seconds'])
+const SINGLE_IMAGE = /^!\[[^\]]*\]\(\s*<?([^)\s>]+)>?\s*\)$/
+
+/** Points relative media URLs (`./photo.jpg`) at the published copy and records which story files are used. */
+function rewriteStoryMedia(markdown: string, files: Set<string>, baseUrl: string, used: Set<string>): string {
+  const rewrite = (url: string): string => {
+    if (isAbsoluteUrl(url)) return url
+    const suffixAt = url.search(/[?#]/)
+    const pathPart = suffixAt === -1 ? url : url.slice(0, suffixAt)
+    const suffix = suffixAt === -1 ? '' : url.slice(suffixAt)
+    const normalized = normalizeMediaPath(pathPart)
+    if (!files.has(normalized)) return url
+    used.add(normalized)
+    return `${baseUrl}story-media/${encodeMediaPath(normalized)}${suffix}`
+  }
+  return markdown
+    .replace(/(!?\[[^\]]*\]\(\s*<?)([^)\s>]+)/g, (_match, before: string, url: string) => `${before}${rewrite(url)}`)
+    .replace(/\b(src|poster)(\s*=\s*)(["'])([^"']+)\3/g, (_match, key: string, equals: string, quote: string, url: string) => `${key}${equals}${quote}${rewrite(url)}${quote}`)
+}
+
+async function publishStoryMedia(files: Iterable<string>): Promise<void> {
+  for (const relative of files) {
+    const source = path.join(storyRoot, ...relative.split('/'))
+    const destination = path.join(storyMediaRoot, ...relative.split('/'))
+    await mkdir(path.dirname(destination), { recursive: true })
+    if (/\.(mp4|m4v|mov)$/i.test(relative)) {
+      const prepared = await prepareVideoForBrowser(source, mediaCacheRoot)
+      await copyFile(prepared.filePath, destination)
+      if (prepared.message) console.warn(`[story] ${relative}: ${prepared.message}`)
+    } else {
+      await copyFile(source, destination)
+    }
+    const size = (await stat(destination)).size
+    if (size > 2_500_000) console.warn(`[story] ${relative}: ${(size / 1_000_000).toFixed(1)} MB: compress it, phones download every file.`)
+  }
+}
+
+interface FolderStories {
+  slides: StorySlide[]
+  /** false when every file said `show: false`. */
+  anyVisible: boolean
+}
+
+async function slidesFromFolder(folder: StoryFolder, options: BuildStoryOptions): Promise<FolderStories> {
+  const used = new Set<string>()
+  const entries: { name: string; slide: StorySlide | null }[] = []
+
+  for (const file of folder.markdown) {
+    const where = `story/${file.name}`
+    const unknown = Object.keys(file.data).filter((key) => !knownKeys.has(key))
+    if (unknown.length > 0) console.warn(`[story] ${where}: ignored frontmatter key(s) ${unknown.join(', ')} (known: show, blog, seconds)`)
+    if (file.data.show === false) {
+      entries.push({ name: file.name, slide: null })
+      continue
+    }
+
+    const seconds = typeof file.data.seconds === 'number' && file.data.seconds > 0 ? file.data.seconds : undefined
+    try {
+      // 1. a link to a section of a blog article (frontmatter `blog:` or the file's whole text on one line)
+      const reference = typeof file.data.blog === 'string'
+        ? file.data.blog
+        : file.body && !file.body.includes('\n') && file.body.includes('/') ? file.body : null
+      if (reference !== null) {
+        const linked = resolveSectionLink(reference, options.articles, options.plainText, where)
+        if (linked) {
+          if (linked.article.meta.adult) throw new Error(`${where}: "${linked.article.meta.title}" is an 18+ article; its text cannot be shown in a story.`)
+          entries.push({ name: file.name, slide: { ...sectionSlide(linked.article, linked.section, options.plainText), ...(seconds ? { seconds } : {}) } })
+          continue
+        }
+        if (typeof file.data.blog === 'string') throw new Error(`${where}: no article matches "blog: ${file.data.blog}". Write the article's title or folder name, then / and the section heading.`)
+      }
+
+      // 2. the file's own Markdown
+      if (!file.body) throw new Error(`${where}: the story is empty.`)
+      const markdown = rewriteStoryMedia(file.body, folder.files, options.baseUrl, used)
+      const single = markdown.match(SINGLE_IMAGE)
+      if (single && single[1].startsWith(`${options.baseUrl}story-media/`)) {
+        entries.push({ name: file.name, slide: { kind: 'image', src: single[1], textLength: 0, ...(seconds ? { seconds } : {}) } })
+      } else {
+        entries.push({ name: file.name, slide: { kind: 'markdown', markdown, textLength: options.plainText(markdown).length, ...(seconds ? { seconds } : {}) } })
+      }
+    } catch (error) {
+      // Development and publishing stop here so the mistake is fixed; the daily production build only skips it.
+      if (!options.isProduction) throw error
+      console.warn(`[story] skipped: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+  // Pictures no .md file uses are stories of their own.
+  for (const image of folder.images) {
+    if (used.has(image)) continue
+    used.add(image)
+    entries.push({ name: image, slide: { kind: 'image', src: `${options.baseUrl}story-media/${encodeMediaPath(image)}`, textLength: 0 } })
+  }
+
+  const unusedOther = [...folder.files].filter((name) => !used.has(name) && !name.includes('/') && path.extname(name).toLowerCase() !== '.md')
+  if (unusedOther.length > 0) console.warn(`[story] not used by any story (only pictures and .md files make stories): ${unusedOther.join(', ')}`)
+
+  entries.sort((left, right) => naturalCompare(left.name, right.name))
+  await publishStoryMedia(used)
+  const slides = entries.flatMap((entry) => (entry.slide ? [entry.slide] : []))
+  return { slides, anyVisible: slides.length > 0 }
 }
 
 // ───────────────────────── build step ─────────────────────────
@@ -252,11 +437,11 @@ export interface BuildStoryOptions {
   isProduction: boolean
   /** Site base, e.g. `/Weblogs/`. */
   baseUrl: string
-  articles: FallbackInput[]
+  articles: ArticleSource[]
   plainText: (markdown: string) => string
 }
 
-/** Writes src/generated/story.json (`null` = no story) and copies the story pictures to public/story-media. */
+/** Writes src/generated/story.json (`null` = no story) and copies the story media to public/story-media. */
 export async function buildStory(options: BuildStoryOptions): Promise<StoryData | null> {
   const today = storyToday()
   const state = await readStoryState()
@@ -266,35 +451,23 @@ export async function buildStory(options: BuildStoryOptions): Promise<StoryData 
   let story: StoryData | null = null
   const publishedToday = state?.date === today
   // Production shows the owner's story only when it was published today. Development also previews a draft.
-  const useCustom = storyFolderHasContent(folder) && (publishedToday || (!options.isProduction && state === null))
+  const useFolder = storyFolderHasContent(folder) && (publishedToday || (!options.isProduction && state === null))
 
-  if (useCustom) {
-    const date = today
-    const slides: StorySlide[] = []
-    const count = Math.max(folder.images.length, folder.captions.length)
-    for (let index = 0; index < count; index += 1) {
-      const image = folder.images[index]
-      const caption = folder.captions[index]
-      if (image) {
-        const destination = path.join(storyMediaRoot, image)
-        await mkdir(path.dirname(destination), { recursive: true })
-        await copyFile(path.join(storyRoot, image), destination)
-        const size = (await stat(destination)).size
-        if (size > 2_500_000) console.warn(`[story] ${image}: ${(size / 1_000_000).toFixed(1)} MB: compress it, phones download every picture.`)
-        slides.push({ kind: 'image', src: `${options.baseUrl}story-media/${encodeURIComponent(image)}`, ...(caption ? { caption } : {}) })
-      } else {
-        slides.push({ kind: 'text', caption })
+  if (useFolder) {
+    const { slides, anyVisible } = await slidesFromFolder(folder, options)
+    // The folder claims the day: when every file is `show: false` nothing (not even a random article) is shown.
+    if (anyVisible) {
+      story = {
+        id: `${today}:custom:${state?.publishedAt || 'draft'}`,
+        source: 'custom',
+        date: today,
+        expiresAt: storyDayEnd(today),
+        ...(publishedToday ? {} : { preview: true }),
+        slides,
       }
+    } else {
+      console.log('Story: hidden for today (every story file has `show: false`).')
     }
-    story = {
-      id: `${date}:custom:${state?.publishedAt || 'draft'}`,
-      source: 'custom',
-      date,
-      expiresAt: storyDayEnd(date),
-      ...(publishedToday ? {} : { preview: true }),
-      slides,
-    }
-    if (folder.ignored.length > 0) console.warn(`[story] ignored (only pictures and .md are used): ${folder.ignored.join(', ')}`)
   } else {
     story = articleStory(today, options.articles, options.plainText, options.isProduction)
     if (storyFolderHasContent(folder) && state !== null && state.date < today) {
@@ -304,6 +477,6 @@ export async function buildStory(options: BuildStoryOptions): Promise<StoryData 
 
   await mkdir(path.dirname(generatedStoryFile), { recursive: true })
   await writeFile(generatedStoryFile, `${JSON.stringify(story, null, 2)}\n`, 'utf8')
-  if (story) console.log(`Story: ${story.source} · ${story.slides.length} slide(s)${story.preview ? ' (draft preview)' : ''}`)
+  if (story) console.log(`Story: ${story.source} · ${story.slides.length} stor${story.slides.length === 1 ? 'y' : 'ies'}${story.preview ? ' (draft preview)' : ''}`)
   return story
 }

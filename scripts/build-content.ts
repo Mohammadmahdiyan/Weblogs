@@ -1,5 +1,6 @@
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
+import matter from 'gray-matter'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { unified } from 'unified'
@@ -9,14 +10,23 @@ import type { ArticleMeta, SearchEntry } from '../src/lib/types.ts'
 import siteConfig from '../src/site.config.ts'
 import { detectProvider, parseYouTubeId, youtubePoster } from '../src/lib/embed.ts'
 import { markdownToPlainText } from '../src/lib/plainText.ts'
-import { coverTypeFor, encodeMediaPath, normalizeMediaPath, rewriteMediaUrl, prepareVideoForBrowser, type MediaFile } from './lib/media.ts'
+import { coverTypeFor, encodeMediaPath, isAbsoluteUrl, normalizeMediaPath, rewriteMediaUrl, prepareVideoForBrowser, type MediaFile } from './lib/media.ts'
 import { allCollections, type Collection } from './lib/collections.ts'
 import { buildStory } from './lib/story.ts'
 import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
 
+interface PreparedPage {
+  number: number
+  title?: string
+  /** Markdown with media URLs already pointing at the published files. */
+  body: string
+}
+
 interface PreparedArticle {
   meta: ArticleMeta
   body: string
+  /** Books: the `pages/<number>.md` files, ascending. */
+  pages: PreparedPage[]
   mediaFiles: MediaFile[]
   articleDirectory: string
   /** false when the article says `show: false` (hidden from the online site). */
@@ -43,7 +53,20 @@ function excerptFrom(markdown: string): string {
   return Array.from(plainText(markdown)).slice(0, 160).join('')
 }
 
-function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[], mediaDir: string): string {
+/**
+ * A page file lives in `pages/`, so `![](./fig.png)` there means `pages/fig.png` when that file exists and the book's
+ * own folder otherwise (`../fig.png` and `fig.png` both reach the book folder).
+ */
+function pageMediaUrl(url: string, mediaFiles: MediaFile[]): string {
+  if (isAbsoluteUrl(url)) return url
+  const suffixAt = url.search(/[?#]/)
+  const pathPart = suffixAt === -1 ? url : url.slice(0, suffixAt)
+  const candidate = `pages/${normalizeMediaPath(pathPart)}`
+  return mediaFiles.some((media) => media.relativePath === candidate) ? `${candidate}${suffixAt === -1 ? '' : url.slice(suffixAt)}` : url
+}
+
+function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[], mediaDir: string, inPages = false): string {
+  const locate = (url: string) => (inPages ? pageMediaUrl(url, mediaFiles) : url)
   const tree = unified().use(remarkParse).parse(body)
   const edits: { start: number; end: number; replacement: string }[] = []
 
@@ -52,7 +75,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
     const { start, end } = node.position
     if (start.offset === undefined || end.offset === undefined) return
 
-    const replacement = rewriteMediaUrl(node.url, slug, mediaFiles, baseUrl, mediaDir)
+    const replacement = rewriteMediaUrl(locate(node.url), slug, mediaFiles, baseUrl, mediaDir)
     if (replacement === node.url) return
 
     const rawNode = body.slice(start.offset, end.offset)
@@ -75,7 +98,7 @@ function rewriteMarkdownMedia(body: string, slug: string, mediaFiles: MediaFile[
     /\b(src|href|poster|image|link|cover)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/gi,
     (match, attribute: string, _whole: string, doubleQuoted: string, singleQuoted: string, unquoted: string) => {
       const original = doubleQuoted ?? singleQuoted ?? unquoted ?? ''
-      const next = rewriteMediaUrl(original, slug, mediaFiles, baseUrl, mediaDir)
+      const next = rewriteMediaUrl(locate(original), slug, mediaFiles, baseUrl, mediaDir)
       if (next === original) return match
       const quote = doubleQuoted !== undefined ? '"' : singleQuoted !== undefined ? "'" : ''
       return `${attribute}=${quote}${next}${quote}`
@@ -166,6 +189,46 @@ function embedCover(url: string): NonNullable<ArticleMeta['cover']> {
   }
 }
 
+/**
+ * Book pages: `pages/1.md`, `pages/2.md` … The FILE NAME is the page number (so the address is /books/<book>/<number>,
+ * pages can be added or skipped without renaming anything, and 10.md follows 9.md). Optional frontmatter: `title:`.
+ */
+async function readBookPages(articleDirectory: string, slug: string, mediaFiles: MediaFile[], collection: Collection): Promise<PreparedPage[]> {
+  const pagesDirectory = path.join(articleDirectory, 'pages')
+  let names: string[]
+  try {
+    names = (await readdir(pagesDirectory, { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw error
+  }
+
+  const pages: PreparedPage[] = []
+  const seen = new Map<number, string>()
+  for (const name of names.filter((file) => file.toLowerCase().endsWith('.md'))) {
+    const filePath = path.join(pagesDirectory, name)
+    const match = name.match(/^(\d+)\.md$/i)
+    if (!match || Number(match[1]) < 1 || Number(match[1]) > 999999) {
+      console.warn(`! ${relativeFilePath(filePath)}: ignored. Page files are named by page number: 1.md, 2.md, 3.md …`)
+      continue
+    }
+    const number = Number(match[1])
+    const duplicate = seen.get(number)
+    if (duplicate) fail(filePath, `page ${number} exists twice (${duplicate} and ${name}); keep one`)
+    seen.set(number, name)
+
+    let parsed: ReturnType<typeof matter>
+    try {
+      parsed = matter((await readFile(filePath, 'utf8')).replace(/^\uFEFF/, ''))
+    } catch (error) {
+      return fail(filePath, `invalid frontmatter (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`)
+    }
+    const title = typeof parsed.data.title === 'string' && parsed.data.title.trim() ? parsed.data.title.trim() : undefined
+    pages.push({ number, ...(title ? { title } : {}), body: rewriteMarkdownMedia(parsed.content.trim(), slug, mediaFiles, collection.mediaDir, true) })
+  }
+  return pages.sort((first, second) => first.number - second.number)
+}
+
 async function prepareArticle(articleDirectory: string, dates: DatesRegistry, collection: Collection): Promise<PreparedArticle> {
   const indexPath = path.join(articleDirectory, 'index.md')
   const label = relativeFilePath(indexPath)
@@ -195,7 +258,10 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry, co
   const date = registered?.date ?? fileDay
   const updated = registered?.completed === false ? date : (registered?.updated ?? date)
 
-  const mediaFiles = await collectMediaFiles(articleDirectory)
+  const allFiles = await collectMediaFiles(articleDirectory)
+  // `pages/<number>.md` are the book's pages, not media.
+  const mediaFiles = allFiles.filter((media) => !/^pages\/\d+\.md$/i.test(media.relativePath))
+  const pages = collection.id === 'books' ? await readBookPages(articleDirectory, slug, mediaFiles, collection) : []
   let coverFile: MediaFile | undefined
 
   if (blog.cover !== undefined) {
@@ -233,9 +299,10 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry, co
     ...(blog.adult === true ? { adult: true } : {}),
     // Only `publishBlog` marks an article as published (old, new, test and unregistered articles alike).
     ...(registered?.published === true ? {} : { incomplete: true }),
+    ...(pages.length > 0 ? { pages: pages.map((page) => ({ number: page.number, ...(page.title ? { title: page.title } : {}) })) } : {}),
   }
 
-  return { meta, body, mediaFiles, articleDirectory, show: blog.show !== false }
+  return { meta, body, pages, mediaFiles, articleDirectory, show: blog.show !== false }
 }
 
 function xmlEscape(value: string): string {
@@ -255,7 +322,10 @@ async function writeSiteFiles(metadata: ArticleMeta[], bookMetadata: ArticleMeta
     { loc: `${base}/`, lastmod: metadata[0]?.updated },
     ...metadata.map((article) => ({ loc: `${base}/blog/${article.slug}`, lastmod: article.updated })),
     { loc: `${base}/books`, lastmod: bookMetadata[0]?.updated },
-    ...bookMetadata.map((book) => ({ loc: `${base}/books/${book.slug}`, lastmod: book.updated })),
+    ...bookMetadata.flatMap((book) => [
+      { loc: `${base}/books/${book.slug}`, lastmod: book.updated },
+      ...(book.pages ?? []).map((page) => ({ loc: `${base}/books/${book.slug}/${page.number}`, lastmod: book.updated })),
+    ]),
   ]
   const sitemap = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -378,6 +448,19 @@ async function buildCollection(collection: Collection, isProduction: boolean): P
     }
   })
 
+  // Book pages are found only by the «محتوا::» search (one entry per page, address `<book>/<page>`).
+  for (const article of articles) {
+    for (const page of article.pages) {
+      searchIndex.push({
+        slug: `${article.meta.slug}/${page.number}`,
+        title: `${article.meta.title}، صفحه ${page.number}`,
+        phrases: [],
+        content: plainText(page.body).replace(/\|/g, ' '),
+        contentOnly: true,
+      })
+    }
+  }
+
   const publicRoot = path.join(projectRoot, 'public', collection.mediaDir)
   await rm(publicRoot, { recursive: true, force: true })
   await mkdir(publicRoot, { recursive: true })
@@ -401,6 +484,14 @@ async function buildCollection(collection: Collection, isProduction: boolean): P
     }
 
     await writeFile(path.join(bodiesDirectory, `${article.meta.slug}.md`), article.body, 'utf8')
+
+    // Pages are published as plain files and fetched when opened (thousands of pages must not become thousands of
+    // bundle chunks).
+    if (article.pages.length > 0) {
+      const pagesFolder = path.join(destinationRoot, 'pages')
+      await mkdir(pagesFolder, { recursive: true })
+      for (const page of article.pages) await writeFile(path.join(pagesFolder, `${page.number}.md`), page.body, 'utf8')
+    }
   }
 
   const bodyImports = articles
@@ -427,6 +518,7 @@ async function buildCollection(collection: Collection, isProduction: boolean): P
     updated: article.updated,
     cover: article.cover?.type ?? 'none',
     suggestions: article.suggestions.length,
+    pages: article.pages?.length ?? 0,
   })))
 
   return { collection, metadata, articles }

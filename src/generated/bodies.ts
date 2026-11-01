@@ -4,6 +4,7 @@ export const articleBodies: Record<string, () => Promise<{ default: string }>> =
   "chera-shia-fohsh-mida": () => import('./bodies/chera-shia-fohsh-mida.md?raw'),
   "eid-syasi-qadir": () => import('./bodies/eid-syasi-qadir.md?raw'),
   "hadis-in-shia": () => import('./bodies/hadis-in-shia.md?raw'),
+  "jansi-taren-ahadis-shia": () => import('./bodies/jansi-taren-ahadis-shia.md?raw'),
   "kashti-najat": () => import('./bodies/kashti-najat.md?raw'),
   "shia-nabovat-pyambar-ra-batel-kard": () => import('./bodies/shia-nabovat-pyambar-ra-batel-kard.md?raw'),
   "shobahat-ravafez": () => import('./bodies/shobahat-ravafez.md?raw'),
