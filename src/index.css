@@ -397,7 +397,15 @@ body { overflow-x: clip; }
 .story-scroll::-webkit-scrollbar-thumb { border-radius: 9999px; background: color-mix(in srgb, var(--text) 28%, transparent); }
 .story-scroll::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text) 45%, transparent); }
 /* Short stories sit in the middle; long ones start at the top and scroll. */
-.story-md { display: grid; min-height: 100%; align-content: safe center; gap: 1rem; background: transparent; text-align: start; }
+.story-scroll { overflow-x: hidden; }
+/* Nothing in a story scrolls sideways: text wraps to the card's width, long words / links break, code and tables fit. */
+.story-md { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 100%; align-content: safe center; gap: 1rem; background: transparent; text-align: start; overflow-wrap: anywhere; word-break: break-word; }
+.story-md * { min-width: 0; max-width: 100%; }
+.story-md :is(pre, code) { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+.story-md .overflow-x-auto, .story-md pre { overflow-x: hidden; }
+.story-md table { width: 100%; table-layout: fixed; }
+.story-md :is(td, th) { overflow-wrap: anywhere; word-break: break-word; }
+.story-md :is(video, iframe, svg, canvas) { max-width: 100%; }
 .story-md .article-body { font-size: 1rem; }
 .story-md img { max-width: 100%; height: auto; pointer-events: none; }
 .story-kicker { margin: 0; font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); }

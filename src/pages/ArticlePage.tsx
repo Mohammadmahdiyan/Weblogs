@@ -5,6 +5,7 @@ import type { ArticleMeta } from '../lib/types'
 import { fetchBookPage, siteCollections, type CollectionId, type SiteCollection } from '../lib/collections'
 import { parsePageParam } from '../lib/bookPages'
 import { BookPagination } from '../components/BookPagination'
+import { BookSearch } from '../components/BookSearch'
 import { buildToc } from '../lib/toc'
 import { FIND_INDEX_PARAM, FIND_PARAM, parseOccurrence } from '../lib/contentSearch'
 import { useFindInPage } from '../lib/findInPage'
@@ -207,7 +208,9 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
       <ReadingProgress />
       <ArticleLayout sidebar={<ArticleSidebar articles={articles} article={article} collection={collection} />}>
         <article className="article-card text-[var(--text)]">
-          <nav aria-label="مسیر صفحه" className="mb-4 flex flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
+          {/* A book also gets a small «search in this book» button on the same row, so it costs no extra height. */}
+          <div className="mb-4 flex items-start justify-between gap-3">
+          <nav aria-label="مسیر صفحه" className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
             <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>
             <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
             <Link to={collectionId === 'books' ? '/books' : '/#articles'} className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">{collection.text.breadcrumb}</Link>
@@ -220,6 +223,8 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
                 <span aria-current="page">صفحه {pageNumber.toLocaleString('fa-IR')}</span>
               </>}
           </nav>
+          {collectionId === 'books' && <BookSearch bookSlug={slug} pages={article.pages} />}
+          </div>
 
           {pageNumber === undefined ? (
             <>
