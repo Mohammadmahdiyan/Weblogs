@@ -71,7 +71,7 @@ adult: true
 
 1. اینجا مجلسی این روایت رو میگه که مجهول هست 
 
-![مجلسی میگه روایت ضعیفه](./majlasi-hadis-majhol.jpg)
+![مجلسی میگه روایت ضعیفه](https://cdn.steadylink.io/a/1676f09a-4c61-4077-ba73-3dcba097ca25)
 
 [آیا شیعه میتواند بگوید فلان حدیث ضعیفه ؟](https://Mohammadmahdiyan.github.io/Weblogs/blog/hadis-in-shia/## مجلسی : تمام روایت هامون صحیح هست)
 
@@ -81,7 +81,7 @@ adult: true
 
 از جهت دوم محمد تقی مجلسی این روایت رو صحیح میدونه (پدرش) در روضة المتقین - جلد 6 - صفحه 80
 
-![پدر مجلسی میگه روایت صحیحه](./father-of-majlasi-hadis-sahih.jpg)
+![پدر مجلسی میگه روایت صحیحه](https://cdn.steadylink.io/a/52460c48-41f8-4bbd-9647-6c1643647f70)
 
 > متنروایت1653
 
@@ -93,7 +93,7 @@ adult: true
 
 این کتاب مکتب شیعه - عجائب احکام امیر المومنین - سید محسن الامین - صفحه 67 
 
-![تحریف حدیث](./tahrif-ali-laye-pa-nagah-kard.jpg)
+![تحریف حدیث](https://cdn.steadylink.io/a/79d55ef1-ff89-484c-b77c-49d92402eed4)
 
 توی روایت اصلی چی بود ؟ 
 
