@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
 import type { ArticleMeta } from '../../src/lib/types.ts'
 import type { StoryData, StorySlide } from '../../src/lib/story.ts'
+import { isTestFolder } from './blog.ts'
 import { encodeMediaPath, isAbsoluteUrl, normalizeMediaPath, prepareVideoForBrowser } from './media.ts'
 
 export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -288,8 +289,8 @@ function seededRandom(seed: string): () => number {
 
 function articleStory(date: string, articles: ArticleSource[], plainText: (markdown: string) => string, isProduction: boolean): StoryData | null {
   const random = seededRandom(date)
-  // Adult-gated articles never appear; in production unfinished articles don't either.
-  const pool = articles.filter(({ meta }) => !meta.adult && (!isProduction || !meta.incomplete))
+  // Never: test articles (`_…` folders), adult-gated articles. In production also unfinished ones.
+  const pool = articles.filter(({ meta }) => !isTestFolder(meta.slug) && !meta.adult && (!isProduction || !meta.incomplete))
   const order = [...pool].sort((left, right) => left.meta.slug.localeCompare(right.meta.slug))
   for (let index = order.length - 1; index > 0; index -= 1) {
     const swap = Math.floor(random() * (index + 1))

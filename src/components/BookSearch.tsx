@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, X } from 'lucide-react'
 import { siteCollections } from '../lib/collections'
@@ -10,22 +10,33 @@ import type { BookPageMeta } from '../lib/types'
 const MAX_HITS = 60
 /** Pages searched per turn of the browser's loop, so a book with thousands of pages never freezes the screen. */
 const CHUNK = 25
+/** Results appear by themselves from this many characters (like the content search on the home page). */
+const MIN_CHARS = 3
+/** Wait for a pause in typing before searching. */
+const TYPING_PAUSE_MS = 250
+
+interface Result {
+  term: string
+  hits: BookHit[]
+  done: boolean
+}
 
 /**
  * «جست‌وجو در کتاب»: a compact button (icon + short label) that opens a small floating panel, so it takes no room in
- * the page. It searches the text of EVERY page of this one book and jumps to the exact spot (`?find=`).
+ * the page. It searches the text of EVERY page of this one book as you type (from 3 characters) and jumps to the
+ * exact spot (`?find=`).
  */
 export function BookSearch({ bookSlug, pages }: { bookSlug: string; pages: BookPageMeta[] | undefined }) {
   const navigate = useNavigate()
   const panelId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const runId = useRef(0)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [hits, setHits] = useState<BookHit[]>([])
-  const [state, setState] = useState<'idle' | 'searching' | 'done'>('idle')
-  const [searched, setSearched] = useState('')
+  const [result, setResult] = useState<Result | null>(null)
+
+  const term = query.trim()
+  const active = term.length >= MIN_CHARS
 
   useEffect(() => {
     if (open) inputRef.current?.focus()
@@ -44,42 +55,41 @@ export function BookSearch({ bookSlug, pages }: { bookSlug: string; pages: BookP
     }
   }, [open])
 
-  // Another book (or page change that unmounts us) cancels a running search.
-  useEffect(() => () => { runId.current += 1 }, [])
-
-  function run(event?: FormEvent) {
-    event?.preventDefault()
-    const term = query.trim()
-    const id = ++runId.current
-    if (term.length < 2) {
-      setHits([])
-      setState('idle')
-      return
-    }
-
+  // Search automatically: after a short typing pause, in small slices so the screen stays responsive. Typing again
+  // (or leaving) cancels the running search.
+  useEffect(() => {
+    if (!open || !active) return
+    let cancelled = false
+    let timer = 0
     const entries = bookEntries(siteCollections.books.searchIndex, bookSlug)
     const found: BookHit[] = []
-    setSearched(term)
-    setHits([])
-    setState('searching')
-
     let next = 0
+
     const step = () => {
-      if (id !== runId.current) return
+      if (cancelled) return
       for (const end = Math.min(entries.length, next + CHUNK); next < end && found.length < MAX_HITS; next += 1) {
         found.push(...searchEntry(entries[next], bookSlug, term))
       }
-      setHits(found.slice(0, MAX_HITS))
-      if (next < entries.length && found.length < MAX_HITS) window.setTimeout(step, 0)
-      else setState('done')
+      const done = next >= entries.length || found.length >= MAX_HITS
+      setResult({ term, hits: found.slice(0, MAX_HITS), done })
+      if (!done) timer = window.setTimeout(step, 0)
     }
-    window.setTimeout(step, 0)
-  }
+    timer = window.setTimeout(step, TYPING_PAUSE_MS)
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [open, active, term, bookSlug])
 
   function go(hit: BookHit) {
     setOpen(false)
-    navigate(articleHref(hit.slug, searched, hit.occurrence, '/books'))
+    navigate(articleHref(hit.slug, term, hit.occurrence, '/books'))
   }
+
+  // Results belong to the text they were searched for; anything older is not shown.
+  const current = active && result?.term === term ? result : null
+  const hits = current?.hits ?? []
+  const searching = active && (!current || !current.done)
 
   const titleOf = (page: number | null) => {
     if (page === null) return 'معرفی کتاب'
@@ -102,28 +112,27 @@ export function BookSearch({ bookSlug, pages }: { bookSlug: string; pages: BookP
 
       {open && (
         <div id={panelId} role="dialog" aria-label="جست‌وجو در متن کتاب" className="absolute end-0 top-full z-30 mt-2 w-[min(92vw,26rem)] rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-3 shadow-[var(--shadow-card)]">
-          <form onSubmit={run} className="flex items-center gap-2">
+          <form onSubmit={(event) => event.preventDefault()} className="flex items-center gap-2">
+            <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--muted)]" />
             <input
               ref={inputRef}
               type="search"
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder="عبارت را بنویسید و Enter بزنید"
+              placeholder="حداقل ۳ حرف بنویسید"
               aria-label="عبارت جست‌وجو در متن کتاب"
               className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)] outline-none placeholder:text-[var(--muted)] focus-visible:border-[var(--brand)]"
             />
-            <button type="submit" aria-label="جست‌وجو" className="inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)] text-[var(--brand-contrast)] hover:bg-[var(--brand-dark)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]">
-              <Search aria-hidden="true" className="size-4" />
-            </button>
             <button type="button" onClick={() => setOpen(false)} aria-label="بستن" className="inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:bg-[var(--surface-alt)] focus-visible:outline-2 focus-visible:outline-[var(--info)]">
               <X aria-hidden="true" className="size-4" />
             </button>
           </form>
 
           <p role="status" className="m-0 mt-2 min-h-5 text-start text-xs text-[var(--text-secondary)]">
-            {state === 'searching' && 'در حال جست‌وجو…'}
-            {state === 'done' && hits.length === 0 && 'نتیجه‌ای پیدا نشد؛ عبارت دیگری را امتحان کنید.'}
-            {state === 'done' && hits.length > 0 && (hits.length >= MAX_HITS ? `${MAX_HITS.toLocaleString('fa-IR')} نتیجهٔ اول؛ برای دقیق‌تر شدن، عبارت بلندتری بنویسید.` : `${hits.length.toLocaleString('fa-IR')} نتیجه`)}
+            {term.length > 0 && !active && `${MIN_CHARS.toLocaleString('fa-IR')} حرف یا بیشتر بنویسید.`}
+            {searching && 'در حال جست‌وجو…'}
+            {current?.done && hits.length === 0 && 'نتیجه‌ای پیدا نشد؛ عبارت دیگری را امتحان کنید.'}
+            {current?.done && hits.length > 0 && (hits.length >= MAX_HITS ? `${MAX_HITS.toLocaleString('fa-IR')} نتیجهٔ اول؛ برای دقیق‌تر شدن، عبارت بلندتری بنویسید.` : `${hits.length.toLocaleString('fa-IR')} نتیجه`)}
           </p>
 
           {hits.length > 0 && (
