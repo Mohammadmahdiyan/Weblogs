@@ -431,7 +431,7 @@ function Spoiler({
   }
   const phrase = hasAnimationDirective !== false
     ? (animationText ?? '').trim()
-    : 'معذرت می‌خوام'
+    : 'نعوذ بالله'
 
   return (
     <span className="spoiler-wrap">
