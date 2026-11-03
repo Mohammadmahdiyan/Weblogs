@@ -219,7 +219,10 @@ export function parseBlog(source: string, label: string): ParsedBlog {
     throw new Error(`${label}: "show" must be true or false`)
   }
   if (data.cover !== undefined && typeof data.cover !== 'string') {
-    throw new Error(`${label}: "cover" must be a relative media path string`)
+    throw new Error(`${label}: "cover" must be a media path (cover.jpg) or an https image URL`)
+  }
+  if (typeof data.cover === 'string' && /^http:\/\//i.test(data.cover)) {
+    throw new Error(`${label}: "cover" must use https://, not http://`)
   }
   if (
     data.readingTime !== undefined &&

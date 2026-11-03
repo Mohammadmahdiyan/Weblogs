@@ -263,11 +263,20 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry, co
   const mediaFiles = allFiles.filter((media) => !/^pages\/\d+\.md$/i.test(media.relativePath))
   const pages = collection.id === 'books' ? await readBookPages(articleDirectory, slug, mediaFiles, collection) : []
   let coverFile: MediaFile | undefined
+  /** `cover: https://…` : a picture hosted elsewhere (nothing to commit to Git). */
+  let remoteCover: string | undefined
 
-  if (blog.cover !== undefined) {
+  if (blog.cover !== undefined && /^https:\/\//i.test(blog.cover)) {
+    remoteCover = blog.cover
+  } else if (blog.cover !== undefined) {
     const requestedCover = normalizeMediaPath(blog.cover)
     coverFile = mediaFiles.find((media) => media.relativePath === requestedCover && media.type !== null)
-    if (!coverFile) return fail(indexPath, `cover file "${blog.cover}" was not found or has an unsupported media extension`)
+    if (!coverFile) {
+      const problem = `cover file "${blog.cover}" was not found or has an unsupported media extension`
+      // On your computer a typo should stop you; the online build must not fail over a decorative picture.
+      if (!process.argv.includes('--production')) return fail(indexPath, problem)
+      console.warn(`! ${relativeFilePath(indexPath)}: ${problem}; building without a cover. If the file exists on your computer, .gitignore may be excluding it (content/blog/*/*.jpg …) so it was never pushed to GitHub: remove that rule, or use an https image URL as the cover.`)
+    }
   } else {
     // The cover is always a file called cover.<any image / video / audio extension>.
     coverFile = mediaFiles.find((media) =>
@@ -290,9 +299,11 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry, co
           url: `${baseUrl}${collection.mediaDir}/${encodeURIComponent(slug)}/${encodeMediaPath(coverFile.relativePath)}`,
           type: coverFile.type,
         }
-      : blog.coverEmbed
-        ? embedCover(blog.coverEmbed)
-        : null,
+      : remoteCover
+        ? { url: remoteCover, type: 'image' }
+        : blog.coverEmbed
+          ? embedCover(blog.coverEmbed)
+          : null,
     readingTime: blog.readingTime ?? Math.max(1, Math.ceil(words / 200)),
     ...(blog.lang ? { lang: blog.lang } : {}),
     ...(blog.dir ? { dir: blog.dir } : {}),

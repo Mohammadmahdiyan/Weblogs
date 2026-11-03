@@ -235,7 +235,9 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
                 <MetaValue label="زمان مطالعه" value={`${article.readingTime} دقیقه`} />
               </div>
 
-              <div className="article-cover"><CoverMedia cover={article.cover} title={article.title} /></div>
+              {/* The cover picture belongs to the list cards (and link previews); the article starts with its own text.
+                  A playable cover (video, audio, YouTube…) is still shown, because that is content. */}
+              {article.cover && article.cover.type !== 'image' && <div className="article-cover"><CoverMedia cover={article.cover} title={article.title} /></div>}
 
               <Basmala />
             </>
