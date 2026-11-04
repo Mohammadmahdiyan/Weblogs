@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { normalizeSearchText } from '../lib/normalize'
 import { decideSubmit, parseSearchQuery, toContentSearchQuery } from '../lib/search'
 import { articleHref, bodyOccurrence, findContentMatches, type ContentMatch } from '../lib/contentSearch'
+import { pageTargets, parsePageQuery, suggestBooks } from '../lib/bookQuery'
 import type { ArticleMeta, SearchEntry } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
 
@@ -17,6 +18,10 @@ interface SearchResult {
   matches?: ContentMatch[]
   /** Length of the title at the start of the indexed content (not part of the rendered article body). */
   titleLength?: number
+  /** Books: «name ص۲۱۶» opens this page of the book. */
+  jump?: { page: number; chapter?: string }
+  /** Books: a name the typed text can be completed to (shows the ↑ button, Tab completes it). */
+  suggestion?: boolean
 }
 
 function HighlightedPhrase({ text, query }: { text: string; query: string }) {
@@ -34,7 +39,11 @@ function SnippetText({ snippet }: { snippet: ContentMatch }) {
 
 const stepButtonClass = 'inline-flex size-7 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:bg-[var(--surface-strong)] hover:text-[var(--brand)] focus-visible:outline-2 focus-visible:outline-[var(--info)] disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--text-secondary)]'
 
-export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePath = '/blog' }: { articles: ArticleMeta[]; searchIndex: SearchEntry[]; initialQuery?: string; basePath?: string }) {
+/**
+ * `bookMode` (the books page) adds: completing a book's name (↑ button, ArrowUp/ArrowDown to pick, Tab to complete) and
+ * «name ص۲۱۶» / «name صفحه ۲۱۶» to open that page of the book directly.
+ */
+export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePath = '/blog', bookMode = false }: { articles: ArticleMeta[]; searchIndex: SearchEntry[]; initialQuery?: string; basePath?: string; bookMode?: boolean }) {
   const navigate = useNavigate()
   const adultConfirmed = useAdultAccess()
   const safeArticles = articles
@@ -44,6 +53,8 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
   const [results, setResults] = useState<SearchResult[]>([])
   const [activeIndex, setActiveIndex] = useState(-1)
   const [open, setOpen] = useState(false)
+  // Books: why a «name ص۲۱۶» query cannot open a page (the page does not exist).
+  const [jumpNote, setJumpNote] = useState<string | null>(null)
   // The query the current `results` were computed for. Until it equals `query`, “not found” must not be shown.
   const [settledQuery, setSettledQuery] = useState<string | null>(null)
   // Content search: which occurrence (0-based) each result currently shows. Missing = the first.
@@ -86,12 +97,36 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
         }).slice(0, 8)
         setResults(hits)
       } else {
-        const hits = fuse.search(normalizedQuery, { limit: 8 }).map((hit) => ({
+        const entryOf = (book: ArticleMeta): SearchEntry => safeSearchIndex.find((entry) => entry.slug === book.slug) ?? { slug: book.slug, title: book.title, phrases: [] }
+        const pageQuery = bookMode ? parsePageQuery(query) : null
+        let note: string | null = null
+        let hits: SearchResult[] | null = null
+
+        if (pageQuery) {
+          // «شرح صحیح بخاری ص۲۱۶»: open that page.
+          const targets = pageTargets(safeArticles, pageQuery)
+          hits = targets
+            .filter((target) => target.exists)
+            .map((target) => ({ entry: entryOf(target.book), score: 0, matchedPhrase: '', jump: { page: target.page, ...(target.chapter ? { chapter: target.chapter } : {}) } }))
+          if (hits.length === 0 && targets.length > 0) {
+            const page = pageQuery.page.toLocaleString('fa-IR')
+            const only = targets.length === 1 ? targets[0] : null
+            note = only
+              ? `صفحهٔ ${page} در «${only.book.title}» وجود ندارد${only.last !== null ? ` (آخرین صفحه: ${only.last.toLocaleString('fa-IR')})` : ' (این کتاب صفحه‌صفحه نیست)'}.`
+              : `صفحهٔ ${page} در هیچ‌یک از کتاب‌های مشابه وجود ندارد.`
+          }
+        } else if (bookMode) {
+          // Names that contain what was typed («شرح صح» → both «شرح صحیح …» books).
+          const names = suggestBooks(safeArticles, query)
+          if (names.length > 0) hits = names.map((book) => ({ entry: entryOf(book), score: 0, matchedPhrase: book.title, suggestion: true }))
+        }
+
+        setJumpNote(note)
+        setResults(hits ?? fuse.search(normalizedQuery, { limit: 8 }).map((hit) => ({
           entry: safeSearchIndex.find((entry) => entry.slug === hit.item.slug) ?? hit.item,
           score: hit.score ?? 1,
           matchedPhrase: hit.item.phrases[hit.matches?.[0]?.refIndex ?? 0] ?? hit.item.title,
-        }))
-        setResults(hits)
+        })))
       }
       setSettledQuery(query)
       setOccurrences({})
@@ -99,13 +134,13 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
       setOpen(true)
     }, 70)
     return () => window.clearTimeout(timer)
-  }, [contentSearch, contentQuery, fuse, query, safeSearchIndex])
+  }, [bookMode, contentSearch, contentQuery, fuse, query, safeArticles, safeSearchIndex])
 
   const activeQueryLength = normalizeSearchText(contentSearch ? contentQuery : query).length
   const visibleResults = activeQueryLength >= 2 ? results : []
   const nothingFound = activeQueryLength >= 2 && settledQuery === query && visibleResults.length === 0
   // Offered only after a normal search found nothing; after a content search the plain “not found” remains.
-  const contentSearchTarget = nothingFound ? toContentSearchQuery(query) : null
+  const contentSearchTarget = nothingFound && !jumpNote ? toContentSearchQuery(query) : null
   const optionCount = visibleResults.length || (contentSearchTarget ? 1 : 0)
 
   function searchInContent() {
@@ -119,6 +154,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
   // After a content search the article opens scrolled to (and highlighting) the found text.
   const occurrenceOf = (result: SearchResult) => Math.min(occurrences[result.entry.slug] ?? 0, Math.max(0, (result.matches?.length ?? 1) - 1))
   const hrefFor = (result: SearchResult) => {
+    if (result.jump) return `${basePath}/${result.entry.slug}/${result.jump.page}`
     if (!contentSearch) return articleHref(result.entry.slug, '', 0, basePath)
     const index = occurrenceOf(result)
     return articleHref(result.entry.slug, contentQuery, result.matches ? bodyOccurrence(result.matches, index, result.titleLength ?? 0) : 0, basePath)
@@ -143,12 +179,36 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
       navigate(hrefFor(visibleResults[0]))
       return
     }
+    // «name ص۲۱۶»: with nothing highlighted, Enter opens the best match's page.
+    if (visibleResults[0]?.jump) {
+      navigate(hrefFor(visibleResults[0]))
+      return
+    }
     const decision = decideSubmit(safeArticles, query, visibleResults.map((result) => ({ slug: result.entry.slug, score: result.score })))
     if (decision.action === 'navigate' && !contentSearch) navigate(`${basePath}/${decision.slug}`)
     else setOpen(true)
   }
 
+  // Books: put a book's full name in the box (so «ص۲۱۶» can be typed after it).
+  function complete(title: string) {
+    setQuery(`${title} `)
+    setActiveIndex(-1)
+    setOpen(true)
+    inputRef.current?.focus()
+  }
+  const completable = bookMode && !contentSearch ? visibleResults.filter((result) => result.suggestion) : []
+
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    // Tab completes the highlighted name (or the first one). When the box already holds that name, Tab moves on as usual.
+    if (event.key === 'Tab' && !event.shiftKey && open && completable.length > 0) {
+      const highlighted = activeIndex >= 0 ? visibleResults[activeIndex] : undefined
+      const target = highlighted?.suggestion ? highlighted : completable[0]
+      if (normalizeSearchText(query) !== normalizeSearchText(target.entry.title)) {
+        event.preventDefault()
+        complete(target.entry.title)
+      }
+      return
+    }
     if (event.key === 'ArrowDown' && optionCount) {
       event.preventDefault()
       setOpen(true)
@@ -167,7 +227,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
 
   return (
     <div className="relative mx-auto w-full max-w-3xl">
-      <label htmlFor="article-search" className="sr-only">جست‌وجو در مقاله‌ها</label>
+      <label htmlFor="article-search" className="sr-only">{bookMode ? 'جست‌وجو در کتاب‌ها' : 'جست‌وجو در مقاله‌ها'}</label>
       <div className="flex min-h-14 items-center gap-3 rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-[var(--surface)] px-4 shadow-[var(--shadow-card)] focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[color-mix(in_srgb,var(--brand)_20%,transparent)]">
         <Search aria-hidden="true" className="size-5 shrink-0 text-[var(--muted)]" />
         <input
@@ -184,7 +244,7 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
           onFocus={() => setOpen(true)}
           onBlur={() => window.setTimeout(() => setOpen(false), 120)}
           onKeyDown={onKeyDown}
-          placeholder="عنوان را جست‌وجو کنید؛ برای متن: محتوا::عبارت"
+          placeholder={bookMode ? 'نام کتاب (یا «نام کتاب ص ۲۱۶»)؛ برای متن: محتوا::عبارت' : 'عنوان را جست‌وجو کنید؛ برای متن: محتوا::عبارت'}
           className="min-w-0 flex-1 bg-transparent py-3 text-start text-base text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
         />
         <button type="button" onClick={submit} aria-label="جست‌وجو" className="inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)] text-[var(--brand-contrast)] hover:bg-[var(--brand-dark)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]">
@@ -224,11 +284,23 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
                         </span>
                       ) : (
                         <>
-                          <span className="text-sm font-semibold text-[var(--text)]">{entry.title}</span>
-                          <span className={clsx('text-xs text-[var(--text-secondary)]', snippet && 'text-center')}>{snippet ? <SnippetText snippet={snippet} /> : <HighlightedPhrase text={matchedPhrase} query={query} />}</span>
+                          <span className="text-sm font-semibold text-[var(--text)]">{result.suggestion ? <HighlightedPhrase text={entry.title} query={query} /> : entry.title}</span>
+                          {result.jump ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-[var(--text-secondary)]">
+                              <CornerDownLeft aria-hidden="true" className="size-3.5 text-[var(--brand)]" />
+                              رفتن به صفحهٔ {result.jump.page.toLocaleString('fa-IR')}{result.jump.chapter ? ` · ${result.jump.chapter}` : ''}
+                            </span>
+                          ) : !result.suggestion && (
+                            <span className={clsx('text-xs text-[var(--text-secondary)]', snippet && 'text-center')}>{snippet ? <SnippetText snippet={snippet} /> : <HighlightedPhrase text={matchedPhrase} query={query} />}</span>
+                          )}
                         </>
                       )}
                   </button>
+                  {result.suggestion && (
+                    <button type="button" aria-label={`تکمیل نام کتاب: ${entry.title}`} title="تکمیل در کادر جست‌وجو (Tab)" onMouseDown={(event) => event.preventDefault()} onClick={() => complete(entry.title)} className={clsx(stepButtonClass, 'size-9 shrink-0 self-center')}>
+                      <ArrowUp aria-hidden="true" className="size-4" />
+                    </button>
+                  )}
                   {total > 0 && !restricted && (
                     <div role="group" aria-label="مورد قبلی و بعدی در این مقاله" className="flex shrink-0 flex-col items-center justify-center gap-0.5 px-1">
                       <button type="button" aria-label="مورد قبلی" title="مورد قبلی" disabled={current <= 0} onMouseDown={(event) => event.preventDefault()} onClick={() => stepOccurrence(result, -1)} className={stepButtonClass}>
@@ -264,8 +336,13 @@ export function ArticleSearch({ articles, searchIndex, initialQuery = '', basePa
                   </span>
                 </button>
               )}
-              <p role="status" className="m-0 px-4 py-5 text-start text-sm text-[var(--text-secondary)]">نتیجه‌ای پیدا نشد؛ عبارت دیگری را امتحان کنید.</p>
+              <p role="status" className="m-0 px-4 py-5 text-start text-sm text-[var(--text-secondary)]">{jumpNote ?? 'نتیجه‌ای پیدا نشد؛ عبارت دیگری را امتحان کنید.'}</p>
             </div>
+          )}
+          {bookMode && !contentSearch && visibleResults.length > 0 && (
+            <p className="m-0 border-t border-[var(--border-light)] px-4 py-2 text-start text-[11px] leading-5 text-[var(--muted)]">
+              ↑ ↓ انتخاب · Tab تکمیل نام کتاب · Enter باز کردن · برای رفتن به صفحه بنویسید «نام کتاب ص ۲۱۶»
+            </p>
           )}
         </div>
       )}

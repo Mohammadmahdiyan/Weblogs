@@ -258,10 +258,9 @@ function optional<Key extends string, Value>(key: Key, value: Value | undefined)
 /** Runs `npm run content`: validates the whole site and regenerates every generated file. */
 export function runContentBuild(): boolean {
   console.log('→ npm run content (validating and regenerating site data)…')
-  const result = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'content'], {
-    cwd: projectRoot,
-    stdio: 'inherit',
-    shell: process.platform === 'win32',
-  })
+  // On Windows npm is a .cmd file, which only a shell can start; a single command string needs no argument quoting.
+  const result = process.platform === 'win32'
+    ? spawnSync('npm run content', { cwd: projectRoot, stdio: 'inherit', shell: true })
+    : spawnSync('npm', ['run', 'content'], { cwd: projectRoot, stdio: 'inherit' })
   return result.status === 0
 }

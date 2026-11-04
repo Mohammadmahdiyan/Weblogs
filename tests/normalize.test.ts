@@ -18,6 +18,24 @@ describe('normalizeSearchText', () => {
   })
 })
 
+describe('searching a vowelled / Quranic text without marks', () => {
+  const simple = 'إِنَّ اللَّهَ لَا يَسْتَحْيِي أَنْ يَضْرِبَ مَثَلًا مَا بَعُوضَةً فَمَا فَوْقَهَا ۚ'
+  const uthmani = 'إِنَّ ٱللَّهَ لَا يَسۡتَحۡىِۦٓ أَن يَضۡرِبَ مَثَلٗا مَّا بَعُوضَةٗ فَمَا فَوۡقَهَاۚ'
+
+  it.each([simple, uthmani])('finds the phrase typed plainly', (text) => {
+    const haystack = normalizeSearchText(text)
+    for (const query of ['يضرب مثلا ما', 'ان الله', 'أن يضرب', 'بعوضه فما فوقها', 'لا يستح']) {
+      expect(haystack).toContain(normalizeSearchText(query))
+    }
+  })
+
+  it('folds alef and hamza forms and ta marbuta', () => {
+    expect(normalizeSearchText('أئمة')).toBe(normalizeSearchText('ائمه'))
+    expect(normalizeSearchText('مسؤول')).toBe(normalizeSearchText('مسوول'))
+    expect(normalizeSearchText('ﷲ')).toBe('الله')
+  })
+})
+
 describe('normalizeWithMap', () => {
   it('gives the same text as normalizeSearchText', () => {
     const sample = '  علي   می‌گوید ۶ ساله\u064e  '

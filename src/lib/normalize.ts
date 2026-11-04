@@ -3,17 +3,37 @@ const digitMap = new Map<string, string>([
   ...Array.from({ length: 10 }, (_unused, digit) => [String.fromCharCode(0x06f0 + digit), String(digit)] as const),
 ])
 
-export function normalizeSearchText(value: string): string {
+/**
+ * Marks that are never typed when searching: Arabic honorific signs (ؐ…), harakat and tanwin (َ ً ِ ُ ّ ْ …), the
+ * dagger alef (ٰ), tatweel (ـ), and the Quranic annotation marks of the Uthmani script (ۡ ۚ ۖ ۦ ۜ …, also the
+ * extended ones ࣰ ࣱ).
+ */
+const MARKS = /[\u0610-\u061a\u064b-\u065f\u0670\u0640\u06d6-\u06ed\u08d3-\u08ff]/g
+
+/**
+ * One letter-by-letter folding used by every search (title, content, in-page highlight), so a phrase typed without
+ * marks finds the fully vowelled text:
+ *  - marks above are removed: «يضرب مثلا ما» finds «يَضْرِبَ مَثَلًا مَا» (also in the Quranic script)
+ *  - alef forms آ أ إ ٱ → ا  («ان الله» finds «إِنَّ ٱللَّهَ»), ؤ → و, ئ → ی, ة → ه
+ *  - Arabic ي ى ك → Persian ی ک, digits → ASCII, zero-width characters removed, Latin lowercased
+ */
+function foldText(value: string): string {
   return value
     .normalize('NFKC')
-    .replace(/[\u064b-\u065f\u0670\u0640]/g, '')
+    .replace(MARKS, '')
+    .replace(/[آأإٱ]/g, 'ا')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ی')
+    .replace(/ة/g, 'ه')
     .replace(/[يى]/g, 'ی')
     .replace(/ك/g, 'ک')
     .replace(/[\u200b-\u200f\ufeff]/g, '')
     .replace(/[\u0660-\u0669\u06f0-\u06f9]/g, (digit) => digitMap.get(digit) ?? digit)
     .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
+}
+
+export function normalizeSearchText(value: string): string {
+  return foldText(value).trim().replace(/\s+/g, ' ')
 }
 
 export interface NormalizedText {
@@ -23,16 +43,7 @@ export interface NormalizedText {
   map: number[]
 }
 
-function foldCharacter(character: string): string {
-  return character
-    .normalize('NFKC')
-    .replace(/[\u064b-\u065f\u0670\u0640]/g, '')
-    .replace(/[يى]/g, 'ی')
-    .replace(/ك/g, 'ک')
-    .replace(/[\u200b-\u200f\ufeff]/g, '')
-    .replace(/[\u0660-\u0669\u06f0-\u06f9]/g, (digit) => digitMap.get(digit) ?? digit)
-    .toLowerCase()
-}
+const foldCharacter = foldText
 
 /**
  * Like `normalizeSearchText`, but also remembers where every normalized character came from.

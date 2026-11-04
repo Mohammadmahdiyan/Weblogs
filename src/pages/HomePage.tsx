@@ -110,7 +110,7 @@ export function HomePage({ collection = 'blog' }: { collection?: CollectionId })
         <h1 className="mb-3 text-3xl font-extrabold leading-tight sm:text-4xl">{isBooks ? text.pageTitle : siteConfig.siteName}</h1>
         <p className="mx-auto mb-7 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">{isBooks ? text.pageDescription : siteConfig.siteDescription}</p>
         {/* key: switching between blog and books starts a fresh search box */}
-        <ArticleSearch key={collection} articles={allArticles} searchIndex={searchIndex} initialQuery={searchParams.get('q') ?? ''} basePath={route} />
+        <ArticleSearch key={collection} articles={allArticles} searchIndex={searchIndex} initialQuery={searchParams.get('q') ?? ''} basePath={route} bookMode={isBooks} />
         <div className="mt-5 flex justify-center">
           <FontControls />
         </div>

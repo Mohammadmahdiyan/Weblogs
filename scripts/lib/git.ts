@@ -8,13 +8,19 @@ function pathsFor(slugs: string[], collection: CollectionId): string[] {
   return [`content/${collection}-dates.json`, ...[...new Set(slugs)].map((slug) => `content/${collection}/${slug}`)]
 }
 
+/** Quotes one argument for a Windows shell (Node does not: it only joins the arguments with spaces). */
+const quoteForShell = (value: string): string => `"${value.replace(/"/g, '""')}"`
+
 function git(args: string[], quiet = false): { status: number; stdout: string; stderr: string } {
-  const result = spawnSync('git', args, {
-    cwd: projectRoot,
-    encoding: 'utf8',
-    stdio: quiet ? 'pipe' : 'inherit',
-    shell: process.platform === 'win32',
-  })
+  const options = { cwd: projectRoot, encoding: 'utf8' as const, stdio: quiet ? ('pipe' as const) : ('inherit' as const) }
+  let result = spawnSync('git', args, options)
+  // Normally `git` runs directly, so every argument (e.g. a commit message with spaces) arrives intact. Only if Windows
+  // cannot start it that way (a `git.cmd` shim) a shell is needed, and then we must quote the arguments ourselves:
+  // with `shell: true` Node simply joins them with spaces, which split `-m "publish: name"` into several arguments
+  // ("pathspec 'name' did not match any file(s) known to git").
+  if (result.error && (result.error as NodeJS.ErrnoException).code === 'ENOENT' && process.platform === 'win32') {
+    result = spawnSync(['git', ...args.map(quoteForShell)].join(' '), { ...options, shell: true })
+  }
   return {
     status: result.status ?? 1,
     stdout: result.stdout ?? '',
@@ -76,7 +82,7 @@ function pushPaths(commitMessage: string, requestedPaths: string[], what: string
   if (staged.status !== 1) return false
 
   if (git(['commit', '-m', commitMessage, '--', ...paths]).status !== 0) {
-    console.error('✖ Git commit failed. Check your Git user.name and user.email settings.')
+    console.error('✖ Git commit failed (see the git message above). If it mentions your identity, set it once: git config --global user.name "Your Name" and git config --global user.email "you@example.com".')
     return false
   }
   let pushed = git(['push', 'origin', 'main']).status === 0

@@ -3,8 +3,8 @@
     "slug": "_example-article",
     "title": "مقاله تستی برای خروجی اموزش",
     "description": "سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام سلام عکس پروژه عکس پروژه عکس پروژه عکس پروژه عکس پروژه اولین",
-    "date": "2026-11-02",
-    "updated": "2026-11-02",
+    "date": "2026-11-01",
+    "updated": "2026-11-01",
     "tags": [
       "نمونه",
       "آزمایشی"
@@ -27,7 +27,7 @@
       "جنسی ترین احادیث شیعه"
     ],
     "cover": null,
-    "readingTime": 13,
+    "readingTime": 11,
     "adult": true,
     "incomplete": true
   },
@@ -273,6 +273,7 @@
       "url": "/Weblogs/content/tohen-ba-ahle-beat/ali-is-olaq.jpg",
       "type": "image"
     },
-    "readingTime": 18
+    "readingTime": 18,
+    "incomplete": true
   }
 ]
