@@ -33,7 +33,7 @@ public/rss.xml
 public/robots.txt
 public/_headers
 
-# ignore photo and videos in project
+# ignore photo and videos in blog project
 content/blog/*/*.png
 content/blog/*/*.gif
 content/blog/*/*.jpg
@@ -42,4 +42,23 @@ content/blog/*/*.mp3
 content/blog/*/*.mkv
 content/blog/*/*.mov
 
+# ignore photo and videos in book project
+content/books/*/*.png
+content/books/*/*.gif
+content/books/*/*.jpg
+content/books/*/*.mp4
+content/books/*/*.mp3
+content/books/*/*.mkv
+content/books/*/*.mov
+
+# ignore photo and videos in book project
+public/content-books/*/*.png
+public/content-books/*/*.gif
+public/content-books/*/*.jpg
+public/content-books/*/*.mp4
+public/content-books/*/*.mp3
+public/content-books/*/*.mkv
+public/content-books/*/*.mov
+
 content/chose.html
+content/makeLink.html
