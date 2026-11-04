@@ -5,9 +5,7 @@ cover: "./alhad-noven.jpg"
 # الحاد نوین جلد 1
 
 :::gallery
-
 ![عکس کاور کتاب](./alhad-noven.jpg)
-
 ![عکس لوگو کتابخانه](./book-libery.jpg)
 :::
 

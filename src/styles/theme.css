@@ -68,13 +68,13 @@
   --no-image-star: #FFFFFF;
 }
 
-/* Inline Islamic honorific SVGs: fixed box, theme-aware ink color. */
-/* Inline Islamic honorific SVGs */
+/* Inline Islamic honorific SVGs: a fixed box painted by a CSS mask. The ink is `currentColor`, so the symbol always has the
+   colour of the text around it: body text colour in a paragraph, link colour inside a link, heading colour in a heading. */
 .markdown-honorific {
   display: inline-block;
   margin-inline: 0.08em;
   flex-shrink: 0;
-  background-color: var(--text);
+  background-color: currentColor;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
