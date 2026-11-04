@@ -290,8 +290,20 @@ function TableCell(props: ComponentPropsWithoutRef<'td'>) {
   return <td {...props} className={clsx('border-b border-[var(--border-light)] px-3 py-2 text-start text-[var(--text)]', props.className)} />
 }
 
+/** `---`: one thin, faint line across the whole width, kept a little away from both sides. */
 function HorizontalRule(props: ComponentPropsWithoutRef<'hr'>) {
-  return <hr {...props} className={clsx('my-8 border-0 border-t border-[var(--border-light)]', props.className)} />
+  return <hr {...props} className={clsx('mx-4 my-8 h-px border-0 bg-[var(--text)] opacity-20 sm:mx-8', props.className)} />
+}
+
+/** `--- text ---`: the same line with the text in the middle of it. */
+function Divider({ children }: { children?: ReactNode }) {
+  return (
+    <div className="mx-4 my-8 flex items-center gap-4 text-sm text-[var(--text-secondary)] sm:mx-8">
+      <span aria-hidden="true" className="h-px min-w-6 flex-1 bg-[var(--text)] opacity-20" />
+      <span className="max-w-[85%] text-center leading-7">{children}</span>
+      <span aria-hidden="true" className="h-px min-w-6 flex-1 bg-[var(--text)] opacity-20" />
+    </div>
+  )
 }
 
 function Details(props: ComponentPropsWithoutRef<'details'>) {
@@ -498,6 +510,7 @@ const markdownComponents: MarkdownComponents = {
   th: TableHeaderCell,
   td: TableCell,
   hr: HorizontalRule,
+  'mdx-divider': Divider,
   img: MarkdownImage,
   video: MarkdownVideo,
   audio: AudioDirective,

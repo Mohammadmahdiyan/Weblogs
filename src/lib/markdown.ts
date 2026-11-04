@@ -15,6 +15,7 @@ import type {
 import { visit } from 'unist-util-visit'
 import type { Node } from 'unist'
 import { splitInline } from './inline.ts'
+import { remarkDividers } from './dividers.ts'
 import { transformChatMessages } from './chat.ts'
 import { emojiFile, isEmoji } from './emojiRegistry.ts'
 import { ITEMS_MARKER } from './quotes.ts'
@@ -42,6 +43,7 @@ type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
     emojiName?: string
     emojiFile?: string
   }>
+  'mdx-divider'?: import('react').ComponentType<{ children?: import('react').ReactNode }>
   'mdx-spoiler'?: import('react').ComponentType<{
     children?: import('react').ReactNode
     animationText?: string
@@ -447,6 +449,7 @@ export function createMarkdownProcessor(components: MarkdownComponents) {
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkDirective)
+    .use(remarkDividers)
     .use(remarkQuoteItems)
     .use(remarkChat)
     .use(remarkSpoilers)
