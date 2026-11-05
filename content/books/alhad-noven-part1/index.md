@@ -1,12 +1,12 @@
 ---
-cover: "./alhad-noven.jpg"
+cover: "https://cdn.steadylink.io/a/220b627d-7854-4f23-9a69-421c6b6aa0ba"
 ---
 
 # الحاد نوین جلد 1
 
 :::gallery
-![عکس کاور کتاب](./alhad-noven.jpg)
-![عکس لوگو کتابخانه](./book-libery.jpg)
+![عکس کاور کتاب](https://cdn.steadylink.io/a/220b627d-7854-4f23-9a69-421c6b6aa0ba)
+![عکس لوگو کتابخانه](https://cdn.steadylink.io/a/95710a79-3cc3-4b09-b141-2e06268b3e9b)
 :::
 
 ---
