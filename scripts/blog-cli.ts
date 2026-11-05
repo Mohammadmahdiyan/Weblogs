@@ -1,14 +1,6 @@
 import { cp, readFile, rm, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import {
-  exists,
-  isTestFolder,
-  parseBlog,
-  readDates,
-  runContentBuild,
-  today,
-  writeDates,
-} from './lib/blog.ts'
+import { exists, isTestFolder, parseBlog, readDates, runContentBuild, today, writeDates } from './lib/blog.ts'
 import { pushBlogChanges } from './lib/git.ts'
 import { collections } from './lib/collections.ts'
 
@@ -16,7 +8,7 @@ import { collections } from './lib/collections.ts'
 const rawCommand = process.argv[2] ?? ''
 const isBook = rawCommand.endsWith('-book')
 const command = isBook ? rawCommand.slice(0, -'-book'.length) : rawCommand
-const collection = isBook ? collections.books : collections.blog
+const collection = isBook ? collections.books : collections.media
 const blogRoot = collection.root
 const noun = isBook ? 'book' : 'article'
 const args = process.argv.slice(3).filter((arg) => arg !== '--')
@@ -32,9 +24,10 @@ function fail(message: string): never {
 }
 
 function parseSlug(raw: string): string {
-  const target = raw.replace(/[\\/]+$/, '')
-  if (!/^[a-z0-9][a-z0-9_-]*$/.test(target) || target.startsWith('_')) {
-    fail('Folder name must use lowercase a-z, numbers, hyphens and underscores, and must not start with _.')
+  const target = raw.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+  const segments = target.split('/')
+  if (!target || segments.some((segment) => !/^[a-z0-9][a-z0-9_-]*$/.test(segment) || segment.startsWith('_'))) {
+    fail('Folder paths must use lowercase a-z, numbers, hyphens and underscores, and must not start with _.')
   }
   return target
 }
@@ -77,9 +70,14 @@ async function publish(): Promise<void> {
   const day = today()
   for (const slug of slugs) {
     const previous = dates[slug]
-    dates[slug] = previous
-      ? { ...previous, updated: previous.completed ? previous.updated : day, completed: true, published: true }
-      : { date: day, updated: day, completed: true, published: true }
+    dates[slug] = previous?.date
+      ? {
+          ...previous,
+          updated: previous.completed ? (previous.updated ?? previous.date) : day,
+          completed: true,
+          published: true,
+        }
+      : { ...previous, date: day, updated: day, completed: true, published: true }
   }
   await writeDates(dates, collection.datesFile)
   if (!runContentBuild()) {
@@ -108,7 +106,8 @@ async function deleteBlog(): Promise<void> {
 }
 
 async function createTest(): Promise<void> {
-  if (args.length !== 0) fail(`Run this command without a folder name: npm run ${isBook ? 'createTestBook' : 'createTest'}`)
+  if (args.length !== 0)
+    fail(`Run this command without a folder name: npm run ${isBook ? 'createTestBook' : 'createTest'}`)
   if (await exists(testDirectory)) {
     console.log(`ℹ Test ${noun} already exists: ${collectionPath}/${testSlug}`)
     return
@@ -118,9 +117,12 @@ async function createTest(): Promise<void> {
   await cp(templateRoot, testDirectory, { recursive: true })
   // The long-standing blog fixture refers to this image in its gallery; create a tiny valid PNG if absent.
   if (!isBook) {
-  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/WQAAAABJRU5ErkJggg==', 'base64')
-  const imagePath = path.join(testDirectory, 'Spider House.png')
-  if (!(await exists(imagePath))) await writeFile(imagePath, png)
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/WQAAAABJRU5ErkJggg==',
+      'base64',
+    )
+    const imagePath = path.join(testDirectory, 'Spider House.png')
+    if (!(await exists(imagePath))) await writeFile(imagePath, png)
   }
 
   await rebuildOrFail()
@@ -128,7 +130,8 @@ async function createTest(): Promise<void> {
 }
 
 async function deleteTest(): Promise<void> {
-  if (args.length !== 0) fail(`Run this command without a folder name: npm run ${isBook ? 'deleteTestBook' : 'deleteTest'}`)
+  if (args.length !== 0)
+    fail(`Run this command without a folder name: npm run ${isBook ? 'deleteTestBook' : 'deleteTest'}`)
   if (!(await exists(testDirectory))) {
     console.log(`ℹ Test ${noun} does not exist: ${collectionPath}/${testSlug}`)
     return

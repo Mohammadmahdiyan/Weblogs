@@ -1,23 +1,52 @@
 # Content pipeline
 
-Create each article with `npm run createNewBlog <folder>` (see README §4): it lives in `content/blog/<folder>/index.md` with its media beside it. The folder name is the slug. The markdown holds only `tags` and `suggestions`; the title is its first `# ` line. `date` / `updated` are stored in `content/blog-dates.json` (written by `createNewBlog` / `updateBlog`, commit it); `updated` equals `date` until `updateBlog` runs. `npm run content` builds the generated metadata and public media for development; Vite runs the same builder when content changes and reloads the page.
+## Categories, articles, and routes
 
-The Vite production build passes `--production` explicitly to the builder. In production, folders whose names begin with `_` (test blogs from `createTest`) are skipped, so tests never reach the online site, the sitemap or the RSS feed. Development runs and `npm run content` include those folders, so example articles can be previewed locally.
+Every immediate directory under `content/` is a top-level category with its own route and date registry:
 
-## Additions (embeds, SEO files)
+- `content/books/` → `/books/`, registry `content/books.json`
+- `content/media/` → `/media/`, registry `content/media.json`
 
-- `articles.json` fields: `slug, title, description, date, updated, tags, suggestions, cover{url,type}, readingTime` (+ optional `lang`, `dir`). There is no `style` (the reader only adjusts small looks from the «ظاهر» menu) and no `draft`.
+Discovery is recursive. A directory containing `index.md` is an article; a directory without it is a folder listing, no matter how deeply nested it is. For example, `content/media/lives-nour/spider-house/topic/index.md` is `/media/lives-nour/spider-house/topic`. The first category segment stays in every URL. Put an article's media next to its `index.md`; relative media links are rewritten to the generated public media URL.
 
-- `coverEmbed` (https URL) becomes `cover: { type: 'embed', url, embedProvider, poster? }` when no local `cover.*` file exists.
-- `lang` / `dir` are copied to `articles.json` and applied to the article body wrapper.
-- `npm run content` also writes `public/sitemap.xml`, `public/rss.xml`, `public/robots.txt` and `public/_headers` (CSP `frame-src` from `embedAllowlist`).
-- `scripts/prerender.ts` runs after `vite build` and writes `dist/blog/<slug>/index.html`.
+At `/`, visitors can browse the top-level categories and their first-level folders, or search each category independently. In a category folder, the page lists its immediate article and folder children. A folder becomes its article page when it contains `index.md`. The reserved `content/<category>/story/` directory is never treated as an article or listing.
 
+### Date registry fields
 
-## Inline Islamic honorifics
+Each category registry is a JSON object keyed by the article's relative folder path (for nested articles, for example `lives-nour/spider-house/topic`). Each value has:
 
-In article Markdown, write an honorific in parentheses after a name, for example `أبو بكر الصديق (رض)` or `رسول الله (ص)`. The renderer replaces supported markers with SVGs from `public/honorifics/`; the icons use the current text color and a consistent inline box size.
+- `date`: creation date (`YYYY-MM-DD`)
+- `updated`: last update date (`YYYY-MM-DD`)
+- `completed`: whether the article is complete; completed files update `updated` when saved in development
+- `published`: whether to show the unfinished notice
+- `route`: canonical site route, such as `/media/lives-nour/spider-house/topic`
+- `name`: folder-card display name. Development fills in an English name from the folder when missing; a manually entered Persian name is retained.
 
-Supported markers include `(ص)`, `(ﷺ)`, `(صلى الله عليه وسلم)`, `(ع)`, `(عليه السلام)`, `(عليه الصلاة والسلام)`, `(رض)`, `(رضي الله عنه)`, `(رضي الله عنها)`, `(رضي الله عنهما)`, `(رضي الله عنهم)`, `(رضي الله عنهن)`, `(رح)`, `(رحمه الله)`, `(رحمها الله)`, `(رحمهم الله)`, `(رحمهما الله)`, `(رحمهن الله)`, `(جل جلاله)`, `(عز وجل)`, `(جل وعلا)`, `(سبحانه وتعالى)` and `(تبارك وتعالى)`.
+On `npm run dev`, new nested articles are registered in the matching category JSON. Existing leaf-slug records are reused when moving an article into a nested directory; their date/completion/publication values are preserved. Legacy category registries can keep their old entries.
 
-`(رض)` is treated as the masculine singular form and uses `radu.svg`. For other grammatical forms, use the corresponding full phrase in parentheses. Markers are only transformed in normal Markdown text, not in code spans or fenced code blocks.
+`npm run content` rebuilds generated metadata and media. The production build excludes any article nested beneath a folder beginning with `_`; development includes such fixtures. `show: false` in article frontmatter hides the article from production search, sitemap, and generated text while keeping the route available for the hidden-page notice.
+
+### Book pages
+
+Book page files stay beside the book's `index.md`, under `pages/<number>.md`. For example:
+
+```
+content/books/answer-to-shobhat/alhad-noven-part1/
+  index.md
+  cover.jpg
+  pages/27.md
+```
+
+This becomes `/books/answer-to-shobhat/alhad-noven-part1` with page 27 at `/books/answer-to-shobhat/alhad-noven-part1/27`. Page media may live under `pages/` or in the book folder.
+
+## Category stories
+
+Put independent stories in `content/<category>/story/` (for example `content/media/story/`). This path is excluded from normal content listings and articles. Use `npm run publishStory -- media` or `npm run publishStory -- books` to publish that category's story for today; `npm run cleanStory -- <category>` and `npm run deleteStory -- <category>` clean it. Each category has a separate story state, generated feed, media directory, and story ring on its listing pages. The existing root `/story` workflow and global header ring remain available.
+
+Story files are one Markdown file per slide (`index.md`, `index1.md`, …); image files can also become slides. Frontmatter supports `show: false`, `seconds: 12`, and `blog: <article>/<heading>` to link to a section of an article in that same category. Story media belongs beside the story files.
+
+## Generated files and local workflow
+
+`npm run dev` registers nested articles, watches content changes, and rebuilds the generated files. `npm run content` runs the builder once. `npm run build` runs the production builder, TypeScript, Vite, and prerendering. Generated metadata, search indexes, body loaders, sitemap, RSS, robots, and hosting headers are written by the builder and should not be edited by hand.
+
+Old `/blog/<slug>` links redirect to the matching media article when a unique leaf slug is found, or to `/media` otherwise.

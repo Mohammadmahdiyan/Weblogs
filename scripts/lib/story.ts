@@ -49,7 +49,12 @@ const mediaCacheRoot = path.join(projectRoot, '.cache', 'media')
 
 /** Today's date (YYYY-MM-DD) in the story time zone, independent of the machine's own zone. */
 export function storyToday(now = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: STORY_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: STORY_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now)
 }
 
 /** The moment the given story day ends: midnight at the end of that date in the story time zone. */
@@ -64,9 +69,9 @@ export interface StoryState {
   publishedAt: string
 }
 
-export async function readStoryState(): Promise<StoryState | null> {
+export async function readStoryState(file = storyStateFile): Promise<StoryState | null> {
   try {
-    const parsed = JSON.parse(await readFile(storyStateFile, 'utf8')) as Partial<StoryState>
+    const parsed = JSON.parse(await readFile(file, 'utf8')) as Partial<StoryState>
     if (typeof parsed.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)) {
       return { date: parsed.date, publishedAt: typeof parsed.publishedAt === 'string' ? parsed.publishedAt : '' }
     }
@@ -76,13 +81,13 @@ export async function readStoryState(): Promise<StoryState | null> {
   }
 }
 
-export async function writeStoryState(state: StoryState | null): Promise<void> {
+export async function writeStoryState(state: StoryState | null, file = storyStateFile): Promise<void> {
   if (state === null) {
-    await rm(storyStateFile, { force: true })
+    await rm(file, { force: true })
     return
   }
-  await mkdir(path.dirname(storyStateFile), { recursive: true })
-  await writeFile(storyStateFile, `${JSON.stringify(state, null, 2)}\n`, 'utf8')
+  await mkdir(path.dirname(file), { recursive: true })
+  await writeFile(file, `${JSON.stringify(state, null, 2)}\n`, 'utf8')
 }
 
 // ───────────────────────── folder ─────────────────────────
@@ -115,25 +120,32 @@ async function walkFiles(directory: string, prefix = ''): Promise<string[]> {
   return found
 }
 
-export async function readStoryFolder(): Promise<StoryFolder> {
+export async function readStoryFolder(directory = storyRoot): Promise<StoryFolder> {
   let all: string[]
   try {
-    all = (await walkFiles(storyRoot)).sort(naturalCompare)
+    all = (await walkFiles(directory)).sort(naturalCompare)
   } catch {
     return { markdown: [], images: [], files: new Set() }
   }
   const top = all.filter((name) => !name.includes('/'))
   const markdown: StoryMarkdownFile[] = []
   for (const name of top.filter((file) => path.extname(file).toLowerCase() === '.md')) {
-    const source = (await readFile(path.join(storyRoot, name), 'utf8')).replace(/^\uFEFF/, '')
+    const source = (await readFile(path.join(directory, name), 'utf8')).replace(/^\uFEFF/, '')
     try {
       const parsed = matter(source)
       markdown.push({ name, data: parsed.data as Record<string, unknown>, body: parsed.content.trim() })
     } catch (error) {
-      throw new Error(`story/${name}: invalid frontmatter (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`, { cause: error })
+      throw new Error(
+        `story/${name}: invalid frontmatter (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`,
+        { cause: error },
+      )
     }
   }
-  return { markdown, images: top.filter((file) => imageExtensions.has(path.extname(file).toLowerCase())), files: new Set(all) }
+  return {
+    markdown,
+    images: top.filter((file) => imageExtensions.has(path.extname(file).toLowerCase())),
+    files: new Set(all),
+  }
 }
 
 export function storyFolderHasContent(folder: StoryFolder): boolean {
@@ -141,19 +153,19 @@ export function storyFolderHasContent(folder: StoryFolder): boolean {
 }
 
 /** Deletes everything inside /story (keeping the folder itself, with a .gitkeep so Git keeps it). */
-export async function emptyStoryFolder(): Promise<number> {
+export async function emptyStoryFolder(directory = storyRoot): Promise<number> {
   let removed = 0
   try {
-    for (const name of await readdir(storyRoot)) {
+    for (const name of await readdir(directory)) {
       if (name === '.gitkeep') continue
-      await rm(path.join(storyRoot, name), { recursive: true, force: true })
+      await rm(path.join(directory, name), { recursive: true, force: true })
       removed += 1
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
   }
-  await mkdir(storyRoot, { recursive: true })
-  await writeFile(path.join(storyRoot, '.gitkeep'), '', 'utf8')
+  await mkdir(directory, { recursive: true })
+  await writeFile(path.join(directory, '.gitkeep'), '', 'utf8')
   return removed
 }
 
@@ -161,11 +173,15 @@ export async function emptyStoryFolder(): Promise<number> {
  * Removes yesterday's (or older) story: the folder contents and the state file. Safe to run any time; returns
  * true when something was removed. A folder that was never published (a draft) is left alone.
  */
-export async function cleanExpiredStory(force = false): Promise<boolean> {
-  const state = await readStoryState()
+export async function cleanExpiredStory(
+  force = false,
+  stateFile = storyStateFile,
+  directory = storyRoot,
+): Promise<boolean> {
+  const state = await readStoryState(stateFile)
   if (!force && (!state || state.date >= storyToday())) return false
-  const removed = await emptyStoryFolder()
-  await writeStoryState(null)
+  const removed = await emptyStoryFolder(directory)
+  await writeStoryState(null, stateFile)
   return removed > 0 || state !== null
 }
 
@@ -175,7 +191,10 @@ export async function cleanExpiredStory(force = false): Promise<boolean> {
 export function normalizeKey(value: string): string {
   return value
     .normalize('NFKC')
-    .replace(/[\u200c\u200d\u064b-\u0652\u0640]/g, '')
+    .replace(/\u200c/g, '')
+    .replace(/\u200d/g, '')
+    .replace(/\u0640/g, '')
+    .replace(/\p{M}/gu, '')
     .replace(/ي/g, 'ی')
     .replace(/ك/g, 'ک')
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
@@ -263,7 +282,9 @@ export function resolveSectionLink(
     const section = findSection(sections, reference.slice(index + 1))
     if (section) return { article, section }
     const available = sections.map((item) => `  - ${item.heading}`).join('\n') || '  (the article has no ## sections)'
-    throw new Error(`${where}: article "${article.meta.title}" has no section "${reference.slice(index + 1).trim()}". Sections you can use:\n${available}`)
+    throw new Error(
+      `${where}: article "${article.meta.title}" has no section "${reference.slice(index + 1).trim()}". Sections you can use:\n${available}`,
+    )
   }
   return null
 }
@@ -287,10 +308,18 @@ function seededRandom(seed: string): () => number {
   }
 }
 
-function articleStory(date: string, articles: ArticleSource[], plainText: (markdown: string) => string, isProduction: boolean): StoryData | null {
+function articleStory(
+  date: string,
+  articles: ArticleSource[],
+  plainText: (markdown: string) => string,
+  isProduction: boolean,
+  articleRoute = '/media',
+): StoryData | null {
   const random = seededRandom(date)
   // Never: test articles (`_…` folders), adult-gated articles. In production also unfinished ones.
-  const pool = articles.filter(({ meta }) => !isTestFolder(meta.slug) && !meta.adult && (!isProduction || !meta.incomplete))
+  const pool = articles.filter(
+    ({ meta }) => !isTestFolder(meta.slug) && !meta.adult && (!isProduction || !meta.incomplete),
+  )
   const order = [...pool].sort((left, right) => left.meta.slug.localeCompare(right.meta.slug))
   for (let index = order.length - 1; index > 0; index -= 1) {
     const swap = Math.floor(random() * (index + 1))
@@ -310,18 +339,24 @@ function articleStory(date: string, articles: ArticleSource[], plainText: (markd
       source: 'article',
       date,
       expiresAt: storyDayEnd(date),
-      slides: [sectionSlide(article, section, plainText)],
+      slides: [sectionSlide(article, section, plainText, articleRoute)],
     }
   }
   return null
 }
 
-function sectionSlide(article: ArticleSource, section: ArticleSection, plainText: (markdown: string) => string): StorySlide {
+function sectionSlide(
+  article: ArticleSource,
+  section: ArticleSection,
+  plainText: (markdown: string) => string,
+  articleRoute?: string,
+): StorySlide {
+  const route = articleRoute ?? `/${article.meta.category ?? 'media'}`
   return {
     kind: 'markdown',
     markdown: section.markdown,
     kicker: article.meta.title,
-    link: { href: `/blog/${article.meta.slug}?find=${encodeURIComponent(section.heading)}`, label: 'خواندن مقاله' },
+    link: { href: `${route}/${article.meta.slug}?find=${encodeURIComponent(section.heading)}`, label: 'خواندن مقاله' },
     textLength: plainText(section.markdown).length,
   }
 }
@@ -332,7 +367,13 @@ const knownKeys = new Set(['show', 'blog', 'seconds'])
 const SINGLE_IMAGE = /^!\[[^\]]*\]\(\s*<?([^)\s>]+)>?\s*\)$/
 
 /** Points relative media URLs (`./photo.jpg`) at the published copy and records which story files are used. */
-function rewriteStoryMedia(markdown: string, files: Set<string>, baseUrl: string, used: Set<string>): string {
+function rewriteStoryMedia(
+  markdown: string,
+  files: Set<string>,
+  baseUrl: string,
+  used: Set<string>,
+  mediaDirectory: string,
+): string {
   const rewrite = (url: string): string => {
     if (isAbsoluteUrl(url)) return url
     const suffixAt = url.search(/[?#]/)
@@ -341,17 +382,25 @@ function rewriteStoryMedia(markdown: string, files: Set<string>, baseUrl: string
     const normalized = normalizeMediaPath(pathPart)
     if (!files.has(normalized)) return url
     used.add(normalized)
-    return `${baseUrl}story-media/${encodeMediaPath(normalized)}${suffix}`
+    return `${baseUrl}${mediaDirectory}/${encodeMediaPath(normalized)}${suffix}`
   }
   return markdown
     .replace(/(!?\[[^\]]*\]\(\s*<?)([^)\s>]+)/g, (_match, before: string, url: string) => `${before}${rewrite(url)}`)
-    .replace(/\b(src|poster)(\s*=\s*)(["'])([^"']+)\3/g, (_match, key: string, equals: string, quote: string, url: string) => `${key}${equals}${quote}${rewrite(url)}${quote}`)
+    .replace(
+      /\b(src|poster)(\s*=\s*)(["'])([^"']+)\3/g,
+      (_match, key: string, equals: string, quote: string, url: string) =>
+        `${key}${equals}${quote}${rewrite(url)}${quote}`,
+    )
 }
 
-async function publishStoryMedia(files: Iterable<string>): Promise<void> {
+async function publishStoryMedia(
+  files: Iterable<string>,
+  sourceRoot = storyRoot,
+  destinationRoot = storyMediaRoot,
+): Promise<void> {
   for (const relative of files) {
-    const source = path.join(storyRoot, ...relative.split('/'))
-    const destination = path.join(storyMediaRoot, ...relative.split('/'))
+    const source = path.join(sourceRoot, ...relative.split('/'))
+    const destination = path.join(destinationRoot, ...relative.split('/'))
     await mkdir(path.dirname(destination), { recursive: true })
     if (/\.(mp4|m4v|mov)$/i.test(relative)) {
       const prepared = await prepareVideoForBrowser(source, mediaCacheRoot)
@@ -361,7 +410,8 @@ async function publishStoryMedia(files: Iterable<string>): Promise<void> {
       await copyFile(source, destination)
     }
     const size = (await stat(destination)).size
-    if (size > 2_500_000) console.warn(`[story] ${relative}: ${(size / 1_000_000).toFixed(1)} MB: compress it, phones download every file.`)
+    if (size > 2_500_000)
+      console.warn(`[story] ${relative}: ${(size / 1_000_000).toFixed(1)} MB: compress it, phones download every file.`)
   }
 }
 
@@ -378,7 +428,8 @@ async function slidesFromFolder(folder: StoryFolder, options: BuildStoryOptions)
   for (const file of folder.markdown) {
     const where = `story/${file.name}`
     const unknown = Object.keys(file.data).filter((key) => !knownKeys.has(key))
-    if (unknown.length > 0) console.warn(`[story] ${where}: ignored frontmatter key(s) ${unknown.join(', ')} (known: show, blog, seconds)`)
+    if (unknown.length > 0)
+      console.warn(`[story] ${where}: ignored frontmatter key(s) ${unknown.join(', ')} (known: show, blog, seconds)`)
     if (file.data.show === false) {
       entries.push({ name: file.name, slide: null })
       continue
@@ -387,27 +438,59 @@ async function slidesFromFolder(folder: StoryFolder, options: BuildStoryOptions)
     const seconds = typeof file.data.seconds === 'number' && file.data.seconds > 0 ? file.data.seconds : undefined
     try {
       // 1. a link to a section of a blog article (frontmatter `blog:` or the file's whole text on one line)
-      const reference = typeof file.data.blog === 'string'
-        ? file.data.blog
-        : file.body && !file.body.includes('\n') && file.body.includes('/') ? file.body : null
+      const reference =
+        typeof file.data.blog === 'string'
+          ? file.data.blog
+          : file.body && !file.body.includes('\n') && file.body.includes('/')
+            ? file.body
+            : null
       if (reference !== null) {
         const linked = resolveSectionLink(reference, options.articles, options.plainText, where)
         if (linked) {
-          if (linked.article.meta.adult) throw new Error(`${where}: "${linked.article.meta.title}" is an 18+ article; its text cannot be shown in a story.`)
-          entries.push({ name: file.name, slide: { ...sectionSlide(linked.article, linked.section, options.plainText), ...(seconds ? { seconds } : {}) } })
+          if (linked.article.meta.adult)
+            throw new Error(
+              `${where}: "${linked.article.meta.title}" is an 18+ article; its text cannot be shown in a story.`,
+            )
+          entries.push({
+            name: file.name,
+            slide: {
+              ...sectionSlide(linked.article, linked.section, options.plainText, options.articleRoute),
+              ...(seconds ? { seconds } : {}),
+            },
+          })
           continue
         }
-        if (typeof file.data.blog === 'string') throw new Error(`${where}: no article matches "blog: ${file.data.blog}". Write the article's title or folder name, then / and the section heading.`)
+        if (typeof file.data.blog === 'string')
+          throw new Error(
+            `${where}: no article matches "blog: ${file.data.blog}". Write the article's title or folder name, then / and the section heading.`,
+          )
       }
 
       // 2. the file's own Markdown
       if (!file.body) throw new Error(`${where}: the story is empty.`)
-      const markdown = rewriteStoryMedia(file.body, folder.files, options.baseUrl, used)
+      const markdown = rewriteStoryMedia(
+        file.body,
+        folder.files,
+        options.baseUrl,
+        used,
+        options.mediaDirectory ?? 'story-media',
+      )
       const single = markdown.match(SINGLE_IMAGE)
       if (single && single[1].startsWith(`${options.baseUrl}story-media/`)) {
-        entries.push({ name: file.name, slide: { kind: 'image', src: single[1], textLength: 0, ...(seconds ? { seconds } : {}) } })
+        entries.push({
+          name: file.name,
+          slide: { kind: 'image', src: single[1], textLength: 0, ...(seconds ? { seconds } : {}) },
+        })
       } else {
-        entries.push({ name: file.name, slide: { kind: 'markdown', markdown, textLength: options.plainText(markdown).length, ...(seconds ? { seconds } : {}) } })
+        entries.push({
+          name: file.name,
+          slide: {
+            kind: 'markdown',
+            markdown,
+            textLength: options.plainText(markdown).length,
+            ...(seconds ? { seconds } : {}),
+          },
+        })
       }
     } catch (error) {
       // Development and publishing stop here so the mistake is fixed; the daily production build only skips it.
@@ -420,14 +503,28 @@ async function slidesFromFolder(folder: StoryFolder, options: BuildStoryOptions)
   for (const image of folder.images) {
     if (used.has(image)) continue
     used.add(image)
-    entries.push({ name: image, slide: { kind: 'image', src: `${options.baseUrl}story-media/${encodeMediaPath(image)}`, textLength: 0 } })
+    entries.push({
+      name: image,
+      slide: {
+        kind: 'image',
+        src: `${options.baseUrl}${options.mediaDirectory ?? 'story-media'}/${encodeMediaPath(image)}`,
+        textLength: 0,
+      },
+    })
   }
 
-  const unusedOther = [...folder.files].filter((name) => !used.has(name) && !name.includes('/') && path.extname(name).toLowerCase() !== '.md')
-  if (unusedOther.length > 0) console.warn(`[story] not used by any story (only pictures and .md files make stories): ${unusedOther.join(', ')}`)
+  const unusedOther = [...folder.files].filter(
+    (name) => !used.has(name) && !name.includes('/') && path.extname(name).toLowerCase() !== '.md',
+  )
+  if (unusedOther.length > 0)
+    console.warn(`[story] not used by any story (only pictures and .md files make stories): ${unusedOther.join(', ')}`)
 
   entries.sort((left, right) => naturalCompare(left.name, right.name))
-  await publishStoryMedia(used)
+  await publishStoryMedia(
+    used,
+    options.storyDir ?? storyRoot,
+    path.join(projectRoot, 'public', options.mediaDirectory ?? 'story-media'),
+  )
   const slides = entries.flatMap((entry) => (entry.slide ? [entry.slide] : []))
   return { slides, anyVisible: slides.length > 0 }
 }
@@ -440,14 +537,23 @@ export interface BuildStoryOptions {
   baseUrl: string
   articles: ArticleSource[]
   plainText: (markdown: string) => string
+  storyDir?: string
+  stateFile?: string
+  generatedFile?: string
+  mediaDirectory?: string
+  articleRoute?: string
 }
 
 /** Writes src/generated/story.json (`null` = no story) and copies the story media to public/story-media. */
 export async function buildStory(options: BuildStoryOptions): Promise<StoryData | null> {
   const today = storyToday()
-  const state = await readStoryState()
-  const folder = await readStoryFolder()
-  await rm(storyMediaRoot, { recursive: true, force: true })
+  const storyDir = options.storyDir ?? storyRoot
+  const generatedFile = options.generatedFile ?? generatedStoryFile
+  const mediaDirectory = options.mediaDirectory ?? 'story-media'
+  const mediaRoot = path.join(projectRoot, 'public', mediaDirectory)
+  const state = await readStoryState(options.stateFile)
+  const folder = await readStoryFolder(storyDir)
+  await rm(mediaRoot, { recursive: true, force: true })
 
   let story: StoryData | null = null
   const publishedToday = state?.date === today
@@ -455,11 +561,11 @@ export async function buildStory(options: BuildStoryOptions): Promise<StoryData 
   const useFolder = storyFolderHasContent(folder) && (publishedToday || (!options.isProduction && state === null))
 
   if (useFolder) {
-    const { slides, anyVisible } = await slidesFromFolder(folder, options)
+    const { slides, anyVisible } = await slidesFromFolder(folder, { ...options, mediaDirectory })
     // The folder claims the day: when every file is `show: false` nothing (not even a random article) is shown.
     if (anyVisible) {
       story = {
-        id: `${today}:custom:${state?.publishedAt || 'draft'}`,
+        id: `${today}:custom:${options.articleRoute ?? 'global'}:${state?.publishedAt || 'draft'}`,
         source: 'custom',
         date: today,
         expiresAt: storyDayEnd(today),
@@ -470,14 +576,19 @@ export async function buildStory(options: BuildStoryOptions): Promise<StoryData 
       console.log('Story: hidden for today (every story file has `show: false`).')
     }
   } else {
-    story = articleStory(today, options.articles, options.plainText, options.isProduction)
+    story = articleStory(today, options.articles, options.plainText, options.isProduction, options.articleRoute)
     if (storyFolderHasContent(folder) && state !== null && state.date < today) {
-      console.warn('[story] /story holds an old story that is no longer shown; `npm run cleanStory` deletes it (done automatically every day on GitHub).')
+      console.warn(
+        '[story] /story holds an old story that is no longer shown; `npm run cleanStory` deletes it (done automatically every day on GitHub).',
+      )
     }
   }
 
-  await mkdir(path.dirname(generatedStoryFile), { recursive: true })
-  await writeFile(generatedStoryFile, `${JSON.stringify(story, null, 2)}\n`, 'utf8')
-  if (story) console.log(`Story: ${story.source} · ${story.slides.length} stor${story.slides.length === 1 ? 'y' : 'ies'}${story.preview ? ' (draft preview)' : ''}`)
+  await mkdir(path.dirname(generatedFile), { recursive: true })
+  await writeFile(generatedFile, `${JSON.stringify(story, null, 2)}\n`, 'utf8')
+  if (story)
+    console.log(
+      `Story: ${story.source} · ${story.slides.length} stor${story.slides.length === 1 ? 'y' : 'ies'}${story.preview ? ' (draft preview)' : ''}`,
+    )
   return story
 }

@@ -1,21 +1,16 @@
-/*
-  The site has two collections of Markdown "articles" that share ONE format and ONE build:
-    blog   content/blog/<folder>/index.md   → /blog/<folder>
-    books  content/books/<folder>/index.md  → /books/<folder>
-  Everything that differs between them (folders, registry file, generated files, media folder) lives here.
-*/
+/* Each immediate content category has an independent date registry, story feed and generated data. */
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
-export type CollectionId = 'blog' | 'books'
+export type CollectionId = 'books' | 'media'
 
 export interface Collection {
   id: CollectionId
   /** content/<id> */
   root: string
-  /** content/<id>-dates.json: creation / update dates and the «published» flag per folder. */
+  /** content/<id>.json: creation / update dates and the «published» flag per article path. */
   datesFile: string
   /** Folder (inside public/) the pictures / videos of each item are copied to, and the URL segment for them. */
   mediaDir: string
@@ -28,24 +23,38 @@ export interface Collection {
 }
 
 export const collections: Record<CollectionId, Collection> = {
-  blog: {
-    id: 'blog',
-    root: path.join(projectRoot, 'content', 'blog'),
-    datesFile: path.join(projectRoot, 'content', 'blog-dates.json'),
-    mediaDir: 'content',
-    files: { meta: 'articles.json', search: 'search-index.json', bodiesDir: 'bodies', bodiesModule: 'bodies.ts', bodiesExport: 'articleBodies', hidden: 'hidden.json' },
-    testSlug: '_example-article',
+  media: {
+    id: 'media',
+    root: path.join(projectRoot, 'content', 'media'),
+    datesFile: path.join(projectRoot, 'content', 'media.json'),
+    mediaDir: 'content-media',
+    files: {
+      meta: 'media.json',
+      search: 'media-search-index.json',
+      bodiesDir: 'media-bodies',
+      bodiesModule: 'media-bodies.ts',
+      bodiesExport: 'mediaBodies',
+      hidden: 'media-hidden.json',
+    },
+    testSlug: '_example-media',
     templateDir: path.join(projectRoot, 'scripts', 'templates', 'example-article'),
   },
   books: {
     id: 'books',
     root: path.join(projectRoot, 'content', 'books'),
-    datesFile: path.join(projectRoot, 'content', 'books-dates.json'),
-    mediaDir: 'content-books',
-    files: { meta: 'books.json', search: 'books-search-index.json', bodiesDir: 'books-bodies', bodiesModule: 'books-bodies.ts', bodiesExport: 'bookBodies', hidden: 'books-hidden.json' },
+    datesFile: path.join(projectRoot, 'content', 'books.json'),
+    mediaDir: 'books-media',
+    files: {
+      meta: 'books.json',
+      search: 'books-search-index.json',
+      bodiesDir: 'books-bodies',
+      bodiesModule: 'books-bodies.ts',
+      bodiesExport: 'bookBodies',
+      hidden: 'books-hidden.json',
+    },
     testSlug: '_example-book',
     templateDir: path.join(projectRoot, 'scripts', 'templates', 'example-book'),
   },
 }
 
-export const allCollections: Collection[] = [collections.blog, collections.books]
+export const allCollections: Collection[] = [collections.books, collections.media]

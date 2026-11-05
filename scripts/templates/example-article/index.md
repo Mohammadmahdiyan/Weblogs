@@ -76,10 +76,10 @@ console.log(message)
 
 :::breadcrumbs
 - [خانه](/)
-- [مقاله نمونه](/blog/married-prophet-with-ayesha)
+- [مقاله نمونه](/media/married-prophet-with-ayesha)
 :::
 
-:button[خواندن مقاله]{href="/blog/married-prophet-with-ayesha" variant="filled" color="brand"}
+:button[خواندن مقاله]{href="/media/married-prophet-with-ayesha" variant="filled" color="brand"}
 
 :::buttons
 :button[گزینه نخست]{href="/first" variant="outlined" color="blue"}
@@ -134,8 +134,8 @@ console.log(message)
 
 ::audio{}
 
-:::suggested{href="/blog/married-prophet-with-ayesha" label="مقاله پیشنهادی:"}
-[عنوان مقاله‌ی نمونه](/blog/married-prophet-with-ayesha)
+:::suggested{href="/media/married-prophet-with-ayesha" label="مقاله پیشنهادی:"}
+[عنوان مقاله‌ی نمونه](/media/married-prophet-with-ayesha)
 :::
 
 :::course{title="دوره نمونه" href="/courses/sample" image="./cover.svg" label="دوره پیشنهادی" cta="مشاهده دوره"}
@@ -268,4 +268,3 @@ console.log(message)
 :::
 :::
 :::
-

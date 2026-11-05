@@ -40,19 +40,19 @@ const siteConfig: SiteConfig = {
   },
   nav: [
     { label: 'خانه', href: '/' },
-    { label: 'همه مقاله‌ها', href: '/#articles' },
     { label: 'کتاب‌ها', href: '/books' },
+    { label: 'رسانه‌ها', href: '/media' },
   ],
   footerLinks: [
     { label: 'خانه', href: '/' },
-    { label: 'همه مقاله‌ها', href: '/#articles' },
     { label: 'کتاب‌ها', href: '/books' },
+    { label: 'رسانه‌ها', href: '/media' },
   ],
   social: [
     {
-      href: "https://t.me/Rasoolallah_s_is_best",
-      label: "تلگرام من"
-    }
+      href: 'https://t.me/Rasoolallah_s_is_best',
+      label: 'تلگرام من',
+    },
   ],
   sidebarCards: [],
   embedAllowlist: [

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, ChevronLeft, ShieldAlert } from 'lucide-react'
 import type { ArticleMeta } from '../lib/types'
 import { fetchBookPage, siteCollections, type CollectionId, type SiteCollection } from '../lib/collections'
@@ -24,7 +24,6 @@ import { HiddenArticlePage } from './HiddenArticlePage'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
 
-
 function AdultContentGate({ onYes }: { onYes: () => void }) {
   return (
     <main
@@ -38,12 +37,10 @@ function AdultContentGate({ onYes }: { onYes: () => void }) {
         </div>
 
         <p className="mb-3 text-sm font-bold text-[var(--brand)]">هشدار محتوای +۱۸</p>
-        <h1 className="mb-4 text-2xl font-extrabold">
-          این مقاله برای افراد زیر ۱۸ سال مناسب نیست
-        </h1>
+        <h1 className="mb-4 text-2xl font-extrabold">این مقاله برای افراد زیر ۱۸ سال مناسب نیست</h1>
         <p className="text-sm leading-8 text-[var(--text-secondary)]">
-          اگر زیر ۱۸ سال هستید، لطفاً «خیر» را انتخاب کنید تا به صفحهٔ اصلی برگردید.
-          با انتخاب «بله» تأیید می‌کنید که ۱۸ سال یا بیشتر دارید.
+          اگر زیر ۱۸ سال هستید، لطفاً «خیر» را انتخاب کنید تا به صفحهٔ اصلی برگردید. با انتخاب «بله» تأیید می‌کنید که ۱۸
+          سال یا بیشتر دارید.
         </p>
 
         <div className="mt-7 grid gap-3 sm:grid-cols-2">
@@ -89,7 +86,11 @@ function ReadingProgress() {
       window.removeEventListener('resize', update)
     }
   }, [])
-  return <div aria-hidden="true" className="fixed inset-x-0 top-0 z-50 h-1 bg-transparent"><div className="h-full bg-[var(--brand-bright)] transition-[width]" style={{ width: `${progress}%` }} /></div>
+  return (
+    <div aria-hidden="true" className="fixed inset-x-0 top-0 z-50 h-1 bg-transparent">
+      <div className="h-full bg-[var(--brand-bright)] transition-[width]" style={{ width: `${progress}%` }} />
+    </div>
+  )
 }
 
 function RelatedArticles({ article, collection }: { article: ArticleMeta; collection: SiteCollection }) {
@@ -104,19 +105,41 @@ function RelatedArticles({ article, collection }: { article: ArticleMeta; collec
 
   return (
     <section aria-labelledby="related-heading" className="surface-card mt-6 p-5 sm:p-7">
-      <h2 id="related-heading" className="mb-4 flex items-center gap-2 text-start text-lg font-bold"><BookOpen aria-hidden="true" className="size-5 text-[var(--brand)]" />{collection.text.related}</h2>
+      <h2 id="related-heading" className="mb-4 flex items-center gap-2 text-start text-lg font-bold">
+        <BookOpen aria-hidden="true" className="size-5 text-[var(--brand)]" />
+        {collection.text.related}
+      </h2>
       <div className="grid gap-3 sm:grid-cols-2">
-        {items.map((item) => <Link key={item.slug} to={`${collection.route}/${item.slug}`} className="line-clamp-2 rounded-[var(--radius-sm)] border border-transparent bg-[var(--surface-alt)] p-4 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]">{item.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : item.title}</Link>)}
+        {items.map((item) => (
+          <Link
+            key={item.slug}
+            to={`${collection.route}/${item.slug}`}
+            className="line-clamp-2 rounded-[var(--radius-sm)] border border-transparent bg-[var(--surface-alt)] p-4 text-start text-sm leading-6 text-[var(--text)] no-underline hover:border-[var(--border-strong)] hover:bg-[var(--surface-strong)]"
+          >
+            {item.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : item.title}
+          </Link>
+        ))}
       </div>
     </section>
   )
 }
 
-/** One item page: an article (`/blog/:slug`) or, with `collection="books"`, a book (`/books/:slug`). */
-export function ArticlePage({ collection: collectionId = 'blog' }: { collection?: CollectionId }) {
+/** One item page within a top-level category. */
+export function ArticlePage({
+  collection: collectionId = 'media',
+  articleSlug,
+  requestedPage,
+}: {
+  collection?: CollectionId
+  articleSlug?: string
+  requestedPage?: string
+}) {
   const collection = siteCollections[collectionId]
   const { items: articles, bodies: articleBodies, route } = collection
-  const { slug = '', page: pageParam } = useParams()
+  const params = useParams()
+  const location = useLocation()
+  const slug = articleSlug ?? params['*'] ?? params.slug ?? ''
+  const pageParam = requestedPage ?? params.page
   const article = articles.find((item) => item.slug === slug)
   // Books only: /books/<slug>/<page> shows one page file (pages/<page>.md); without it the book's index.md.
   const pageNumber = collectionId === 'books' ? parsePageParam(pageParam) : undefined
@@ -125,8 +148,10 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
   const adultConfirmed = useAdultAccess()
   const bodyRef = useRef<HTMLDivElement>(null)
   const [bodyState, setBodyState] = useState<{ key: string; markdown?: string; error?: boolean } | null>(null)
-  const markdown = bodyState?.key === bodyKey ? bodyState.markdown ?? null : null
-  const bodyError = (bodyState?.key === bodyKey && bodyState.error === true) || Boolean(article && pageNumber === undefined && !articleBodies[article.slug])
+  const markdown = bodyState?.key === bodyKey ? (bodyState.markdown ?? null) : null
+  const bodyError =
+    (bodyState?.key === bodyKey && bodyState.error === true) ||
+    Boolean(article && pageNumber === undefined && !articleBodies[article.slug])
   const toc = useMemo(() => buildToc(markdown ?? ''), [markdown])
   const [searchParams] = useSearchParams()
   // Set by a content search on the home page: scroll to this text and highlight it.
@@ -135,9 +160,12 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
 
   const pageUrl = `${siteConfig.siteUrl}${route}/${bodyKey}`
   const pageTitle = article && pageNumber !== undefined ? `${article.title} — صفحه ${pageNumber}` : article?.title
-  const imageUrl = article?.cover?.type === 'image'
-    ? article.cover.url
-    : article?.cover?.type === 'embed' ? article.cover.poster : undefined
+  const imageUrl =
+    article?.cover?.type === 'image'
+      ? article.cover.url
+      : article?.cover?.type === 'embed'
+        ? article.cover.poster
+        : undefined
   const jsonLd = useMemo(() => {
     if (!article) return undefined
     return [
@@ -157,8 +185,22 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'خانه', item: siteConfig.siteUrl },
-          ...(collectionId === 'books' ? [{ '@type': 'ListItem', position: 2, name: collection.text.breadcrumb, item: `${siteConfig.siteUrl}/books` }] : []),
-          { '@type': 'ListItem', position: collectionId === 'books' ? 3 : 2, name: pageTitle ?? article.title, item: pageUrl },
+          ...(collectionId === 'books'
+            ? [
+                {
+                  '@type': 'ListItem',
+                  position: 2,
+                  name: collection.text.breadcrumb,
+                  item: `${siteConfig.siteUrl}/books`,
+                },
+              ]
+            : []),
+          {
+            '@type': 'ListItem',
+            position: collectionId === 'books' ? 3 : 2,
+            name: pageTitle ?? article.title,
+            item: pageUrl,
+          },
         ],
       },
     ]
@@ -166,7 +208,8 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
 
   usePageMeta({
     title: pageTitle ?? collection.text.notFoundTitle,
-    description: article?.description ?? (collectionId === 'books' ? 'کتاب درخواستی پیدا نشد.' : 'مقاله‌ی درخواستی پیدا نشد.'),
+    description:
+      article?.description ?? (collectionId === 'books' ? 'کتاب درخواستی پیدا نشد.' : 'مقاله‌ی درخواستی پیدا نشد.'),
     image: imageUrl,
     type: 'article',
     jsonLd,
@@ -176,33 +219,68 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
     if (!article || (article.adult === true && !adultConfirmed)) return
     if (pageNumber !== undefined && !pageMeta) return
     let cancelled = false
-    const loading = pageNumber === undefined
-      ? articleBodies[article.slug]?.().then((body) => body.default)
-      : fetchBookPage(article.slug, pageNumber)
+    const loading =
+      pageNumber === undefined
+        ? articleBodies[article.slug]?.().then((body) => body.default)
+        : fetchBookPage(article.slug, pageNumber)
     if (!loading) return
-    void loading.then((text) => {
-      if (!cancelled) setBodyState({ key: bodyKey, markdown: text })
-    }, () => {
-      if (!cancelled) setBodyState({ key: bodyKey, error: true })
-    })
-    return () => { cancelled = true }
+    void loading.then(
+      (text) => {
+        if (!cancelled) setBodyState({ key: bodyKey, markdown: text })
+      },
+      () => {
+        if (!cancelled) setBodyState({ key: bodyKey, error: true })
+      },
+    )
+    return () => {
+      cancelled = true
+    }
   }, [article, adultConfirmed, articleBodies, bodyKey, pageNumber, pageMeta])
 
-  if (!article) return collection.hidden.includes(slug) ? <HiddenArticlePage slug={slug} basePath={route} /> : <NotFoundPage />
+  useEffect(() => {
+    if (!markdown || !location.hash) return
+    let frame = 0
+    let timeout = 0
+    let finished = false
+    const fragment = location.hash.slice(1)
+    let id = fragment
+    try {
+      id = decodeURIComponent(fragment)
+    } catch {
+      /* use the literal fragment */
+    }
+    const scrollToTarget = () => {
+      const target = document.getElementById(id)
+      if (!target || finished) return
+      finished = true
+      target.scrollIntoView({ block: 'start' })
+      observer.disconnect()
+      window.clearTimeout(timeout)
+    }
+    const observer = new MutationObserver(scrollToTarget)
+    observer.observe(bodyRef.current ?? document.body, { childList: true, subtree: true })
+    frame = window.requestAnimationFrame(scrollToTarget)
+    timeout = window.setTimeout(() => observer.disconnect(), 3000)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearTimeout(timeout)
+      observer.disconnect()
+    }
+  }, [bodyKey, location.hash, markdown])
+
+  if (!article)
+    return collection.hidden.includes(slug) ? <HiddenArticlePage slug={slug} basePath={route} /> : <NotFoundPage />
   // An address like /books/x/999 or /books/x/abc for a page that does not exist.
   if (pageParam !== undefined && !pageMeta) return <NotFoundPage />
 
   if (article.adult === true && !adultConfirmed) {
-    return (
-      <AdultContentGate
-        onYes={confirmAdultAccess}
-      />
-    )
+    return <AdultContentGate onYes={confirmAdultAccess} />
   }
 
   const previous = articleIndex > 0 ? articles[articleIndex - 1] : undefined
   const next = articleIndex >= 0 ? articles[articleIndex + 1] : undefined
   const tocReady = markdown !== null && toc.length > 0
+  const slugSegments = slug.split('/').filter(Boolean)
 
   return (
     <>
@@ -211,20 +289,58 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
         <article className="article-card text-[var(--text)]">
           {/* A book also gets a small «search in this book» button on the same row, so it costs no extra height. */}
           <div className="relative mb-4 flex items-start justify-between gap-3">
-          <nav aria-label="مسیر صفحه" className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
-            <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>
-            <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
-            <Link to={collectionId === 'books' ? '/books' : '/#articles'} className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">{collection.text.breadcrumb}</Link>
-            <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
-            {pageNumber === undefined
-              ? <span aria-current="page" className="max-w-full truncate">{article.title}</span>
-              : <>
-                <Link to={`${route}/${slug}`} className="max-w-[12rem] truncate text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">{article.title}</Link>
-                <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
-                <span aria-current="page">صفحه {pageNumber.toLocaleString('fa-IR')}</span>
-              </>}
-          </nav>
-          {collectionId === 'books' && <BookSearch bookSlug={slug} pages={article.pages} />}
+            <nav
+              aria-label="مسیر صفحه"
+              className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-[var(--muted)]"
+            >
+              <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">
+                خانه
+              </Link>
+              <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
+              <Link
+                to={collection.route}
+                className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]"
+              >
+                {collection.text.breadcrumb}
+              </Link>
+              {slugSegments.map((segment, index) => {
+                const parentPath = slugSegments.slice(0, index + 1).join('/')
+                const isArticle = index === slugSegments.length - 1
+                return (
+                  <span key={parentPath} className="contents">
+                    <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
+                    {isArticle ? (
+                      pageNumber === undefined ? (
+                        <span aria-current="page" className="max-w-full truncate">
+                          {article.title}
+                        </span>
+                      ) : (
+                        <Link
+                          to={`${route}/${slug}`}
+                          className="max-w-[12rem] truncate text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]"
+                        >
+                          {article.title}
+                        </Link>
+                      )
+                    ) : (
+                      <Link
+                        to={`${route}/${parentPath}`}
+                        className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]"
+                      >
+                        {collection.folderNames[parentPath] ?? segment.replace(/[-_]+/g, ' ')}
+                      </Link>
+                    )}
+                  </span>
+                )
+              })}
+              {pageNumber !== undefined && (
+                <>
+                  <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
+                  <span aria-current="page">صفحه {pageNumber.toLocaleString('fa-IR')}</span>
+                </>
+              )}
+            </nav>
+            {collectionId === 'books' && <BookSearch bookSlug={slug} pages={article.pages} />}
           </div>
 
           {pageNumber === undefined ? (
@@ -232,13 +348,19 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
               <h1 className="article-title mb-5">{article.title}</h1>
               <div className="article-meta mb-6 grid grid-cols-[repeat(auto-fit,minmax(4.5rem,1fr))] gap-3 border-b border-[var(--border-light)] pb-5 text-start sm:gap-8">
                 <MetaValue label="تاریخ انتشار" value={formatDate(article.date)} />
-                {article.updated !== article.date && <MetaValue label="به‌روزرسانی" value={formatDate(article.updated)} />}
+                {article.updated !== article.date && (
+                  <MetaValue label="به‌روزرسانی" value={formatDate(article.updated)} />
+                )}
                 <MetaValue label="زمان مطالعه" value={`${article.readingTime} دقیقه`} />
               </div>
 
               {/* The cover picture belongs to the list cards (and link previews); the article starts with its own text.
                   A playable cover (video, audio, YouTube…) is still shown, because that is content. */}
-              {article.cover && article.cover.type !== 'image' && <div className="article-cover"><CoverMedia cover={article.cover} title={article.title} /></div>}
+              {article.cover && article.cover.type !== 'image' && (
+                <div className="article-cover">
+                  <CoverMedia cover={article.cover} title={article.title} />
+                </div>
+              )}
 
               <Basmala />
             </>
@@ -252,31 +374,64 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
           {tocReady && <ArticleToc items={toc} variant="box" />}
 
           <div ref={bodyRef} className="article-lang" lang={article.lang} dir={article.dir}>
-            {bodyError && <p role="alert" className="text-[var(--danger)]">بارگذاری متن مقاله ممکن نشد.</p>}
-            {markdown === null && !bodyError && <div aria-busy="true" className="my-6 grid gap-4"><div className="h-6 w-2/5 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /><div className="h-4 w-5/6 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" /></div>}
+            {bodyError && (
+              <p role="alert" className="text-[var(--danger)]">
+                بارگذاری متن مقاله ممکن نشد.
+              </p>
+            )}
+            {markdown === null && !bodyError && (
+              <div aria-busy="true" className="my-6 grid gap-4">
+                <div className="h-6 w-2/5 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
+                <div className="h-4 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
+                <div className="h-4 w-5/6 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-strong)]" />
+              </div>
+            )}
             {markdown !== null && <MarkdownRenderer markdown={markdown} className="[&_h2]:scroll-mt-24" />}
           </div>
 
           {markdown !== null && <TelegramCopy markdown={markdown} bodyRef={bodyRef} />}
 
           {/* `sources:` of the frontmatter: one closed accordion at the end of the article (for a book: of its introduction). */}
-          {markdown !== null && pageNumber === undefined && article.sources && <SourcesAccordion sources={article.sources} />}
+          {markdown !== null && pageNumber === undefined && article.sources && (
+            <SourcesAccordion sources={article.sources} />
+          )}
 
-          {collectionId === 'books' && <BookPagination bookPath={`${route}/${slug}`} pages={article.pages} current={pageNumber ?? null} />}
+          {collectionId === 'books' && (
+            <BookPagination bookPath={`${route}/${slug}`} pages={article.pages} current={pageNumber ?? null} />
+          )}
 
-          {article.incomplete && markdown !== null && pageNumber === undefined && <IncompleteNotice title={article.title} />}
+          {article.incomplete && markdown !== null && pageNumber === undefined && (
+            <IncompleteNotice title={article.title} />
+          )}
 
-          {pageNumber === undefined && article.suggestions.length > 0 && <section aria-labelledby="questions-heading" className="mt-8 border-t border-[var(--border-light)] pt-5">
-            <h2 id="questions-heading" className="mb-3 text-start text-base font-bold">پرسش‌های مرتبط</h2>
-            <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-              {article.suggestions.map((suggestion) => <li key={suggestion} className="rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2 text-start text-sm text-[var(--text-secondary)]">{suggestion}</li>)}
-            </ul>
-          </section>}
+          {pageNumber === undefined && article.suggestions.length > 0 && (
+            <section aria-labelledby="questions-heading" className="mt-8 border-t border-[var(--border-light)] pt-5">
+              <h2 id="questions-heading" className="mb-3 text-start text-base font-bold">
+                پرسش‌های مرتبط
+              </h2>
+              <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+                {article.suggestions.map((suggestion) => (
+                  <li
+                    key={suggestion}
+                    className="rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-3 py-2 text-start text-sm text-[var(--text-secondary)]"
+                  >
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-          {pageNumber === undefined && article.tags.length > 0 && <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[var(--border-light)] pt-5">
-            <span className="text-sm font-semibold">برچسب‌ها:</span>
-            {article.tags.map((tag) => <span key={tag} className="article-tag px-2.5 py-1 text-xs transition-colors">{tag}</span>)}
-          </div>}
+          {pageNumber === undefined && article.tags.length > 0 && (
+            <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[var(--border-light)] pt-5">
+              <span className="text-sm font-semibold">برچسب‌ها:</span>
+              {article.tags.map((tag) => (
+                <span key={tag} className="article-tag px-2.5 py-1 text-xs transition-colors">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </article>
 
         {pageNumber === undefined && <RelatedArticles article={article} collection={collection} />}
@@ -290,18 +445,43 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
 }
 
 function MetaValue({ label, value }: { label: string; value: string }) {
-  return <div className="min-w-0"><span className="mb-1 block text-[10px] text-[var(--muted)] sm:text-xs">{label}</span><span className="block truncate text-xs text-[var(--text)] sm:text-sm">{value}</span></div>
+  return (
+    <div className="min-w-0">
+      <span className="mb-1 block text-[10px] text-[var(--muted)] sm:text-xs">{label}</span>
+      <span className="block truncate text-xs text-[var(--text)] sm:text-sm">{value}</span>
+    </div>
+  )
 }
 
-function ArticleNavItem({ article, direction, collection }: { article: ArticleMeta; direction: 'previous' | 'next'; collection: SiteCollection }) {
+function ArticleNavItem({
+  article,
+  direction,
+  collection,
+}: {
+  article: ArticleMeta
+  direction: 'previous' | 'next'
+  collection: SiteCollection
+}) {
   // The list is sorted newest → oldest, so "previous" is the newer article.
   const label = direction === 'previous' ? collection.text.newer : collection.text.older
   const adultConfirmed = useAdultAccess()
   return (
-    <Link to={`${collection.route}/${article.slug}`} className="surface-card flex min-w-0 items-center gap-3 p-4 text-start no-underline hover:border-[var(--brand)]">
-      {direction === 'previous' && <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />}
-      <span className="min-w-0 flex-1"><span className="block text-xs text-[var(--muted)]">{label}</span><span className="mt-1 line-clamp-2 block text-sm font-semibold text-[var(--text)]">{article.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : article.title}</span></span>
-      {direction === 'next' && <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rotate-180 rtl:rotate-0" />}
+    <Link
+      to={`${collection.route}/${article.slug}`}
+      className="surface-card flex min-w-0 items-center gap-3 p-4 text-start no-underline hover:border-[var(--brand)]"
+    >
+      {direction === 'previous' && (
+        <ArrowLeft aria-hidden="true" className="size-4 shrink-0 text-[var(--brand)] rtl:rotate-180" />
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs text-[var(--muted)]">{label}</span>
+        <span className="mt-1 line-clamp-2 block text-sm font-semibold text-[var(--text)]">
+          {article.adult && !adultConfirmed ? 'مقالهٔ +۱۸ — محتوای محدودشده' : article.title}
+        </span>
+      </span>
+      {direction === 'next' && (
+        <ArrowLeft aria-hidden="true" className="size-4 shrink-0 rotate-180 text-[var(--brand)] rtl:rotate-0" />
+      )}
     </Link>
   )
 }

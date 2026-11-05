@@ -13,6 +13,7 @@ import {
 import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
 import { Copy, ExternalLink, Link2, Quote } from 'lucide-react'
+import { useHref } from 'react-router-dom'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
 import { withMdxErrorBoundary } from '../lib/mdx-component'
 import {
@@ -65,7 +66,7 @@ function createHeading(tag: HeadingTag) {
           <a
             href={`#${id}`}
             aria-label="پیوند به این عنوان"
-            className="absolute -start-6 top-1 hidden text-[var(--text-muted)] group-hover:inline-flex group-focus-within:inline-flex"
+            className="absolute -start-6 top-1 hidden text-[var(--text-muted)] group-focus-within:inline-flex group-hover:inline-flex"
           >
             <Link2 aria-hidden="true" className="size-4" />
           </a>
@@ -81,13 +82,15 @@ function Paragraph(props: ComponentPropsWithoutRef<'p'>) {
 
 function Anchor({ href, target, rel, children, className, ...props }: ComponentPropsWithoutRef<'a'>) {
   const isExternal = typeof href === 'string' && /^https?:\/\//i.test(href)
+  const isSitePath = typeof href === 'string' && href.startsWith('/') && !href.startsWith('//')
+  const siteHref = useHref(isSitePath ? href : '/')
   const safeTarget = isExternal ? '_blank' : target
   const safeRel = isExternal ? clsx(rel, 'noopener noreferrer') : rel
 
   return (
     <a
       {...props}
-      href={href}
+      href={isSitePath ? siteHref : href}
       target={safeTarget}
       rel={safeRel}
       className={clsx('text-[var(--info)] no-underline', className)}
@@ -132,7 +135,14 @@ function isParagraphElement(node: ReactNode): node is ReactElement<{ children?: 
 function withQuoteIcons(children: ReactNode): ReactNode {
   const nodes = Children.toArray(children)
   const elementIndexes = nodes.flatMap((node, index) => (isValidElement(node) ? [index] : []))
-  if (elementIndexes.length === 0) return <><QuoteIcon />{nodes}<QuoteIcon end /></>
+  if (elementIndexes.length === 0)
+    return (
+      <>
+        <QuoteIcon />
+        {nodes}
+        <QuoteIcon end />
+      </>
+    )
 
   const firstIndex = elementIndexes[0]
   const lastIndex = elementIndexes[elementIndexes.length - 1]
@@ -143,16 +153,35 @@ function withQuoteIcons(children: ReactNode): ReactNode {
     if (index === firstIndex) {
       // A quote that opens with a list/table/etc. gets the icon on a line of its own.
       if (isParagraphElement(current)) {
-        current = cloneElement(current, undefined, <QuoteIcon key="quote-start" />, ...Children.toArray(current.props.children))
+        current = cloneElement(
+          current,
+          undefined,
+          <QuoteIcon key="quote-start" />,
+          ...Children.toArray(current.props.children),
+        )
       } else {
-        output.push(<div key="quote-start"><QuoteIcon /></div>)
+        output.push(
+          <div key="quote-start">
+            <QuoteIcon />
+          </div>,
+        )
       }
     }
     if (index === lastIndex) {
       if (isParagraphElement(current)) {
-        current = cloneElement(current, undefined, ...Children.toArray(current.props.children), <QuoteIcon key="quote-end" end />)
+        current = cloneElement(
+          current,
+          undefined,
+          ...Children.toArray(current.props.children),
+          <QuoteIcon key="quote-end" end />,
+        )
       } else {
-        output.push(current, <div key="quote-end"><QuoteIcon end /></div>)
+        output.push(
+          current,
+          <div key="quote-end">
+            <QuoteIcon end />
+          </div>,
+        )
         return
       }
     }
@@ -163,9 +192,15 @@ function withQuoteIcons(children: ReactNode): ReactNode {
 
 /** Several quotes in one box: every paragraph is a quote of its own, with its own opening/closing icons. */
 function withQuoteItems(children: ReactNode): ReactNode {
-  return Children.toArray(children).flatMap((node, index) => (
-    isValidElement(node) ? [<div key={index} className="md-quote-item">{withQuoteIcons(node)}</div>] : []
-  ))
+  return Children.toArray(children).flatMap((node, index) =>
+    isValidElement(node)
+      ? [
+          <div key={index} className="md-quote-item">
+            {withQuoteIcons(node)}
+          </div>,
+        ]
+      : [],
+  )
 }
 
 function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
@@ -179,14 +214,13 @@ function Blockquote(props: ComponentPropsWithoutRef<'blockquote'>) {
         className={clsx('md-quote group relative isolate overflow-hidden text-start text-[var(--text)]', className)}
       >
         <span aria-hidden="true" className="md-quote-rail pointer-events-none absolute inset-y-0 end-0 z-10" />
-        <div className="quote-highlight relative text-start leading-8 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 [&>p]:relative [&>p]:z-0">
+        <div className="quote-highlight relative text-start leading-8 [&>p]:relative [&>p]:z-0 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
           {items ? withQuoteItems(children) : withQuoteIcons(children)}
         </div>
       </blockquote>
     </div>
   )
 }
-
 
 function textFromNode(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node)
@@ -199,8 +233,7 @@ function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
   const [copied, setCopied] = useState(false)
   const [highlighted, setHighlighted] = useState<{ code: string; html: string } | null>(null)
   const codeElement = Children.toArray(children).find(
-    (child): child is ReactElement<{ className?: string; children?: ReactNode }> =>
-      isValidElement(child),
+    (child): child is ReactElement<{ className?: string; children?: ReactNode }> => isValidElement(child),
   )
   const languageClass = codeElement?.props.className
   const language = languageClass?.match(/(?:^|\s)language-([\w-]+)/)?.[1] ?? 'code'
@@ -209,10 +242,14 @@ function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
   useEffect(() => {
     let cancelled = false
     highlightCode(codeText, language).then(
-      (html) => { if (!cancelled && html !== null) setHighlighted({ code: codeText, html }) },
+      (html) => {
+        if (!cancelled && html !== null) setHighlighted({ code: codeText, html })
+      },
       () => undefined, // Highlighting is cosmetic; plain text stays.
     )
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [codeText, language])
 
   async function copyCode() {
@@ -230,7 +267,9 @@ function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
   return (
     <div className="not-prose my-6 overflow-hidden rounded-[var(--radius-md)] bg-[var(--code-bg)] text-[var(--code-text)]">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2 text-xs text-white/70">
-        <span dir="ltr" className="font-mono">{language}</span>
+        <span dir="ltr" className="font-mono">
+          {language}
+        </span>
         <button
           type="button"
           onClick={() => void copyCode()}
@@ -243,9 +282,11 @@ function Pre({ children }: ComponentPropsWithoutRef<'pre'>) {
         </button>
       </div>
       <pre dir="ltr" className="m-0 overflow-x-auto p-4 text-start text-sm leading-6">
-        {html !== null
-          ? <code className="hljs block bg-transparent p-0 text-inherit" dangerouslySetInnerHTML={{ __html: html }} />
-          : <code className="block bg-transparent p-0 text-inherit">{codeText}</code>}
+        {html !== null ? (
+          <code className="hljs block bg-transparent p-0 text-inherit" dangerouslySetInnerHTML={{ __html: html }} />
+        ) : (
+          <code className="block bg-transparent p-0 text-inherit">{codeText}</code>
+        )}
       </pre>
     </div>
   )
@@ -256,7 +297,10 @@ function InlineCode({ children, className, ...props }: ComponentPropsWithoutRef<
     <code
       {...props}
       dir="ltr"
-      className={clsx('rounded-[var(--radius-sm)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-mono text-[0.9em] text-[var(--text)]', className)}
+      className={clsx(
+        'rounded-[var(--radius-sm)] bg-[var(--surface-strong)] px-1.5 py-0.5 font-mono text-[0.9em] text-[var(--text)]',
+        className,
+      )}
     >
       {children}
     </code>
@@ -267,7 +311,13 @@ function Table(props: ComponentPropsWithoutRef<'table'>) {
   const { children, className, ...rest } = props
   return (
     <div className="my-6 max-w-full overflow-x-auto">
-      <table {...rest} className={clsx('w-full border-collapse text-start [&_tbody_tr:nth-child(even)]:bg-[var(--surface-alt)]', className)}>
+      <table
+        {...rest}
+        className={clsx(
+          'w-full border-collapse text-start [&_tbody_tr:nth-child(even)]:bg-[var(--surface-alt)]',
+          className,
+        )}
+      >
         {children}
       </table>
     </div>
@@ -283,16 +333,31 @@ function TableRow(props: ComponentPropsWithoutRef<'tr'>) {
 }
 
 function TableHeaderCell(props: ComponentPropsWithoutRef<'th'>) {
-  return <th {...props} className={clsx('border-b border-[var(--border-strong)] px-3 py-2 text-start font-semibold text-[var(--text)]', props.className)} />
+  return (
+    <th
+      {...props}
+      className={clsx(
+        'border-b border-[var(--border-strong)] px-3 py-2 text-start font-semibold text-[var(--text)]',
+        props.className,
+      )}
+    />
+  )
 }
 
 function TableCell(props: ComponentPropsWithoutRef<'td'>) {
-  return <td {...props} className={clsx('border-b border-[var(--border-light)] px-3 py-2 text-start text-[var(--text)]', props.className)} />
+  return (
+    <td
+      {...props}
+      className={clsx('border-b border-[var(--border-light)] px-3 py-2 text-start text-[var(--text)]', props.className)}
+    />
+  )
 }
 
 /** `---`: one thin, faint line across the whole width, kept a little away from both sides. */
 function HorizontalRule(props: ComponentPropsWithoutRef<'hr'>) {
-  return <hr {...props} className={clsx('mx-4 my-8 h-px border-0 bg-[var(--text)] opacity-20 sm:mx-8', props.className)} />
+  return (
+    <hr {...props} className={clsx('mx-4 my-8 h-px border-0 bg-[var(--text)] opacity-20 sm:mx-8', props.className)} />
+  )
 }
 
 /** `--- text ---`: the same line with the text in the middle of it. */
@@ -307,11 +372,21 @@ function Divider({ children }: { children?: ReactNode }) {
 }
 
 function Details(props: ComponentPropsWithoutRef<'details'>) {
-  return <details {...props} className={clsx('my-4 rounded-[var(--radius-sm)] border border-[var(--border-light)] px-4', props.className)} />
+  return (
+    <details
+      {...props}
+      className={clsx('my-4 rounded-[var(--radius-sm)] border border-[var(--border-light)] px-4', props.className)}
+    />
+  )
 }
 
 function Summary(props: ComponentPropsWithoutRef<'summary'>) {
-  return <summary {...props} className={clsx('cursor-pointer py-3 text-start font-semibold text-[var(--text)]', props.className)} />
+  return (
+    <summary
+      {...props}
+      className={clsx('cursor-pointer py-3 text-start font-semibold text-[var(--text)]', props.className)}
+    />
+  )
 }
 
 const directiveComponents = {
@@ -441,42 +516,69 @@ function Spoiler({
     rejectAdultAccess()
     setAskAge(false)
   }
-  const phrase = hasAnimationDirective !== false
-    ? (animationText ?? '').trim()
-    : 'نعوذ بالله'
+  const phrase = hasAnimationDirective !== false ? (animationText ?? '').trim() : 'نعوذ بالله'
 
   return (
     <span className="spoiler-wrap">
-      {revealed ? <span className="spoiler-revealed">{children}</span> : (
-        <button ref={coverRef} type="button" className="spoiler-cover" onClick={reveal} aria-label="نمایش متن سانسورشده">
-          <span aria-hidden="true" className="spoiler-hidden-text">{children}</span>
+      {revealed ? (
+        <span className="spoiler-revealed">{children}</span>
+      ) : (
+        <button
+          ref={coverRef}
+          type="button"
+          className="spoiler-cover"
+          onClick={reveal}
+          aria-label="نمایش متن سانسورشده"
+        >
+          <span aria-hidden="true" className="spoiler-hidden-text">
+            {children}
+          </span>
           <span className="sr-only">برای نمایش متن کلیک کنید</span>
         </button>
       )}
-      {showAnimationText && revealed && phraseAnchor && phrase.length > 0 && typeof document !== 'undefined' && createPortal(
-        <span
-          className="spoiler-animation-phrase"
-          aria-hidden="true"
-          style={{ left: phraseAnchor.x, top: phraseAnchor.y }}
-        >
-          {phrase}
-        </span>,
-        document.body,
-      )}
-      {askAge && typeof document !== 'undefined' && createPortal(
-        <span className="spoiler-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAskAge(false) }}>
-          <span className="spoiler-dialog" role="dialog" aria-modal="true" aria-labelledby="spoiler-age-title">
-            <span className="spoiler-dialog-icon" aria-hidden="true">18+</span>
-            <strong id="spoiler-age-title">آیا ۱۸ سالت هست؟</strong>
-            <span className="spoiler-dialog-description">برای نمایش این متن باید ۱۸ سال یا بیشتر داشته باشی.</span>
-            <span className="spoiler-dialog-actions">
-              <button type="button" className="spoiler-yes" onClick={acceptAge}>بله</button>
-              <button type="button" className="spoiler-no" onClick={declineAge}>خیر</button>
+      {showAnimationText &&
+        revealed &&
+        phraseAnchor &&
+        phrase.length > 0 &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <span
+            className="spoiler-animation-phrase"
+            aria-hidden="true"
+            style={{ left: phraseAnchor.x, top: phraseAnchor.y }}
+          >
+            {phrase}
+          </span>,
+          document.body,
+        )}
+      {askAge &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <span
+            className="spoiler-dialog-backdrop"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setAskAge(false)
+            }}
+          >
+            <span className="spoiler-dialog" role="dialog" aria-modal="true" aria-labelledby="spoiler-age-title">
+              <span className="spoiler-dialog-icon" aria-hidden="true">
+                18+
+              </span>
+              <strong id="spoiler-age-title">آیا ۱۸ سالت هست؟</strong>
+              <span className="spoiler-dialog-description">برای نمایش این متن باید ۱۸ سال یا بیشتر داشته باشی.</span>
+              <span className="spoiler-dialog-actions">
+                <button type="button" className="spoiler-yes" onClick={acceptAge}>
+                  بله
+                </button>
+                <button type="button" className="spoiler-no" onClick={declineAge}>
+                  خیر
+                </button>
+              </span>
             </span>
-          </span>
-        </span>,
-        document.body,
-      )}
+          </span>,
+          document.body,
+        )}
     </span>
   )
 }
@@ -570,14 +672,18 @@ export function MarkdownRenderer({ markdown, className }: MarkdownRendererProps)
 
   if (rendered?.source !== markdown) return <MarkdownSkeleton />
   if (rendered.error) {
-    return <p role="alert" className="text-start text-[var(--danger)]">امکان نمایش متن وجود ندارد: {rendered.error}</p>
+    return (
+      <p role="alert" className="text-start text-[var(--danger)]">
+        امکان نمایش متن وجود ندارد: {rendered.error}
+      </p>
+    )
   }
 
   return (
     <div
       className={clsx(
-        'article-body prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-headings:var(--text)] [--tw-prose-links:var(--info)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-counters:var(--brand)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-hr:var(--border-light)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-th-borders:var(--border-strong)] [--tw-prose-td-borders:var(--border-light)]',
-        'prose-headings:text-start prose-p:text-start prose-ul:ps-6 prose-ol:ps-6',
+        'article-body prose max-w-none text-start [--tw-prose-body:var(--text)] [--tw-prose-bold:var(--text)] [--tw-prose-bullets:var(--brand)] [--tw-prose-captions:var(--text-muted)] [--tw-prose-counters:var(--brand)] [--tw-prose-headings:var(--text)] [--tw-prose-hr:var(--border-light)] [--tw-prose-links:var(--info)] [--tw-prose-quote-borders:var(--border-strong)] [--tw-prose-quotes:var(--text-muted)] [--tw-prose-td-borders:var(--border-light)] [--tw-prose-th-borders:var(--border-strong)]',
+        'prose-headings:text-start prose-p:text-start prose-ol:ps-6 prose-ul:ps-6',
         'prose-li:ps-1',
         className,
       )}

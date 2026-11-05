@@ -29,9 +29,11 @@ npm test           # تست‌های واحد
 npm run lint
 ```
 
-## ۴. افزودن، ویرایش و حذف وبلاگ (آموزش کامل)
+## ۴. افزودن، ویرایش و حذف محتوا (آموزش کامل)
 
-هر وبلاگ یک **پوشه** است. نام پوشه همان آدرس وبلاگ است (`content/blog/my-post` → `/blog/my-post`) و فقط می‌تواند `a-z`، `0-9`، `-` و `_` داشته باشد.
+ساختار فعلی محتوا بازگشتی است: هر شاخهٔ مستقیم `content/<category>/` یک دستهٔ مستقل با همان پیشوند در نشانی است (`content/media/lives-nour/topic/index.md` → `/media/lives-nour/topic`). پوشه‌ای که `index.md` ندارد صفحهٔ فهرست پوشه است؛ پوشه‌ای که `index.md` دارد مقاله است. دسته‌های فعلی `media` و `books` هستند. راهنمای مرجع مسیرها، رجیستری JSON و استوری دسته‌ای: [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md).
+
+یک مقاله در هر عمقی با `index.md` شناخته می‌شود. نام پوشه فقط از `a-z`، `0-9`، `-` و `_` ساخته شود؛ هر segment در مسیر باید همین قاعده را داشته باشد.
 
 ```
 my-post/
@@ -68,17 +70,17 @@ suggestions:
 |---|---|
 | `npm run publishBlog -- <نام-پوشه>` | اعلام پایان نگارش مقاله، ثبت وضعیت تکمیل، ساخت مجدد محتوا و `git commit`/`git push` به شاخهٔ `main` |
 | `npm run deleteBlog -- <نام-پوشه>` | حذف کامل پوشه و تاریخ‌های آن، بازسازی محتوا و push به GitHub |
-| `npm run createTest` | ساخت مجدد مقالهٔ آزمایشی کامل در `content/blog/_example-article/index.md`؛ بدون ورودی و بدون بازنویسی نمونه‌ای که از قبل وجود دارد |
+| `npm run createTest` | ساخت مجدد مقالهٔ آزمایشی کامل در `content/media/_example-article/index.md`؛ بدون ورودی و بدون بازنویسی نمونه‌ای که از قبل وجود دارد |
 | `npm run deleteTest` | حذف مقالهٔ آزمایشی ثابت `_example-article`؛ بدون ورودی |
 
-دیگر نیازی به دستورهای جداگانهٔ `createNewBlog` و `updateBlog` نیست. برای افزودن مقاله، پوشهٔ آن را مستقیم در `content/blog/<نام-پوشه>/` بساز و فایل `index.md` را قرار بده. هنگام اجرای `npm run dev`، پوشه‌های تازه به‌صورت خودکار ثبت و محتوای سایت بازسازی می‌شوند.
+دیگر نیازی به دستورهای جداگانهٔ `createNewBlog` و `updateBlog` نیست. برای افزودن رسانه/مقاله، پوشهٔ آن را در `content/media/<مسیر>/` بساز و `index.md` را قرار بده؛ برای کتاب از `content/books/<مسیر>/` استفاده کن. هر دو دسته به‌صورت بازگشتی کشف می‌شوند و `story/` رزرو است. هنگام اجرای `npm run dev`، مسیرهای تازه به‌صورت خودکار در `content/<category>.json` ثبت می‌شوند و سایت بازسازی می‌شود.
 
 **پس از اجرای `npm run publishBlog -- <نام-پوشه>`، مقاله تکمیل‌شده محسوب می‌شود.** تا وقتی `npm run dev` باز است، هر ذخیرهٔ بعدی در فایل‌ها یا رسانه‌های همان مقاله، تاریخ `updated` را خودکار به‌روز می‌کند، محتوا را بازسازی می‌کند و تغییرات مقاله را به GitHub push می‌کند. مقاله‌هایی که هنوز منتشر/تکمیل نشده‌اند خودکار push نمی‌شوند.
 
 نمونه:
 
 ```bash
-# پوشهٔ content/blog/my-post از قبل ساخته شده و index.md دارد
+# پوشهٔ content/media/my-post از قبل ساخته شده و index.md دارد
 npm run publishBlog -- my-post
 
 # حذف کامل مقاله و انتشار حذف در سایت
@@ -93,17 +95,17 @@ npm run deleteTest
 
 ### تاریخ‌ها (`date` و `updated`)
 
-تاریخ‌ها داخل Markdown نیستند؛ در `content/blog-dates.json` نگه داشته می‌شوند و همراه محتوای مقاله commit می‌شوند.
+تاریخ‌ها داخل Markdown نیستند؛ برای رسانه در `content/media.json` و برای کتاب در `content/books.json` نگه داشته می‌شوند و همراه محتوای مقاله commit می‌شوند. هر مدخل شامل `date`, `updated`, `completed`, `published`, `route` و `name` است. کلید مقاله مسیر نسبی پوشه است (مثلاً `lives-nour/spider-house/topic`); هنگام ثبت خودکار، تاریخ‌ها و وضعیت قدیمی با تطبیق نام پوشهٔ پایانی حفظ می‌شود. `name` نام نمایشی است: انگلیسی از نام پوشه ساخته می‌شود و نام فارسی که نویسنده دستی گذاشته باشد حفظ می‌شود.
 
 - پوشهٔ مقاله‌ای که در حالت توسعه شناسایی شود، به‌صورت خودکار با `completed: false` ثبت می‌شود.
 - `publishBlog` مقدار `completed` را `true` می‌کند و تاریخ تکمیل/انتشار را ثبت می‌کند.
 - پس از تکمیل، ذخیرهٔ هر تغییر در فایل‌ها و رسانه‌های مقاله هنگام اجرای `npm run dev` تاریخ `updated` را خودکار جلو می‌برد و به GitHub push می‌کند؛ نیازی به `updateBlog` نیست.
-- **تا وقتی `publishBlog` زده نشده** (چه مقالهٔ جدید و چه قدیمی)، انتهای مقاله یک اعلان با متن «متن مقاله هنوز کامل نشده» و پیوند «پیگیری از مدیر برای تکمیل این مقاله» نمایش داده می‌شود (مقاله‌های تست `_…` هم همین‌طورند). پیوند، چت تلگرام شما را با یک پیام آمادهٔ مؤدبانه درباره‌ی همین مقاله باز می‌کند و در هر بار کلیک یکی از ۲۵ پیام می‌آید. فقط `publishBlog` نشانهٔ `"published": true` را در `content/blog-dates.json` می‌گذارد و اعلان را برمی‌دارد؛ مقاله‌های قدیمی که این نشانه را ندارند اعلان می‌گیرند تا برایشان اجرا کنید. برای چند مقاله با هم: `npm run publishBlog -- نام-اول نام-دوم`. پیام‌ها در `src/lib/followUp.ts` هستند (هر تعداد قابل‌ویرایش است؛ `{title}` جای عنوان مقاله را می‌گیرد). آیدی تلگرام از اولین پیوند `t.me/…` در `social` فایل `src/site.config.ts` خوانده می‌شود؛ اگر نباشد، فقط متن اعلان نشان داده می‌شود. ظاهر اعلان در `src/index.css` (کلاس‌های `wip-*`) است.
+- **تا وقتی `publishBlog` زده نشده** (چه مقالهٔ جدید و چه قدیمی)، انتهای مقاله یک اعلان با متن «متن مقاله هنوز کامل نشده» و پیوند «پیگیری از مدیر برای تکمیل این مقاله» نمایش داده می‌شود (مقاله‌های تست `_…` هم همین‌طورند). پیوند، چت تلگرام شما را با یک پیام آمادهٔ مؤدبانه درباره‌ی همین مقاله باز می‌کند و در هر بار کلیک یکی از ۲۵ پیام می‌آید. فقط `publishBlog` نشانهٔ `"published": true` را در رجیستری دستهٔ خودش می‌گذارد و اعلان را برمی‌دارد؛ مقاله‌های قدیمی که این نشانه را ندارند اعلان می‌گیرند تا برایشان اجرا کنید. برای چند مقاله با هم: `npm run publishBlog -- مسیر-اول مسیر-دوم`. پیام‌ها در `src/lib/followUp.ts` هستند (هر تعداد قابل‌ویرایش است؛ `{title}` جای عنوان مقاله را می‌گیرد). آیدی تلگرام از اولین پیوند `t.me/…` در `social` فایل `src/site.config.ts` خوانده می‌شود؛ اگر نباشد، فقط متن اعلان نشان داده می‌شود. ظاهر اعلان در `src/index.css` (کلاس‌های `wip-*`) است.
 - پوشه‌های شروع‌شونده با `_` آزمایشی هستند و در انتشار تولیدی، sitemap و RSS قرار نمی‌گیرند.
 
-### وبلاگ آزمایشی (تست)
+### مقالهٔ آزمایشی (تست)
 
-`npm run createTest` بدون آرگومان، قالب کامل `scripts/templates/example-article` را به `content/blog/_example-article` کپی می‌کند. اگر پوشه موجود باشد آن را بازنویسی نمی‌کند؛ اگر حذف شده باشد دوباره ساخته می‌شود. `npm run deleteTest` همان پوشهٔ ثابت را حذف می‌کند. این مقاله برای تست محلی است و در build تولیدی منتشر نمی‌شود.
+`npm run createTest` بدون آرگومان، قالب کامل `scripts/templates/example-article` را به `content/media/_example-article` کپی می‌کند. اگر پوشه موجود باشد آن را بازنویسی نمی‌کند؛ اگر حذف شده باشد دوباره ساخته می‌شود. `npm run deleteTest` همان پوشهٔ ثابت را حذف می‌کند. این مقاله برای تست محلی است و در build تولیدی منتشر نمی‌شود.
 
 ### خروجی ساخته‌شده برای هر وبلاگ (`src/generated/articles.json`)
 
@@ -297,7 +299,7 @@ export const emojis = {
 
 ## ۱۴. سئو، sitemap، RSS، prerender
 
-در `npm run content` ساخته می‌شود: `public/sitemap.xml`، `robots.txt`، `rss.xml`. **حتماً `siteUrl` را در `src/site.config.ts` تنظیم کنید.** صفحات مقاله JSON-LD (`Article`, `BreadcrumbList`, و `FAQPage` برای آکاردئون `faq`)، canonical، Open Graph و Twitter دارند. بعد از `vite build` اسکریپت `scripts/prerender.ts` برای هر مقاله `dist/blog/<slug>/index.html` با title، meta و `<h1>` می‌سازد (متن کامل prerender نمی‌شود).
+در `npm run content` ساخته می‌شود: `public/sitemap.xml`، `robots.txt`، `rss.xml`. **حتماً `siteUrl` را در `src/site.config.ts` تنظیم کنید.** صفحات مقاله JSON-LD (`Article`, `BreadcrumbList`, و `FAQPage` برای آکاردئون `faq`)، canonical، Open Graph و Twitter دارند. بعد از `vite build` اسکریپت `scripts/prerender.ts` مسیرهای nested دسته‌ها (`dist/media/...`, `dist/books/...`) و redirectهای قدیمی `/blog/<slug>` می‌سازد (متن کامل prerender نمی‌شود).
 
 ## ۱۵. استقرار
 
@@ -420,23 +422,25 @@ story/index.md, index1.md, index2.md    ← سه استوری
 
 اگر `story/` خالی باشد، هر روز یک بخش (`##`) از یک مقالهٔ تصادفی (کامل‌شده و غیر +۱۸) به‌همان شکل نمایش داده می‌شود؛ انتخاب برای هر روز ثابت است. در `npm run dev` پوشهٔ منتشرنشده هم به‌صورت «پیش‌نمایش» دیده می‌شود. زمان پایهٔ هر استوری: `story.slideSeconds` در `site.config.ts`؛ خاموش کردن: `story.enabled: false`.
 
+برای استوری مستقل هر دسته، فایل‌ها را در `content/media/story/` یا `content/books/story/` بگذارید و دسته را به فرمان بدهید (`npm run publishStory -- media`, `npm run cleanStory -- media`, `npm run deleteStory -- media`; برای کتاب‌ها به‌جای `media` بنویسید `books`). این پوشه‌ها در فهرست عادی محتوا دیده نمی‌شوند. حلقهٔ هدر و پوشهٔ اصلی `/story` همچنان به‌عنوان استوری سراسری کار می‌کنند.
+
 **جست‌وجوی آیه و متن اعراب‌دار:** لازم نیست اعراب بگذارید. در همهٔ جست‌وجوها (عنوان، `محتوا::` و هایلایت داخل مقاله) حرکات، تنوین، تشدید، علامت‌های قرآنی (رسم عثمانی) و کشیده نادیده گرفته می‌شود و شکل‌های الف (آ أ إ ٱ)، ؤ، ئ، ة و ي/ی و ك/ک یکی حساب می‌شوند. پس در صفحهٔ اصلی بنویسید `محتوا::يضرب مثلا ما` یا `محتوا::ان الله لا يستحيي` تا مقالهٔ دارای `يَضْرِبَ مَثَلًا مَا` پیدا و همان تکه هایلایت شود.
 
 ## ۲۱. صفحهٔ کتاب‌ها (`/books`)
 
 کتاب‌ها یک مجموعهٔ جدا هستند که دقیقاً همان قالب و همان ساخت مقاله‌ها را دارند، پس همهٔ قابلیت‌های md (آکاردئون، چت، نقل‌قول، گالری، کاور، suggestions …) در آن‌ها کار می‌کند.
 
-- هر کتاب یک پوشه در `content/books/<نام-پوشه>/index.md` است. نام پوشه همان آدرس است: `/books/<نام-پوشه>`.
+- هر کتاب یک پوشه در `content/books/<مسیر-پوشه>/index.md` است. نام کامل مسیر در نشانی حفظ می‌شود: `/books/<مسیر-پوشه>`.
 - صفحهٔ `/books` مثل صفحهٔ خانه فهرست صفحه‌بندی‌شده، جست‌وجوی عنوان و جست‌وجوی داخل متن (`محتوا::عبارت`) دارد. لینک «کتاب‌ها» در `nav` و `footerLinks` فایل `src/site.config.ts` است.
 - دستورها (مثل وبلاگ):
   - `npm run publishBook -- نام-پوشه` ← انتشار و push (بدون آن، صفحه با یادداشت «هنوز تمام نشده» دیده می‌شود)
   - `npm run deleteBook -- نام-پوشه` ← حذف
   - `npm run createTestBook` / `npm run deleteTestBook` ← کتاب آزمایشی `content/books/_example-book` (فقط در `npm run dev` دیده می‌شود، مثل `_example-article`)
-- **صفحه‌صفحه نوشتن:** کتاب بلند را با پوشهٔ `pages/` کنار `index.md` بنویسید و **نام هر فایل، شمارهٔ صفحه** باشد: `pages/1.md`، `pages/2.md` … `index.md` فقط مشخصات و معرفی کتاب است (عنوان، برچسب، کاور، suggestions). هر صفحه آدرس خودش را دارد: `/books/نام-کتاب/۱۲`. بالای هر فایل صفحه می‌توانید `title: "فصل اول"` بنویسید. شماره‌ها لازم نیست پشت سر هم باشند و برای اضافه کردن صفحهٔ ۳۷ فقط `37.md` را بسازید (هیچ فایلی تغییر نام نمی‌دهد). عکس صفحه‌ها را کنار خود فایل (`pages/`) یا در پوشهٔ کتاب بگذارید.
+- **صفحه‌صفحه نوشتن:** کتاب بلند را با پوشهٔ `pages/` کنار `index.md` بنویسید و **نام هر فایل، شمارهٔ صفحه** باشد: `pages/1.md`، `pages/2.md` … `index.md` فقط مشخصات و معرفی کتاب است (عنوان، برچسب، کاور، suggestions). برای نمونه، `content/books/answer-to-shobhat/alhad-noven-part1/pages/27.md` در نشانی `/books/answer-to-shobhat/alhad-noven-part1/27` باز می‌شود. بالای هر فایل صفحه می‌توانید `title: "فصل اول"` بنویسید. شماره‌ها لازم نیست پشت سر هم باشند و برای اضافه کردن صفحهٔ ۳۷ فقط `37.md` را بسازید (هیچ فایلی تغییر نام نمی‌دهد). عکس صفحه‌ها را کنار خود فایل (`pages/`) یا در پوشهٔ کتاب بگذارید.
 - **دکمه‌های زیر کتاب:** صفحهٔ قبل/بعد، ده، صد، هزار و ده‌هزار صفحه قبل/بعد (هر کدام فقط وقتی آن‌قدر صفحه در آن سمت هست) دکمه‌های «اولین» و «آخرین» (صفحهٔ شمارهٔ اول و آخر) و کادر «برو به» که شمارهٔ آخرین صفحه در آن به‌عنوان نمونه دیده می‌شود (کتاب ۱۰۰ صفحه‌ای: ۱۰۰، ۴۰۰۰ صفحه‌ای: ۴۰۰۰). کتابی که `pages/` ندارد (فقط `index.md`) هیچ دکمه‌ای ندارد. جست‌وجوی `محتوا::` داخل همهٔ صفحه‌ها هم می‌گردد و مستقیم به همان صفحه می‌برد.
 - **جست‌وجوی صفحهٔ کتاب‌ها:** با تایپ بخشی از نام، کتاب‌هایی که آن را دارند فهرست می‌شوند (`شرح صح` ← «شرح صحیح مسلم» و «شرح صحیح بخاری»). دکمهٔ فلش رو به بالا کنار هر مورد، نام کامل را در کادر می‌گذارد؛ ↑ و ↓ بین موارد جابه‌جا می‌شوند، `Tab` مورد انتخاب‌شده (یا اولی) را کامل می‌کند و `Enter` کتاب را باز می‌کند. برای رفتن مستقیم به یک صفحه بنویسید `شرح صحیح بخاری ص۲۱۶` یا `… صفحه۲۱۶` یا `… صفحه ۲۱۶` و Enter بزنید. اگر آن صفحه در کتاب نباشد، آخرین صفحهٔ کتاب را می‌گوید.
-- تاریخ‌ها در `content/books-dates.json` نگه‌داری می‌شوند و `npm run dev` کتاب‌های تازه را خودکار ثبت می‌کند. عکس و ویدیوی کتاب‌ها زیر `/content-books/<نام-پوشه>/` منتشر می‌شود.
-- مقاله‌ها و کتاب‌ها از هم جدا هستند: استوری، «پیشنهادی»های فوتر و RSS فقط از وبلاگ می‌آیند؛ sitemap هر دو را دارد.
+- تاریخ‌ها، route و نام نمایشی در `content/books.json` نگه‌داری می‌شوند و `npm run dev` کتاب‌های تو‌در‌تو را خودکار ثبت می‌کند. رسانهٔ کتاب‌ها در مسیر عمومی جداگانه منتشر می‌شود و مسیر کتاب را حفظ می‌کند.
+- مقاله‌ها و کتاب‌ها جدا هستند: جست‌وجو، فهرست و استوری دسته‌ای هرگز محتوای دو دسته را با هم مخلوط نمی‌کنند؛ sitemap و RSS نیز مسیرهای فعلی `/media` و `/books` را ثبت می‌کنند.
 
 ## Overview
 
@@ -454,9 +458,11 @@ npm run preview
 npm test
 ```
 
-## Add, update and delete a blog
+## Add, update and delete content
 
-A blog is a folder; the folder name is the URL (`content/blog/my-post` → `/blog/my-post`). Put the article in `content/blog/<folder>/index.md` using the Markdown format above.
+The current content tree has independent top-level categories: `content/media/` → `/media/` and `content/books/` → `/books/`. Discovery is recursive. Any directory with `index.md` is an article; a directory without it is a listing page. For example, `content/media/lives-nour/topic/index.md` maps to `/media/lives-nour/topic`. Keep article media beside its `index.md`; book page files go under that book's `pages/<number>.md`. The reserved `content/<category>/story/` directory is excluded from normal discovery.
+
+The development watcher registers new article paths in `content/media.json` or `content/books.json`. Registry keys are paths relative to their category root; fields are `date`, `updated`, `completed`, `published`, `route`, and `name`. Missing names are filled from the folder in English; a manually entered Persian `name` is retained. See [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md) for the author workflow and story commands.
 
 | Command | What it does |
 |---|---|
@@ -465,7 +471,7 @@ A blog is a folder; the folder name is the URL (`content/blog/my-post` → `/blo
 | `npm run createTest` | Restore the full `_example-article` test fixture, with no arguments. Existing fixtures are not overwritten. |
 | `npm run deleteTest` | Delete the fixed `_example-article` test fixture, with no arguments. |
 
-`createNewBlog` and `updateBlog` are no longer separate commands. Create a new folder directly under `content/blog` and add `index.md`; while `npm run dev` is running, new folders are registered automatically. After `publishBlog` marks an article complete, saving changes to its Markdown or media files automatically updates `updated`, rebuilds the content and pushes the change to GitHub. This watcher runs only while `npm run dev` is running; incomplete articles are not auto-pushed.
+`createNewBlog` and `updateBlog` are no longer separate commands. Create a folder under `content/media/<path>/` or `content/books/<path>/`, add `index.md`, and run `npm run dev` to register it. `publishBlog` / `publishBook` accept nested relative paths. After publishing marks an article complete, saving changes to its Markdown or media files automatically updates `updated`, rebuilds the content and pushes that category's files to GitHub. Incomplete articles are not auto-pushed.
 
 Automatic push requires the local clone to be on branch `main`, an `origin` remote pointing to `https://github.com/mohammadmahdiyan/weblogs`, and working GitHub authentication. The existing `.github/workflows/deploy.yml` builds and deploys the site after a push to `main`; the public site may take a few minutes to refresh.
 
@@ -476,7 +482,7 @@ npm run createTest
 npm run deleteTest
 ```
 
-Until `publishBlog` is run for an article (new or old), its end shows a «not finished yet» line with one Telegram link that opens your chat with a ready-made polite message about that article (a different one of 25 on every click; see `src/lib/followUp.ts`). Only `publishBlog` writes `"published": true` into `content/blog-dates.json` and removes the notice; several articles at once: `npm run publishBlog -- first second`. The Telegram username comes from the first `t.me` link in `social` in `src/site.config.ts`. Dates and completion status live in `content/blog-dates.json` and are committed with the article. A folder first detected by the dev watcher is registered as incomplete; `publishBlog` marks it complete. Test folders begin with `_` and are excluded from production output, sitemap and RSS.
+Until `publishBlog` / `publishBook` is run for an article (new or old), its end shows a «not finished yet» line with a Telegram link. The publish command writes `"published": true` and marks it complete in the appropriate category registry; use paths relative to that category root. Test folders begin with `_` and are excluded from production output, sitemap and RSS.
 
 ## Search suggestions
 

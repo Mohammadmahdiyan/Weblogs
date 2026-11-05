@@ -15,13 +15,11 @@ import {
 
 /**
  * Header menu with small look changes for the article being read: colour palette, accordion,
- * quote and button style. It never changes the page layout. It appears only on /blog/:slug and /books/:slug;
+ * quote and button style. It never changes the page layout. It appears only on article routes;
  * the saved choice applies to the whole site and is remembered in this browser.
  */
 export function StyleSwitcher() {
-  const onBlogArticle = useMatch('/blog/:slug') !== null
-  const onBook = useMatch('/books/:slug') !== null
-  const onArticle = onBlogArticle || onBook
+  const onArticle = useMatch('/blog/*') !== null || useMatch('/media/*') !== null || useMatch('/books/*') !== null
   const detailsRef = useRef<HTMLDetailsElement>(null)
   const [settings, setSettings] = useState<AppearanceSettings>(loadAppearance)
 

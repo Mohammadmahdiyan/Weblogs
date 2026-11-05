@@ -15,14 +15,20 @@ export interface MediaFile {
   type: MediaType | null
 }
 
-const imageExtensions = new Set([
-  '.avif', '.bmp', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp', '.tif', '.tiff',
-])
-const videoExtensions = new Set([
-  '.3gp', '.avi', '.m4v', '.mkv', '.mov', '.mp4', '.mpeg', '.mpg', '.ogv', '.webm',
-])
+const imageExtensions = new Set(['.avif', '.bmp', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp', '.tif', '.tiff'])
+const videoExtensions = new Set(['.3gp', '.avi', '.m4v', '.mkv', '.mov', '.mp4', '.mpeg', '.mpg', '.ogv', '.webm'])
 const audioExtensions = new Set([
-  '.aac', '.flac', '.m4a', '.mid', '.midi', '.mp3', '.oga', '.ogg', '.opus', '.wav', '.weba',
+  '.aac',
+  '.flac',
+  '.m4a',
+  '.mid',
+  '.midi',
+  '.mp3',
+  '.oga',
+  '.ogg',
+  '.opus',
+  '.wav',
+  '.weba',
 ])
 
 export function coverTypeFor(filePath: string): MediaType | null {
@@ -53,13 +59,12 @@ export function isAbsoluteUrl(value: string): boolean {
   return value.startsWith('/') || value.startsWith('#') || /^[a-z][a-z\d+.-]*:/i.test(value)
 }
 
-
 export function rewriteMediaUrl(
   value: string,
   slug: string,
   mediaFiles: MediaFile[],
   base = '/',
-  /** Folder inside public/ the item's media is published under (`content` for the blog, `content-books` for books). */
+  /** Folder inside public/ where this item's media is published. */
   mediaDir = 'content',
 ): string {
   const suffixIndex = value.search(/[?#]/)
@@ -71,19 +76,15 @@ export function rewriteMediaUrl(
   const normalizedPath = normalizeMediaPath(pathname)
   if (!normalizedPath || normalizedPath === '.') return value
 
-  const isArticleMedia = mediaFiles.some(
-    (media) => media.relativePath.toLowerCase() === normalizedPath.toLowerCase(),
-  )
+  const isArticleMedia = mediaFiles.some((media) => media.relativePath.toLowerCase() === normalizedPath.toLowerCase())
 
   if (!isArticleMedia && !coverTypeFor(pathname)) return value
 
   const normalizedBase = base.replace(/^\/+|\/+$/g, '')
   const prefix = normalizedBase ? `/${normalizedBase}` : ''
 
-  return `${prefix}/${mediaDir}/${encodeURIComponent(slug)}/${encodeMediaPath(normalizedPath)}${suffix}`
+  return `${prefix}/${mediaDir}/${encodeMediaPath(slug)}/${encodeMediaPath(normalizedPath)}${suffix}`
 }
-
-
 
 /** Audio codecs every mainstream browser plays inside mp4 / webm / ogv. */
 const browserSafeAudioCodecs = new Set(['aac', 'mp3', 'opus', 'vorbis', 'flac'])
@@ -117,14 +118,11 @@ function findFfmpeg(): Promise<string | null> {
 }
 
 async function audioCodecsOf(ffmpeg: string, filePath: string): Promise<string[]> {
-  let report = ''
-  try {
-    const { stderr } = await execFileAsync(ffmpeg, ['-hide_banner', '-i', filePath], { timeout: 30_000 })
-    report = stderr
-  } catch (error) {
+  const report = await execFileAsync(ffmpeg, ['-hide_banner', '-i', filePath], { timeout: 30_000 }).then(
+    ({ stderr }) => stderr,
     // `ffmpeg -i file` with no output always exits non-zero, but still prints the stream list on stderr.
-    report = String((error as { stderr?: unknown }).stderr ?? '')
-  }
+    (error) => String((error as { stderr?: unknown }).stderr ?? ''),
+  )
   return [...report.matchAll(/Stream #\S+.*?: Audio: ([\w-]+)/g)].map((match) => match[1].toLowerCase())
 }
 
@@ -153,7 +151,10 @@ export async function prepareVideoForBrowser(sourcePath: string, cacheDir: strin
 
     const extension = path.extname(sourcePath).toLowerCase()
     if (!remuxableExtensions.has(extension)) {
-      return { filePath: sourcePath, message: `audio codec "${codecs.join(', ')}" is not playable in browsers; convert the file to mp4 with AAC audio` }
+      return {
+        filePath: sourcePath,
+        message: `audio codec "${codecs.join(', ')}" is not playable in browsers; convert the file to mp4 with AAC audio`,
+      }
     }
 
     const info = await stat(sourcePath)
@@ -163,13 +164,40 @@ export async function prepareVideoForBrowser(sourcePath: string, cacheDir: strin
 
     await mkdir(cacheDir, { recursive: true })
     const partial = path.join(cacheDir, `${key}.partial${extension}`)
-    await execFileAsync(ffmpeg, [
-      '-hide_banner', '-loglevel', 'error', '-y', '-i', sourcePath,
-      '-map', '0:v?', '-map', '0:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', partial,
-    ], { timeout: 30 * 60_000, maxBuffer: 16 * 1024 * 1024 })
+    await execFileAsync(
+      ffmpeg,
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-y',
+        '-i',
+        sourcePath,
+        '-map',
+        '0:v?',
+        '-map',
+        '0:a:0',
+        '-c:v',
+        'copy',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '192k',
+        '-movflags',
+        '+faststart',
+        partial,
+      ],
+      { timeout: 30 * 60_000, maxBuffer: 16 * 1024 * 1024 },
+    )
     await rename(partial, converted)
-    return { filePath: converted, message: `audio "${codecs.join(', ')}" converted to AAC automatically (original file untouched)` }
+    return {
+      filePath: converted,
+      message: `audio "${codecs.join(', ')}" converted to AAC automatically (original file untouched)`,
+    }
   } catch (error) {
-    return { filePath: sourcePath, message: `automatic audio conversion failed: ${error instanceof Error ? error.message : String(error)}` }
+    return {
+      filePath: sourcePath,
+      message: `automatic audio conversion failed: ${error instanceof Error ? error.message : String(error)}`,
+    }
   }
 }

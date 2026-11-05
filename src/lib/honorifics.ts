@@ -12,7 +12,6 @@ export type HonorificConfig = {
   verticalAlign?: string
 }
 
-
 const DEFAULT_HONORIFIC_SIZE = '1.8em'
 const DEFAULT_HONORIFIC_ALIGN = '-0.4em'
 const SMALL_HONORIFIC_SIZE = '1.2em'
@@ -35,20 +34,20 @@ const createHonorific = (
 
 export const honorifics: Record<string, HonorificConfig> = {
   // درود بر پیامبر ﷺ
-  'ص': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
-  'ﷺ': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
+  ص: createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
+  ﷺ: createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
   'صلى الله عليه وسلم': createHonorific('sas.svg', 'صلى الله عليه وسلم', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
 
   // سلام بر پیامبران
-  'ع': createHonorific('as.svg', 'عليه السلام'),
+  ع: createHonorific('as.svg', 'عليه السلام'),
   'عليه سلام': createHonorific('as.svg', 'عليه السلام'),
   'عليه الصلاة والسلام': createHonorific('asws.svg', 'عليه الصلاة والسلام'),
-  'علیه السلام': createHonorific('asws.svg', 'عليه الصلاة والسلام'),
+  'علیه السلام': createHonorific('asws.svg', 'علیه السلام'),
   'عليها السلام': createHonorific('ahas.svg', 'عليها السلام'),
   'عليهم السلام': createHonorific('amus.svg', 'عليهم السلام'),
 
   // رضایت خداوند از صحابه
-  'رض': createHonorific('radu.svg', 'رضي الله عنه'),
+  رض: createHonorific('radu.svg', 'رضي الله عنه'),
   'رضي الله عنه': createHonorific('radu.svg', 'رضي الله عنه'),
   'رضي الله عنها': createHonorific('rada.svg', 'رضي الله عنها'),
   'رضي الله عنهما': createHonorific('raduma.svg', 'رضي الله عنهما'),
@@ -56,7 +55,7 @@ export const honorifics: Record<string, HonorificConfig> = {
   'رضي الله عنهن': createHonorific('radunna.svg', 'رضي الله عنهن'),
 
   // رحمت خداوند
-  'رح': createHonorific('rahimahu.svg', 'رحمه الله'),
+  رح: createHonorific('rahimahu.svg', 'رحمه الله'),
   'رحمه الله': createHonorific('rahimahu.svg', 'رحمه الله'),
   'رحمها الله': createHonorific('rahimaha.svg', 'رحمها الله', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
   'رحمهم الله': createHonorific('rahimahum.svg', 'رحمهم الله'),
@@ -71,27 +70,27 @@ export const honorifics: Record<string, HonorificConfig> = {
   'تبارك وتعالى': createHonorific('twt.svg', 'تبارك وتعالى', '1.5em', '-0.25em'),
 
   // اختصارات مؤنث و جمع
-  'رضها': createHonorific('rada.svg', 'رضي الله عنها'),
-  'رضهما': createHonorific('raduma.svg', 'رضي الله عنهما'),
-  'رضهم': createHonorific('radum.svg', 'رضي الله عنهم'),
-  'رضهن': createHonorific('radunna.svg', 'رضي الله عنهن'),
+  رضها: createHonorific('rada.svg', 'رضي الله عنها'),
+  رضهما: createHonorific('raduma.svg', 'رضي الله عنهما'),
+  رضهم: createHonorific('radum.svg', 'رضي الله عنهم'),
+  رضهن: createHonorific('radunna.svg', 'رضي الله عنهن'),
 
-  'رحها': createHonorific('rahimaha.svg', 'رحمها الله', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
-  'رحهم': createHonorific('rahimahum.svg', 'رحمهم الله'),
-  'رحهما': createHonorific('rahimahuma.svg', 'رحمهما الله'),
-  'رحهن': createHonorific('rahimahunna.svg', 'رحمهن الله'),
+  رحها: createHonorific('rahimaha.svg', 'رحمها الله', MEDIUM_HONORIFIC_SIZE, MEDIUM_HONORIFIC_ALIGN),
+  رحهم: createHonorific('rahimahum.svg', 'رحمهم الله'),
+  رحهما: createHonorific('rahimahuma.svg', 'رحمهما الله'),
+  رحهن: createHonorific('rahimahunna.svg', 'رحمهن الله'),
 
   // اختصارات عبارات مربوط به خداوند
-  'جل': createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'عز': createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'سبح': createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
-  'تبارك': createHonorific('twt.svg', 'تبارك وتعالى', '1.6em', '-0.25em'),
+  جل: createHonorific('jal.svg', 'جل جلاله', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  عز: createHonorific('awj.svg', 'عز وجل', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  سبح: createHonorific('swt.svg', 'سبحانه وتعالى', SMALL_HONORIFIC_SIZE, SMALL_HONORIFIC_ALIGN),
+  تبارك: createHonorific('twt.svg', 'تبارك وتعالى', '1.6em', '-0.25em'),
 
-    // درود بر پیامبر و خاندان ایشان
-  'صا': createHonorific('saa.svg', 'صلى الله عليه و آله'),
+  // درود بر پیامبر و خاندان ایشان
+  صا: createHonorific('saa.svg', 'صلى الله عليه و آله'),
   'صلى الله عليه و آله': createHonorific('saa.svg', 'صلى الله عليه و آله'),
 
   // حفظه الله
-  'حف': createHonorific('haf.svg', 'حفظه الله'),
+  حف: createHonorific('haf.svg', 'حفظه الله'),
   'حفظه الله': createHonorific('haf.svg', 'حفظه الله'),
 }

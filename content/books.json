@@ -1,0 +1,28 @@
+{
+  "_example-book": {
+    "date": "2026-11-02",
+    "updated": "2026-11-02",
+    "completed": true,
+    "published": false,
+    "name": "Example Book",
+    "route": "/books/_example-book"
+  },
+  "alhad-noven-part1": {
+    "date": "2026-11-04",
+    "updated": "2026-11-05",
+    "completed": true,
+    "published": false
+  },
+  "answer-to-shobhat": {
+    "name": "Answer To Shobhat",
+    "route": "/books/answer-to-shobhat"
+  },
+  "answer-to-shobhat/alhad-noven-part1": {
+    "date": "2026-11-04",
+    "updated": "2026-11-05",
+    "completed": true,
+    "published": false,
+    "name": "Alhad Noven Part1",
+    "route": "/books/answer-to-shobhat/alhad-noven-part1"
+  }
+}

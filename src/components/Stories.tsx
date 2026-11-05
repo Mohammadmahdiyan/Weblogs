@@ -1,14 +1,33 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import storyJson from '../generated/story.json'
 import siteConfig from '../site.config'
-import { isStoryExpired, markStorySeen, readSeenStory, slideSeconds, type StoryData, type StorySlide } from '../lib/story'
+import {
+  isStoryExpired,
+  markStorySeen,
+  readSeenStory,
+  slideSeconds,
+  type StoryData,
+  type StorySlide,
+} from '../lib/story'
 import { ProfileAvatar } from './ProfileAvatar'
 
 // The Markdown engine is large and only needed once a story is opened.
-const MarkdownRenderer = lazy(() => import('./MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer })))
+const MarkdownRenderer = lazy(() =>
+  import('./MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer })),
+)
 
 const story = storyJson as StoryData | null
 const HOLD_MS = 220
@@ -18,28 +37,56 @@ const SCROLL_REST_MS = 2000
 /** What a tap must not steal: anything that does something by itself. */
 const INTERACTIVE = 'a, button, summary, input, textarea, select, video, audio, [role="button"], [data-story-ui]'
 
-function SlideBody({ slide, onReady, onNavigate, onScroll }: {
+function SlideBody({
+  slide,
+  onReady,
+  onNavigate,
+  onScroll,
+}: {
   slide: StorySlide
   onReady: () => void
   onNavigate: () => void
   onScroll: () => void
 }) {
   if (slide.kind === 'image') {
-    return <img referrerPolicy="no-referrer" src={slide.src} alt="تصویر استوری" draggable={false} onLoad={onReady} onError={onReady} className="story-image" />
+    return (
+      <img
+        referrerPolicy="no-referrer"
+        src={slide.src}
+        alt="تصویر استوری"
+        draggable={false}
+        onLoad={onReady}
+        onError={onReady}
+        className="story-image"
+      />
+    )
   }
 
   return (
     <div className="story-scroll" tabIndex={0} role="region" aria-label="متن استوری" onScroll={onScroll}>
       <div className="story-md blog-scope">
         {slide.kicker && <p className="story-kicker">از مقالهٔ «{slide.kicker}»</p>}
-        <Suspense fallback={<div aria-busy="true" className="story-skeleton"><span /><span /><span /></div>}>
+        <Suspense
+          fallback={
+            <div aria-busy="true" className="story-skeleton">
+              <span />
+              <span />
+              <span />
+            </div>
+          }
+        >
           <MarkdownRenderer markdown={slide.markdown ?? ''} />
         </Suspense>
-        {slide.link && (
-          slide.link.href.startsWith('/')
-            ? <Link to={slide.link.href} onClick={onNavigate} className="story-cta">{slide.link.label}</Link>
-            : <a href={slide.link.href} target="_blank" rel="noopener noreferrer" className="story-cta">{slide.link.label}</a>
-        )}
+        {slide.link &&
+          (slide.link.href.startsWith('/') ? (
+            <Link to={slide.link.href} onClick={onNavigate} className="story-cta">
+              {slide.link.label}
+            </Link>
+          ) : (
+            <a href={slide.link.href} target="_blank" rel="noopener noreferrer" className="story-cta">
+              {slide.link.label}
+            </a>
+          ))}
       </div>
     </div>
   )
@@ -106,28 +153,51 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
 
   function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     const rtl = isRtl()
-    if (event.key === 'Escape') { event.preventDefault(); onClose() }
-    else if (event.key === 'ArrowLeft') { event.preventDefault(); if (rtl) next(); else previous() }
-    else if (event.key === 'ArrowRight') { event.preventDefault(); if (rtl) previous(); else next() }
-    else if (event.key === ' ' && event.target === event.currentTarget) { event.preventDefault(); setHolding((value) => !value) }
-    else if (event.key === 'Tab' && overlayRef.current) {
-      const focusable = Array.from(overlayRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex="0"]'))
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onClose()
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault()
+      if (rtl) next()
+      else previous()
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault()
+      if (rtl) previous()
+      else next()
+    } else if (event.key === ' ' && event.target === event.currentTarget) {
+      event.preventDefault()
+      setHolding((value) => !value)
+    } else if (event.key === 'Tab' && overlayRef.current) {
+      const focusable = Array.from(
+        overlayRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex="0"]'),
+      )
       if (focusable.length === 0) return
       const first = focusable[0]
       const final = focusable[focusable.length - 1]
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); final.focus() }
-      else if (!event.shiftKey && document.activeElement === final) { event.preventDefault(); first.focus() }
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        final.focus()
+      } else if (!event.shiftKey && document.activeElement === final) {
+        event.preventDefault()
+        first.focus()
+      }
     }
   }
 
   // Tap: left / right half of the card changes story (in a right-to-left page, left = next). Press and hold:
   // pause. Dragging (scrolling a long text) is neither: the timer just waits while the reader scrolls.
   function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 || (event.target as HTMLElement).closest(INTERACTIVE)) { press.current = null; return }
+    if (event.button !== 0 || (event.target as HTMLElement).closest(INTERACTIVE)) {
+      press.current = null
+      return
+    }
     press.current = { x: event.clientX, y: event.clientY, moved: false, held: false }
     window.clearTimeout(holdTimer.current)
     holdTimer.current = window.setTimeout(() => {
-      if (press.current && !press.current.moved) { press.current.held = true; setHolding(true) }
+      if (press.current && !press.current.moved) {
+        press.current.held = true
+        setHolding(true)
+      }
     }, HOLD_MS)
   }
   function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
@@ -143,7 +213,10 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
     const current = press.current
     press.current = null
     if (!current) return
-    if (current.held) { setHolding(false); return }
+    if (current.held) {
+      setHolding(false)
+      return
+    }
     if (current.moved || !stageRef.current) return
     const rect = stageRef.current.getBoundingClientRect()
     const leftHalf = event.clientX < rect.left + rect.width / 2
@@ -170,10 +243,19 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
       aria-label="استوری"
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
       className="story-overlay"
     >
-      <button type="button" aria-label="استوری قبلی" disabled={index === 0} onClick={previous} className="story-nav" data-story-ui>
+      <button
+        type="button"
+        aria-label="استوری قبلی"
+        disabled={index === 0}
+        onClick={previous}
+        className="story-nav"
+        data-story-ui
+      >
         <ChevronRight aria-hidden="true" className="size-6 ltr:rotate-180" />
       </button>
 
@@ -185,9 +267,17 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
-        onContextMenu={(event) => { if (holding) event.preventDefault() }}
+        onContextMenu={(event) => {
+          if (holding) event.preventDefault()
+        }}
       >
-        <SlideBody key={index} slide={slide} onReady={() => setReadyIndex(index)} onNavigate={onClose} onScroll={onScroll} />
+        <SlideBody
+          key={index}
+          slide={slide}
+          onReady={() => setReadyIndex(index)}
+          onNavigate={onClose}
+          onScroll={onScroll}
+        />
 
         <div className="story-top">
           <div className="story-bars" aria-hidden="true">
@@ -198,7 +288,12 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
                   <span
                     key={`run-${index}`}
                     className="story-bar-fill story-bar-run"
-                    style={{ animationDuration: `${seconds}s`, animationPlayState: paused || !ready ? 'paused' : 'running' } as CSSProperties}
+                    style={
+                      {
+                        animationDuration: `${seconds}s`,
+                        animationPlayState: paused || !ready ? 'paused' : 'running',
+                      } as CSSProperties
+                    }
                     onAnimationEnd={next}
                   />
                 )}
@@ -206,10 +301,21 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
             ))}
           </div>
           <div className="story-head">
-            <span className="story-head-avatar"><ProfileAvatar fallback={siteConfig.profile.name.charAt(0)} /></span>
+            <span className="story-head-avatar">
+              <ProfileAvatar fallback={siteConfig.profile.name.charAt(0)} />
+            </span>
             <span className="story-head-name">{siteConfig.profile.name}</span>
             <span className="story-head-meta">{data.preview ? 'پیش‌نمایش · منتشر نشده' : 'امروز'}</span>
-            <button ref={closeRef} type="button" onClick={onClose} aria-label="بستن استوری" className="story-close" data-story-ui><X aria-hidden="true" className="size-5" /></button>
+            <button
+              ref={closeRef}
+              type="button"
+              onClick={onClose}
+              aria-label="بستن استوری"
+              className="story-close"
+              data-story-ui
+            >
+              <X aria-hidden="true" className="size-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -223,27 +329,36 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
 }
 
 /** The ring in the header (profile picture inside a coloured ring, grey once seen). Opens the story viewer. */
-export function StoryButton() {
+export function StoryButton({ data = story }: { data?: StoryData | null }) {
   const [open, setOpen] = useState(false)
   const [seenId, setSeenId] = useState<string | null>(() => readSeenStory())
-  const [expired] = useState(() => (story ? isStoryExpired(story) : true))
+  const [expired] = useState(() => (data ? isStoryExpired(data) : true))
 
-  if (!siteConfig.story.enabled || !story || expired || story.slides.length === 0) return null
+  if (!siteConfig.story.enabled || !data || expired || data.slides.length === 0) return null
 
-  const seen = seenId === story.id
+  const seen = seenId === data.id
   function openStory() {
-    if (!story) return
-    markStorySeen(story.id)
-    setSeenId(story.id)
+    if (!data) return
+    markStorySeen(data.id)
+    setSeenId(data.id)
     setOpen(true)
   }
 
   return (
     <>
-      <button type="button" onClick={openStory} aria-label={seen ? 'مشاهده دوبارهٔ استوری امروز' : 'مشاهدهٔ استوری امروز'} aria-haspopup="dialog" data-seen={seen} className="story-ring">
-        <span className="story-ring-inner"><ProfileAvatar fallback={siteConfig.profile.name.charAt(0)} /></span>
+      <button
+        type="button"
+        onClick={openStory}
+        aria-label={seen ? 'مشاهده دوبارهٔ استوری امروز' : 'مشاهدهٔ استوری امروز'}
+        aria-haspopup="dialog"
+        data-seen={seen}
+        className="story-ring"
+      >
+        <span className="story-ring-inner">
+          <ProfileAvatar fallback={siteConfig.profile.name.charAt(0)} />
+        </span>
       </button>
-      {open && <StoryViewer data={story} onClose={() => setOpen(false)} />}
+      {open && <StoryViewer data={data} onClose={() => setOpen(false)} />}
     </>
   )
 }

@@ -7,7 +7,9 @@ describe('telegramFromMarkdown', () => {
   it('turns formatting into Telegram markup and into HTML', () => {
     const { text, html } = telegramFromMarkdown('متن **بولد** و *کج* و ~~خط‌خورده~~ و `mono` و ||راز|| و <u>زیرخط</u>')
     expect(text).toBe('متن **بولد** و __کج__ و ~~خط‌خورده~~ و `mono` و ||راز|| و زیرخط')
-    expect(html).toBe('متن <b>بولد</b> و <i>کج</i> و <s>خط‌خورده</s> و <code>mono</code> و <tg-spoiler>راز</tg-spoiler> و <u>زیرخط</u>')
+    expect(html).toBe(
+      'متن <b>بولد</b> و <i>کج</i> و <s>خط‌خورده</s> و <code>mono</code> و <tg-spoiler>راز</tg-spoiler> و <u>زیرخط</u>',
+    )
   })
 
   it('keeps quotes as quotes and links as links', () => {
@@ -29,8 +31,20 @@ describe('telegramFromMarkdown', () => {
   })
 
   it('writes accordion titles and chat messages', () => {
-    const { text } = telegramFromMarkdown(':::accordion\n:::item{title="عنوان"}\nسوال1 : (این چیست؟)\nجواب1 : (پاسخ)\n:::\n:::')
+    const { text } = telegramFromMarkdown(
+      ':::accordion\n:::item{title="عنوان"}\nسوال1 : (این چیست؟)\nجواب1 : (پاسخ)\n:::\n:::',
+    )
     expect(text).toBe('**عنوان**\n\n**سوال ۱:** این چیست؟\n\n**جواب ۱:** پاسخ')
+  })
+
+  it('makes quoted source text copyable in Telegram and keeps its source link clickable', () => {
+    const { text, html } = telegramFromMarkdown(
+      ':::source{site="کتاب" url="https://example.com/source"}\n\nمتن آماده کپی\n\n:::',
+    )
+    expect(text).toContain('`متن آماده کپی`')
+    expect(text).toContain('مشاهده در منبع (https://example.com/source)')
+    expect(html).toContain('<code>متن آماده کپی</code>')
+    expect(html).toContain('<a href="https://example.com/source">مشاهده در منبع</a>')
   })
 })
 
@@ -60,7 +74,10 @@ describe('telegramPart', () => {
   })
 
   it('copies a quote by itself, and nothing for an unknown offset', () => {
-    expect(telegramPart(markdown, offsetOf(markdown, '> نقل'))).toMatchObject({ kind: 'quote', payload: { text: '> نقل' } })
+    expect(telegramPart(markdown, offsetOf(markdown, '> نقل'))).toMatchObject({
+      kind: 'quote',
+      payload: { text: '> نقل' },
+    })
     expect(telegramPart(markdown, 9999)).toBeNull()
   })
 
@@ -72,8 +89,12 @@ describe('telegramPart', () => {
 
 describe('honorifics', () => {
   it('writes the phrase instead of the picture marker', () => {
-    const { text } = telegramFromMarkdown('موسی (ع) و رسول الله (ص) و رسول الله (صلى الله عليه وسلم) و الله (جل) و ابوبکر (رض) و پیامبر (علیه السلام)')
-    expect(text).toBe('موسی (علیه السلام) و رسول الله (ﷺ) و رسول الله (ﷺ) و الله (جل جلاله) و ابوبکر (رضی الله عنه) و پیامبر (علیه السلام)')
+    const { text } = telegramFromMarkdown(
+      'موسی (ع) و رسول الله (ص) و رسول الله (صلى الله عليه وسلم) و الله (جل) و ابوبکر (رض) و پیامبر (علیه السلام)',
+    )
+    expect(text).toBe(
+      'موسی (علیه السلام) و رسول الله (ﷺ) و رسول الله (ﷺ) و الله (جل جلاله) و ابوبکر (رضی الله عنه) و پیامبر (علیه السلام)',
+    )
   })
 
   it('leaves other parentheses alone', () => {
@@ -91,7 +112,9 @@ describe('enters and images', () => {
   it('writes a picture as «عکس» (never its file name or alt text); a video or sound keeps its file name', () => {
     expect(telegramFromMarkdown('![عکس پروژه](./17hazar-in-qadir-top-site.png)').text).toBe('عکس')
     expect(telegramFromMarkdown('![](./photos/my%20pic.png?v=2)').text).toBe('عکس')
-    expect(telegramFromMarkdown('![](https://cdn.steadylink.io/a/0cf9f84a-67ab-4786-8f51-eb98a6a4b2f8)').text).toBe('عکس')
+    expect(telegramFromMarkdown('![](https://cdn.steadylink.io/a/0cf9f84a-67ab-4786-8f51-eb98a6a4b2f8)').text).toBe(
+      'عکس',
+    )
     expect(telegramFromMarkdown('![](./a.mp4)').text).toBe('a.mp4')
     expect(telegramFromMarkdown('::video{link="./clip.mp4", cover="./c.jpg"}').text).toBe('clip.mp4')
     expect(telegramFromMarkdown('::audio{link="https://example.com/x/music.mp3"}').text).toBe('music.mp3')
@@ -100,15 +123,22 @@ describe('enters and images', () => {
   it('names several pictures «عکس اول»، «عکس دوم»، «عکس سوم»', () => {
     const three = '![](https://example.com/a)\n![](https://example.com/b)\n![](https://example.com/c)'
     expect(telegramFromMarkdown(three).text).toBe('عکس اول\nعکس دوم\nعکس سوم')
-    expect(telegramFromMarkdown('متن\n\n![](a.png)\n\nمتن دو\n\n![](b.png)').text).toBe('متن\n\nعکس اول\n\nمتن دو\n\nعکس دوم')
+    expect(telegramFromMarkdown('متن\n\n![](a.png)\n\nمتن دو\n\n![](b.png)').text).toBe(
+      'متن\n\nعکس اول\n\nمتن دو\n\nعکس دوم',
+    )
     expect(telegramFromMarkdown('![](a.png)\n\n::video{link="v.mp4"}').text).toBe('عکس\n\nv.mp4')
     const many = Array.from({ length: 21 }, (_, index) => `![](https://example.com/${index})`).join('\n')
-    expect(telegramFromMarkdown(many).text.split('\n').slice(-2)).toEqual(['عکس بیستم', `عکس ${(21).toLocaleString('fa-IR')}`])
+    expect(telegramFromMarkdown(many).text.split('\n').slice(-2)).toEqual([
+      'عکس بیستم',
+      `عکس ${(21).toLocaleString('fa-IR')}`,
+    ])
   })
 
   it('links the pasted label to the picture when the picture has an address', () => {
     expect(telegramFromMarkdown('![](https://example.com/a)').html).toBe('<a href="https://example.com/a">عکس</a>')
-    expect(telegramFromMarkdown('![](/Weblogs/content/x/a.png)').html).toMatch(/^<a href="https?:\/\/[^"/]+\/Weblogs\/content\/x\/a\.png">عکس<\/a>$/)
+    expect(telegramFromMarkdown('![](/Weblogs/content/x/a.png)').html).toMatch(
+      /^<a href="https?:\/\/[^"/]+\/Weblogs\/content\/x\/a\.png">عکس<\/a>$/,
+    )
     expect(telegramFromMarkdown('![](./a.png)').html).toBe('عکس')
   })
 

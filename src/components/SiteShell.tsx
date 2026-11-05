@@ -11,10 +11,26 @@ import { useAdultAccess } from '../lib/adultAccess'
 import { useDismissibleDetails } from '../lib/useDismissibleDetails'
 import { StoryButton } from './Stories'
 
-function SiteLink({ href, children, className, onClick }: { href: string; children: ReactNode; className?: string; onClick?: () => void }) {
-  return href.startsWith('/')
-    ? <Link to={href} onClick={onClick} className={className}>{children}</Link>
-    : <a href={href} onClick={onClick} className={className}>{children}</a>
+function SiteLink({
+  href,
+  children,
+  className,
+  onClick,
+}: {
+  href: string
+  children: ReactNode
+  className?: string
+  onClick?: () => void
+}) {
+  return href.startsWith('/') ? (
+    <Link to={href} onClick={onClick} className={className}>
+      {children}
+    </Link>
+  ) : (
+    <a href={href} onClick={onClick} className={className}>
+      {children}
+    </a>
+  )
 }
 
 function AnnouncementBar() {
@@ -29,9 +45,15 @@ function AnnouncementBar() {
   return (
     <div className="relative bg-[var(--brand)] px-12 py-2 text-center text-sm text-[var(--brand-contrast)]">
       <SiteLink href={siteConfig.announcement.linkHref} className="font-medium no-underline">
-        {siteConfig.announcement.text} <span className="mx-1">·</span>{siteConfig.announcement.linkText}
+        {siteConfig.announcement.text} <span className="mx-1">·</span>
+        {siteConfig.announcement.linkText}
       </SiteLink>
-      <button type="button" onClick={dismiss} aria-label="بستن پیام" className="absolute end-3 top-2 rounded-[var(--radius-sm)] p-1 focus-visible:outline-2 focus-visible:outline-[var(--brand-contrast)]">
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label="بستن پیام"
+        className="absolute end-3 top-2 rounded-[var(--radius-sm)] p-1 focus-visible:outline-2 focus-visible:outline-[var(--brand-contrast)]"
+      >
         <X aria-hidden="true" className="size-4" />
       </button>
     </div>
@@ -69,13 +91,36 @@ function MobileDrawer({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 md:hidden" onClick={onClose}>
-      <nav ref={drawerRef} role="dialog" aria-modal="true" aria-label="فهرست اصلی" onClick={(event) => event.stopPropagation()} className="absolute inset-y-0 end-0 flex w-[min(88vw,22rem)] flex-col gap-6 border-s border-[var(--border-light)] bg-[var(--surface)] p-5 text-[var(--text)]">
+      <nav
+        ref={drawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="فهرست اصلی"
+        onClick={(event) => event.stopPropagation()}
+        className="absolute inset-y-0 end-0 flex w-[min(88vw,22rem)] flex-col gap-6 border-s border-[var(--border-light)] bg-[var(--surface)] p-5 text-[var(--text)]"
+      >
         <div className="flex items-center justify-between">
           <span className="font-bold">{siteConfig.siteName}</span>
-          <button type="button" onClick={onClose} aria-label="بستن فهرست" className="rounded-[var(--radius-sm)] p-2 hover:bg-[var(--surface-alt)]"><X aria-hidden="true" className="size-5" /></button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="بستن فهرست"
+            className="rounded-[var(--radius-sm)] p-2 hover:bg-[var(--surface-alt)]"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
         </div>
         <div className="grid gap-2">
-          {siteConfig.nav.map((item) => <SiteLink key={item.href} href={item.href} onClick={onClose} className="rounded-[var(--radius-sm)] px-3 py-3 text-start hover:bg-[var(--surface-alt)]">{item.label}</SiteLink>)}
+          {siteConfig.nav.map((item) => (
+            <SiteLink
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              className="rounded-[var(--radius-sm)] px-3 py-3 text-start hover:bg-[var(--surface-alt)]"
+            >
+              {item.label}
+            </SiteLink>
+          ))}
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t border-[var(--border-light)] pt-4">
           <ThemeToggle />
@@ -95,15 +140,27 @@ function Header() {
     <>
       <header className="sticky top-0 z-40 border-b border-[var(--border-strong)] bg-[var(--surface)] text-[var(--text)]">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-2 sm:gap-4 sm:px-6 lg:min-h-20">
-          <Link to="/" className="min-w-0 text-lg font-extrabold text-[var(--text)] no-underline sm:text-xl">{siteConfig.siteName}</Link>
+          <Link to="/" className="min-w-0 text-lg font-extrabold text-[var(--text)] no-underline sm:text-xl">
+            {siteConfig.siteName}
+          </Link>
           <nav aria-label="پیمایش اصلی" className="hidden items-center gap-7 md:flex">
-            {siteConfig.nav.map((item) => <SiteLink key={item.href} href={item.href} className="text-sm text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">{item.label}</SiteLink>)}
+            {siteConfig.nav.map((item) => (
+              <SiteLink
+                key={item.href}
+                href={item.href}
+                className="text-sm text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]"
+              >
+                {item.label}
+              </SiteLink>
+            ))}
           </nav>
           <div className="flex shrink-0 items-center gap-3">
             <div className="hidden items-center gap-3 lg:flex">
               <ThemeToggle />
               <details ref={textSettingsRef} className="group relative">
-                <summary className="cursor-pointer list-none rounded-[var(--radius-sm)] border border-[var(--border-light)] px-3 py-2 text-sm text-[var(--text-secondary)]">تنظیم متن</summary>
+                <summary className="cursor-pointer list-none rounded-[var(--radius-sm)] border border-[var(--border-light)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+                  تنظیم متن
+                </summary>
                 <div className="absolute end-0 top-full z-10 mt-2 rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
                   <FontControls />
                 </div>
@@ -111,7 +168,12 @@ function Header() {
             </div>
             <StoryButton />
             <StyleSwitcher />
-            <button type="button" onClick={() => setDrawerOpen(true)} aria-label="بازکردن فهرست" className="inline-flex size-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] text-[var(--text)] hover:bg-[var(--surface-alt)] md:hidden">
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="بازکردن فهرست"
+              className="inline-flex size-10 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--border-light)] text-[var(--text)] hover:bg-[var(--surface-alt)] md:hidden"
+            >
               <Menu aria-hidden="true" className="size-5" />
             </button>
           </div>
@@ -128,9 +190,20 @@ function Footer({ articles }: { articles: ArticleMeta[] }) {
   return (
     <footer className="mx-auto my-8 w-full max-w-7xl px-4 sm:px-6">
       <div className="relative rounded-[var(--radius-lg)] bg-[var(--footer-bg,var(--text))] p-6 text-[var(--footer-text,var(--surface))] sm:p-8">
-        <span aria-hidden="true" className="absolute -top-2 end-5 hidden size-10 translate-x-1/2 -translate-y-1/2 rotate-6 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)] text-[var(--brand-contrast)] sm:flex">
+        <span
+          aria-hidden="true"
+          className="absolute end-5 -top-2 hidden size-10 translate-x-1/2 -translate-y-1/2 rotate-6 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--brand)] text-[var(--brand-contrast)] sm:flex"
+        >
           {/* open book: knowledge / reading */}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-6 -rotate-6">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="size-6 -rotate-6"
+          >
             <path d="M12 6.5C10.4 5.3 8.2 4.7 5.5 4.7c-.9 0-1.7.1-2.5.3v13.2c.8-.2 1.6-.3 2.5-.3 2.7 0 4.9.6 6.5 1.8 1.6-1.2 3.8-1.8 6.5-1.8.9 0 1.7.1 2.5.3V5c-.8-.2-1.6-.3-2.5-.3-2.7 0-4.9.6-6.5 1.8Z" />
             <path d="M12 6.5V20" />
           </svg>
@@ -143,19 +216,55 @@ function Footer({ articles }: { articles: ArticleMeta[] }) {
           <section>
             <h2 className="mb-3 text-sm font-bold">پیوندهای مفید</h2>
             <ul className="m-0 grid list-none gap-2 p-0">
-              {siteConfig.footerLinks.map((item) => <li key={item.href}><SiteLink href={item.href} className="text-sm opacity-75 no-underline hover:opacity-100">{item.label}</SiteLink></li>)}
+              {siteConfig.footerLinks.map((item) => (
+                <li key={item.href}>
+                  <SiteLink href={item.href} className="text-sm no-underline opacity-75 hover:opacity-100">
+                    {item.label}
+                  </SiteLink>
+                </li>
+              ))}
             </ul>
           </section>
           <section>
             <h2 className="mb-3 text-sm font-bold">نوشته‌های پیشنهادی</h2>
             <ul className="m-0 grid list-none gap-2 p-0">
-              {latest.map((article) => <li key={article.slug}><Link to={`/blog/${article.slug}`} aria-label={article.adult && !adultConfirmed ? 'مشاهده مقاله +۱۸' : article.title} className="line-clamp-2 text-sm opacity-75 no-underline hover:opacity-100">{article.adult && !adultConfirmed ? <span className="relative block"><span className="block select-none blur-sm">{article.title}</span><span className="absolute inset-0 flex items-center justify-center text-xs font-semibold">حاوی جملات +۱۸</span></span> : article.title}</Link></li>)}
+              {latest.map((article) => (
+                <li key={article.slug}>
+                  <Link
+                    to={`/media/${article.slug}`}
+                    aria-label={article.adult && !adultConfirmed ? 'مشاهده مقاله +۱۸' : article.title}
+                    className="line-clamp-2 text-sm no-underline opacity-75 hover:opacity-100"
+                  >
+                    {article.adult && !adultConfirmed ? (
+                      <span className="relative block">
+                        <span className="block blur-sm select-none">{article.title}</span>
+                        <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold">
+                          حاوی جملات +۱۸
+                        </span>
+                      </span>
+                    ) : (
+                      article.title
+                    )}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </section>
           <section>
             <h2 className="mb-3 text-sm font-bold">شبکه‌های اجتماعی</h2>
             <ul className="m-0 grid list-none gap-2 p-0">
-              {siteConfig.social.map((item) => <li key={item.href}><a href={item.href} target="_blank" rel="noopener noreferrer" className="text-sm opacity-75 no-underline hover:opacity-100">{item.label}</a></li>)}
+              {siteConfig.social.map((item) => (
+                <li key={item.href}>
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm no-underline opacity-75 hover:opacity-100"
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))}
               {siteConfig.social.length === 0 && <li className="text-sm opacity-60">پیوندی ثبت نشده است</li>}
             </ul>
           </section>
@@ -171,7 +280,12 @@ function Footer({ articles }: { articles: ArticleMeta[] }) {
 export function SiteShell({ children, articles }: { children: ReactNode; articles: ArticleMeta[] }) {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[60] focus:rounded-[var(--radius-sm)] focus:bg-[var(--brand)] focus:px-4 focus:py-2 focus:text-[var(--brand-contrast)]">پرش به محتوای اصلی</a>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[60] focus:rounded-[var(--radius-sm)] focus:bg-[var(--brand)] focus:px-4 focus:py-2 focus:text-[var(--brand-contrast)]"
+      >
+        پرش به محتوای اصلی
+      </a>
       <AnnouncementBar />
       <Header />
       {children}

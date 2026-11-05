@@ -54,9 +54,9 @@ function snippetAt(content: string, start: number, end: number, context: number)
   const from = start - room
   const to = end + room
   return {
-    before: `${from > 0 ? '…' : ''}${squash(content.slice(from, start))}`,
+    before: `${room > 0 && from > 0 ? '…' : ''}${squash(content.slice(from, start))}`,
     match: squash(content.slice(start, end)),
-    after: `${squash(content.slice(end, to))}${to < content.length ? '…' : ''}`,
+    after: `${squash(content.slice(end, to))}${room > 0 && to < content.length ? '…' : ''}`,
     start,
   }
 }

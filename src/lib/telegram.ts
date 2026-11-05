@@ -53,10 +53,7 @@ type Inline =
   | { kind: 'b' | 'i' | 'u' | 's' | 'code' | 'spoiler'; children: Inline[] }
   | { kind: 'a'; href: string; children: Inline[] }
 
-type Block =
-  | { kind: 'text'; content: Inline[] }
-  | { kind: 'quote'; blocks: Block[] }
-  | { kind: 'pre'; text: string }
+type Block = { kind: 'text'; content: Inline[] } | { kind: 'quote'; blocks: Block[] } | { kind: 'pre'; text: string }
 
 // ───────────────────────────── Markdown → mdast (same source text the page renders)
 
@@ -95,11 +92,18 @@ const keepEnters = (value: string) => value.replace(/[ \t]*\r?\n[ \t]*/g, '\n')
 
 // ── honorifics: «(ص)» → «(ﷺ)», «(ع)» → «(علیه السلام)», «(جل)» → «(جل جلاله)» …
 const toPersianLetters = (value: string) => value.replace(/ي/g, 'ی').replace(/ى/g, 'ی').replace(/ك/g, 'ک')
-const honorificKey = (value: string) => toPersianLetters(value).replace(/[\u064B-\u065F\u0670\u0640\u200c]/g, '').replace(/ة/g, 'ه').replace(/\s+/g, '')
+const honorificKey = (value: string) =>
+  toPersianLetters(value)
+    .replace(/[\u064B-\u065F\u0670\u0640\u200c]/g, '')
+    .replace(/ة/g, 'ه')
+    .replace(/\s+/g, '')
 
 /** Telegram has no pictures here, so every marker is written out; the Prophet's «ص» becomes the single sign ﷺ. */
 const TELEGRAM_HONORIFICS = new Map<string, string>([
-  ...Object.entries(honorifics).map(([key, config]): [string, string] => [honorificKey(key), config.file === 'sas.svg' ? 'ﷺ' : toPersianLetters(config.label)]),
+  ...Object.entries(honorifics).map(([key, config]): [string, string] => [
+    honorificKey(key),
+    config.file === 'sas.svg' ? 'ﷺ' : toPersianLetters(config.label),
+  ]),
   [honorificKey('صله الله علیه وسلم'), 'ﷺ'], // a common spelling slip
 ])
 
@@ -119,7 +123,8 @@ function absoluteUrl(href: string): string | null {
 /** Plain text of the article: mini-text keeps its words and emoji names disappear. */
 function extras(value: string): Inline[] {
   return splitInline(value, isEmoji).flatMap((segment): Inline[] =>
-    segment.type === 'text' ? [segment.value] : segment.type === 'mini' ? [segment.text] : [])
+    segment.type === 'text' ? [segment.value] : segment.type === 'mini' ? [segment.text] : [],
+  )
 }
 
 function textInline(rawValue: string): Inline[] {
@@ -137,7 +142,16 @@ function textInline(rawValue: string): Inline[] {
 }
 
 const HTML_FORMAT: Record<string, 'b' | 'i' | 'u' | 's' | 'code'> = {
-  b: 'b', strong: 'b', i: 'i', em: 'i', u: 'u', ins: 'u', s: 's', del: 's', strike: 's', code: 'code',
+  b: 'b',
+  strong: 'b',
+  i: 'i',
+  em: 'i',
+  u: 'u',
+  ins: 'u',
+  s: 's',
+  del: 's',
+  strike: 's',
+  code: 'code',
 }
 const HTML_TAG = /^<\s*(\/)?\s*([a-z][a-z0-9]*)\b[^>]*?(\/)?\s*>$/i
 
@@ -182,16 +196,29 @@ function inlines(nodes: MdNode[] = []): Inline[] {
   // Raw HTML such as <u>…</u> arrives as separate opening / closing nodes, so a stack groups what is between them.
   const root: Inline[] = []
   const stack: { kind: 'b' | 'i' | 'u' | 's' | 'code'; children: Inline[] }[] = []
-  const push = (item: Inline | Inline[]) => (stack.length ? stack[stack.length - 1].children : root).push(...(Array.isArray(item) ? item : [item]))
+  const push = (item: Inline | Inline[]) =>
+    (stack.length ? stack[stack.length - 1].children : root).push(...(Array.isArray(item) ? item : [item]))
 
   for (const node of nodes) {
     switch (node.type) {
-      case 'text': push(textInline(node.value ?? '')); break
-      case 'strong': push({ kind: 'b', children: inlines(node.children) }); break
-      case 'emphasis': push({ kind: 'i', children: inlines(node.children) }); break
-      case 'delete': push({ kind: 's', children: inlines(node.children) }); break
-      case 'inlineCode': push({ kind: 'code', children: [node.value ?? ''] }); break
-      case 'break': push('\n'); break
+      case 'text':
+        push(textInline(node.value ?? ''))
+        break
+      case 'strong':
+        push({ kind: 'b', children: inlines(node.children) })
+        break
+      case 'emphasis':
+        push({ kind: 'i', children: inlines(node.children) })
+        break
+      case 'delete':
+        push({ kind: 's', children: inlines(node.children) })
+        break
+      case 'inlineCode':
+        push({ kind: 'code', children: [node.value ?? ''] })
+        break
+      case 'break':
+        push('\n')
+        break
       case 'link': {
         const href = absoluteUrl(node.url ?? '')
         const children = inlines(node.children)
@@ -209,10 +236,15 @@ function inlines(nodes: MdNode[] = []): Inline[] {
         } else if (HTML_FORMAT[name] && !tag[3]) stack.push({ kind: HTML_FORMAT[name], children: [] })
         break
       }
-      case 'image': push(mediaOf(node.url ?? '', (node.alt ?? '').trim() || (node.title ?? '').trim())); break
-      case 'imageReference': break
-      case 'footnoteReference': break
-      default: push(inlines(node.children))
+      case 'image':
+        push(mediaOf(node.url ?? '', (node.alt ?? '').trim() || (node.title ?? '').trim()))
+        break
+      case 'imageReference':
+        break
+      case 'footnoteReference':
+        break
+      default:
+        push(inlines(node.children))
     }
   }
   while (stack.length) {
@@ -234,6 +266,22 @@ function trimEdges(content: Inline[]): Inline[] {
 const text = (content: Inline[]): Block[] => (content.length ? [{ kind: 'text', content }] : [])
 const bold = (value: string): Inline => ({ kind: 'b', children: [value] })
 const mediaUrl = (node: MdNode) => node.attributes?.link ?? node.attributes?.src ?? node.attributes?.url ?? ''
+
+function sourcePlainText(item: Inline): string {
+  if (typeof item === 'string') return item
+  if (item.kind === 'media') return mediaLabel(item)
+  return item.children.map(sourcePlainText).join('')
+}
+
+function copyableSourceBlocks(blocks: Block[]): Block[] {
+  return blocks.flatMap((block): Block[] => {
+    if (block.kind === 'pre') return [block]
+    if (block.kind === 'quote') return [{ kind: 'quote', blocks: copyableSourceBlocks(block.blocks) }]
+
+    const value = block.content.map(sourcePlainText).join('').trim()
+    return value ? [{ kind: 'text', content: [{ kind: 'code', children: [value] }] }] : []
+  })
+}
 
 function listLines(list: MdNode, depth = 0): Inline[][] {
   const lines: Inline[][] = []
@@ -268,22 +316,34 @@ function blocksOf(node: MdNode): Block[] {
     case 'paragraph': {
       const children = node.children ?? []
       // `--- text ---`: the same line with the text in the middle.
-      if (node.data?.hName === 'mdx-divider') return text([DIVIDER_SIDE, ' ', ...trimEdges(inlines(children)), ' ', DIVIDER_SIDE])
-      const onlyImages = children.some((child) => child.type === 'image') && children.every((child) => child.type === 'image' || (child.type === 'text' && !(child.value ?? '').trim()) || child.type === 'break')
+      if (node.data?.hName === 'mdx-divider')
+        return text([DIVIDER_SIDE, ' ', ...trimEdges(inlines(children)), ' ', DIVIDER_SIDE])
+      const onlyImages =
+        children.some((child) => child.type === 'image') &&
+        children.every(
+          (child) =>
+            child.type === 'image' || (child.type === 'text' && !(child.value ?? '').trim()) || child.type === 'break',
+        )
       if (onlyImages) {
-        const files = children.filter((child) => child.type === 'image').map((child): Inline => mediaOf(child.url ?? '', (child.alt ?? '').trim()))
+        const files = children
+          .filter((child) => child.type === 'image')
+          .map((child): Inline => mediaOf(child.url ?? '', (child.alt ?? '').trim()))
         return text(joinLines(files.map((file) => [file])))
       }
       return text(trimEdges(inlines(children)))
     }
-    case 'heading': return text([{ kind: 'b', children: inlines(node.children) }])
+    case 'heading':
+      return text([{ kind: 'b', children: inlines(node.children) }])
     case 'blockquote': {
       const inner = (node.children ?? []).flatMap(blocksOf)
       return inner.length ? [{ kind: 'quote', blocks: inner }] : []
     }
-    case 'list': return text(joinLines(listLines(node)))
-    case 'code': return [{ kind: 'pre', text: node.value ?? '' }]
-    case 'thematicBreak': return text([DIVIDER_LINE])
+    case 'list':
+      return text(joinLines(listLines(node)))
+    case 'code':
+      return [{ kind: 'pre', text: node.value ?? '' }]
+    case 'thematicBreak':
+      return text([DIVIDER_LINE])
     case 'html': {
       const plain = (node.value ?? '').replace(/<[^>]*>/g, '').trim()
       return plain ? text([plain]) : []
@@ -304,13 +364,15 @@ function blocksOf(node: MdNode): Block[] {
       const inner = (node.children ?? []).flatMap(blocksOf)
       if (!label) return inner
       const first = inner[0]
-      if (first?.kind === 'text') return [{ kind: 'text', content: [bold(`${label}:`), ' ', ...first.content] }, ...inner.slice(1)]
+      if (first?.kind === 'text')
+        return [{ kind: 'text', content: [bold(`${label}:`), ' ', ...first.content] }, ...inner.slice(1)]
       return [{ kind: 'text', content: [bold(`${label}:`)] }, ...inner]
     }
     case 'leafDirective': {
       const url = mediaUrl(node)
       if (node.name === 'video' || node.name === 'audio') return url ? text([mediaOf(url, '', node.name)]) : []
-      if (['youtube', 'aparat', 'instagram', 'embed'].includes(node.name ?? '') && /^https?:\/\//i.test(url)) return text([url])
+      if (['youtube', 'aparat', 'instagram', 'embed'].includes(node.name ?? '') && /^https?:\/\//i.test(url))
+        return text([url])
       return []
     }
     case 'containerDirective': {
@@ -319,14 +381,23 @@ function blocksOf(node: MdNode): Block[] {
       const title = (node.attributes?.title ?? '').trim()
       if (name === 'source') {
         const head = [node.attributes?.site, title, node.attributes?.ref].filter(Boolean).join(' · ')
-        const body = [...(head ? text([bold(head)]) : []), ...inner]
+        const heading: Inline[] = head ? [bold(head)] : []
+        const url = node.attributes?.url
+        if (url && /^https?:\/\//i.test(url)) {
+          if (heading.length > 0) heading.push(' · ')
+          heading.push({ kind: 'a', href: url, children: ['مشاهده در منبع'] })
+        }
+        const body = [...text(heading), ...copyableSourceBlocks(inner)]
         return body.length ? [{ kind: 'quote', blocks: body }] : []
       }
       if ((name === 'item' || name === 'modal') && title) return [...text([bold(title)]), ...inner]
       return inner
     }
-    case 'chatThread': case 'root': return (node.children ?? []).flatMap(blocksOf)
-    default: return []
+    case 'chatThread':
+    case 'root':
+      return (node.children ?? []).flatMap(blocksOf)
+    default:
+      return []
   }
 }
 
@@ -335,7 +406,28 @@ function blocksOf(node: MdNode): Block[] {
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const escapeAttribute = (value: string) => escapeHtml(value).replace(/"/g, '&quot;')
 
-const ORDINALS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم', 'یازدهم', 'دوازدهم', 'سیزدهم', 'چهاردهم', 'پانزدهم', 'شانزدهم', 'هفدهم', 'هجدهم', 'نوزدهم', 'بیستم']
+const ORDINALS = [
+  'اول',
+  'دوم',
+  'سوم',
+  'چهارم',
+  'پنجم',
+  'ششم',
+  'هفتم',
+  'هشتم',
+  'نهم',
+  'دهم',
+  'یازدهم',
+  'دوازدهم',
+  'سیزدهم',
+  'چهاردهم',
+  'پانزدهم',
+  'شانزدهم',
+  'هفدهم',
+  'هجدهم',
+  'نوزدهم',
+  'بیستم',
+]
 
 /** «عکس» / «عکس اول» / «عکس دوم»…; a video or sound keeps its file name. */
 function mediaLabel(item: { media: MediaKind; name: string; number?: number }): string {
@@ -365,13 +457,15 @@ function blockHtml(block: Block): string {
 }
 
 function joinHtml(blocks: Block[]): string {
-  return blocks.map((block, index) => {
-    const html = blockHtml(block)
-    if (index === 0) return html
-    // A quote already ends its own line, so one <br> is enough around it.
-    const single = block.kind === 'quote' || blocks[index - 1].kind === 'quote'
-    return `${single ? '<br>' : '<br><br>'}${html}`
-  }).join('')
+  return blocks
+    .map((block, index) => {
+      const html = blockHtml(block)
+      if (index === 0) return html
+      // A quote already ends its own line, so one <br> is enough around it.
+      const single = block.kind === 'quote' || blocks[index - 1].kind === 'quote'
+      return `${single ? '<br>' : '<br><br>'}${html}`
+    })
+    .join('')
 }
 
 const MARKERS = { b: '**', i: '__', s: '~~', code: '`', spoiler: '||' } as const
@@ -393,10 +487,14 @@ function blockText(block: Block, quote: TelegramOptions['plainQuote']): string {
   if (block.kind === 'pre') return `\`\`\`\n${block.text}\n\`\`\``
   const inner = joinText(block.blocks, quote)
   if (quote === 'guillemets') return `«${inner.trim()}»`
-  return inner.split('\n').map((line) => (line ? `> ${line}` : '>')).join('\n')
+  return inner
+    .split('\n')
+    .map((line) => (line ? `> ${line}` : '>'))
+    .join('\n')
 }
 
-const joinText = (blocks: Block[], quote: TelegramOptions['plainQuote']): string => blocks.map((block) => blockText(block, quote)).join('\n\n')
+const joinText = (blocks: Block[], quote: TelegramOptions['plainQuote']): string =>
+  blocks.map((block) => blockText(block, quote)).join('\n\n')
 
 /** Pictures (and, separately, videos and sounds) are numbered 1., 2., … from the top, but only when there are several. */
 function numberMedia(blocks: Block[]): void {
@@ -416,13 +514,18 @@ function numberMedia(blocks: Block[]): void {
   }
   walk(blocks)
   for (const items of Object.values(found)) {
-    if (items.length > 1) items.forEach((item, index) => { item.number = index + 1 })
+    if (items.length > 1)
+      items.forEach((item, index) => {
+        item.number = index + 1
+      })
   }
 }
 
 function payloadOf(blocks: Block[], options: TelegramOptions = {}): TelegramPayload {
   numberMedia(blocks)
-  const meaningful = blocks.filter((block) => block.kind !== 'text' || block.content.some((item) => typeof item !== 'string' || item.trim() !== ''))
+  const meaningful = blocks.filter(
+    (block) => block.kind !== 'text' || block.content.some((item) => typeof item !== 'string' || item.trim() !== ''),
+  )
   return { html: joinHtml(meaningful), text: joinText(meaningful, options.plainQuote ?? 'marker').trim() }
 }
 
@@ -440,7 +543,8 @@ function locate(node: MdNode, offset: number): { node: MdNode; siblings: MdNode[
   const children = node.children ?? []
   for (let index = 0; index < children.length; index += 1) {
     const child = children[index]
-    if (PICKABLE.has(child.type) && child.position?.start.offset === offset) return { node: child, siblings: children, index }
+    if (PICKABLE.has(child.type) && child.position?.start.offset === offset)
+      return { node: child, siblings: children, index }
     const inside = locate(child, offset)
     if (inside) return inside
   }
@@ -451,7 +555,11 @@ function locate(node: MdNode, offset: number): { node: MdNode; siblings: MdNode[
  * One part of the article, chosen by where it starts in the source: a heading gives its whole section (up to the
  * next heading of the same or a higher level, so `##` includes its `###` parts); a quote gives itself.
  */
-export function telegramPart(markdown: string, offset: number, options: TelegramOptions = {}): { payload: TelegramPayload; kind: TelegramPartKind } | null {
+export function telegramPart(
+  markdown: string,
+  offset: number,
+  options: TelegramOptions = {},
+): { payload: TelegramPayload; kind: TelegramPartKind } | null {
   const found = locate(parse(markdown), offset)
   if (!found) return null
 
@@ -461,7 +569,10 @@ export function telegramPart(markdown: string, offset: number, options: Telegram
 
   if (node.type === 'heading') {
     kind = 'section'
-    const end = siblings.findIndex((sibling, position) => position > index && sibling.type === 'heading' && (sibling.depth ?? 6) <= (node.depth ?? 6))
+    const end = siblings.findIndex(
+      (sibling, position) =>
+        position > index && sibling.type === 'heading' && (sibling.depth ?? 6) <= (node.depth ?? 6),
+    )
     nodes = siblings.slice(index, end < 0 ? undefined : end)
   }
 

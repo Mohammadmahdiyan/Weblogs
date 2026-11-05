@@ -1,7 +1,7 @@
 /** Daily story: data shape (written by scripts/lib/story.ts into src/generated/story.json) + reader helpers. */
 
 export interface StoryLink {
-  /** Site path (`/blog/slug?find=…`, opened with the router) or a full https URL. */
+  /** Category route (`/media/path?find=…`, opened with the router) or a full https URL. */
   href: string
   label: string
 }

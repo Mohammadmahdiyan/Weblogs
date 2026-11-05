@@ -1,6 +1,6 @@
 /*
   Usage:  npm run new -- my-slug "عنوان مقاله"
-  Creates content/blog/<slug>/index.md from a template. The dev watcher registers it automatically.
+  Creates content/media/<slug>/index.md from a template. The dev watcher registers it automatically.
 */
 import { mkdir, writeFile, access } from 'node:fs/promises'
 import path from 'node:path'
@@ -15,10 +15,12 @@ function usage(message: string): never {
   process.exit(1)
 }
 
-if (!slug || !/^[a-z0-9][a-z0-9_-]*$/.test(slug)) usage('A URL-safe slug is required.')
+const relativeSlug = (slug ?? '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+if (!relativeSlug || relativeSlug.split('/').some((part) => !/^[a-z0-9][a-z0-9_-]*$/.test(part)))
+  usage('A URL-safe folder path is required.')
 if (!title) usage('A title is required.')
 
-const directory = path.join(projectRoot, 'content', 'blog', slug)
+const directory = path.join(projectRoot, 'content', 'media', ...relativeSlug.split('/'))
 const file = path.join(directory, 'index.md')
 
 const template = `---
@@ -53,4 +55,6 @@ try {
 
 await mkdir(directory, { recursive: true })
 await writeFile(file, template, 'utf8')
-console.log(`Created ${path.relative(projectRoot, file)}\nAdd images / videos next to it (a file named cover.jpg becomes the cover), then run npm run dev to register it automatically`)
+console.log(
+  `Created ${path.relative(projectRoot, file)}\nAdd images / videos next to it (a file named cover.jpg becomes the cover), then run npm run dev to register it automatically`,
+)

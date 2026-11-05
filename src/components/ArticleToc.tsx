@@ -5,46 +5,65 @@ import type { SVGProps } from 'react'
 import type { TocItem } from '../lib/toc'
 import { useMediaQuery } from '../lib/useMediaQuery'
 
-
 /** Tables of contents longer than this show only the first items until «نمایش بیشتر» is pressed. */
 const TOC_COLLAPSED_COUNT = 6
 
 const tocHonorificFiles: Record<string, string> = {
-  'ص': 'sas.svg', 'ﷺ': 'sas.svg', 'صا': 'saa.svg',
-  'ع': 'as.svg', 'رض': 'radu.svg', 'رح': 'rahimahu.svg',
-  'رضها': 'rada.svg', 'رضهما': 'raduma.svg', 'رضهم': 'radum.svg', 'رضهن': 'radunna.svg',
-  'رحها': 'rahimaha.svg', 'رحهما': 'rahimahuma.svg', 'رحهم': 'rahimahum.svg', 'رحهن': 'rahimahunna.svg',
-  'جل': 'jal.svg', 'عز': 'awj.svg', 'سبح': 'swt.svg', 'تبارك': 'twt.svg', 'حف': 'haf.svg',
+  ص: 'sas.svg',
+  ﷺ: 'sas.svg',
+  صا: 'saa.svg',
+  ع: 'as.svg',
+  رض: 'radu.svg',
+  رح: 'rahimahu.svg',
+  رضها: 'rada.svg',
+  رضهما: 'raduma.svg',
+  رضهم: 'radum.svg',
+  رضهن: 'radunna.svg',
+  رحها: 'rahimaha.svg',
+  رحهما: 'rahimahuma.svg',
+  رحهم: 'rahimahum.svg',
+  رحهن: 'rahimahunna.svg',
+  جل: 'jal.svg',
+  عز: 'awj.svg',
+  سبح: 'swt.svg',
+  تبارك: 'twt.svg',
+  حف: 'haf.svg',
 }
 
 function TocTitle({ title }: { title: string }) {
-  const parts = title.split(/\(\s*(صلى الله عليه وسلم|ﷺ|صلى الله عليه و آله|صا|ص|عليه الصلاة والسلام|عليه السلام|عليها السلام|عليهم السلام|ع|رضي الله عنهما|رضي الله عنهم|رضي الله عنهن|رضي الله عنها|رضي الله عنه|رضهما|رضهم|رضهن|رضها|رض|رحمهما الله|رحمهم الله|رحمهن الله|رحمها الله|رحمه الله|رحهما|رحهم|رحهن|رحها|رح|جل جلاله|عز وجل|جل وعلا|سبحانه وتعالى|تبارك وتعالى|جل|عز|سبح|تبارك|حفظه الله|حف)\s*\)/g)
-  return <>{parts.map((part, index) => {
-    const key = part.trim()
-    const file = tocHonorificFiles[key]
-    if (!file) return <span key={index}>{part}</span>
-    // A mask painted with `currentColor`, so the icon always has the same colour as the title (hover, active, dark mode).
-    const url = `url(${import.meta.env.BASE_URL}honorifics/${file})`
-    return <span key={index} role="img" aria-label={key} title={key} className="toc-honorific-icon mx-0.5 inline-block h-[1.35em] w-[1.35em] bg-current align-[-0.3em]" style={{ maskImage: url, WebkitMaskImage: url }} />
-  })}</>
+  const parts = title.split(
+    /\(\s*(صلى الله عليه وسلم|ﷺ|صلى الله عليه و آله|صا|ص|عليه الصلاة والسلام|عليه السلام|عليها السلام|عليهم السلام|ع|رضي الله عنهما|رضي الله عنهم|رضي الله عنهن|رضي الله عنها|رضي الله عنه|رضهما|رضهم|رضهن|رضها|رض|رحمهما الله|رحمهم الله|رحمهن الله|رحمها الله|رحمه الله|رحهما|رحهم|رحهن|رحها|رح|جل جلاله|عز وجل|جل وعلا|سبحانه وتعالى|تبارك وتعالى|جل|عز|سبح|تبارك|حفظه الله|حف)\s*\)/g,
+  )
+  return (
+    <>
+      {parts.map((part, index) => {
+        const key = part.trim()
+        const file = tocHonorificFiles[key]
+        if (!file) return <span key={index}>{part}</span>
+        // A mask painted with `currentColor`, so the icon always has the same colour as the title (hover, active, dark mode).
+        const url = `url(${import.meta.env.BASE_URL}honorifics/${file})`
+        return (
+          <span
+            key={index}
+            role="img"
+            aria-label={key}
+            title={key}
+            className="toc-honorific-icon mx-0.5 inline-block h-[1.35em] w-[1.35em] bg-current align-[-0.3em]"
+            style={{ maskImage: url, WebkitMaskImage: url }}
+          />
+        )
+      })}
+    </>
+  )
 }
 
-type TocBranchType =
-  | 'single'
-  | 'first'
-  | 'middle'
-  | 'last'
-  | 'continuation'
+type TocBranchType = 'single' | 'first' | 'middle' | 'last' | 'continuation' | 'empty'
 
 interface TocBranchProps extends SVGProps<SVGSVGElement> {
   type: TocBranchType
 }
 
-function TocBranch({
-  type,
-  className,
-  ...props
-}: TocBranchProps) {
+function TocBranch({ type, className, ...props }: TocBranchProps) {
   const pathProps: SVGProps<SVGPathElement> = {
     fill: 'none',
     stroke: 'var(--brand)',
@@ -60,6 +79,7 @@ function TocBranch({
     middle: 'M16 0 V24 M16 12 H2',
     continuation: 'M16 0 V24',
     last: 'M16 0 V12 H2',
+    empty: '',
   }
 
   return (
@@ -77,56 +97,41 @@ function TocBranch({
   )
 }
 
-function getParentIndex(items: TocItem[], index: number): number {
-  const current = items[index]
-  if (!current) return -1
+interface TocBranches {
+  types: TocBranchType[]
+  parentIndexes: number[]
+  hasFollowingSibling: boolean[]
+}
 
-  for (let i = index - 1; i >= 0; i--) {
-    const previous = items[i]
+function buildTocBranches(items: TocItem[]): TocBranches {
+  const types = Array<TocBranchType>(items.length).fill('single')
+  const parentIndexes = Array<number>(items.length).fill(-1)
+  const hasFollowingSibling = Array<boolean>(items.length).fill(false)
+  const stack: number[] = []
+  const siblingGroups = new Map<string, number[]>()
 
-    if (previous && previous.level < current.level) {
-      return i
-    }
+  items.forEach((item, index) => {
+    while (stack.length > 0 && items[stack[stack.length - 1]]!.level >= item.level) stack.pop()
+    const parentIndex = stack.at(-1) ?? -1
+    parentIndexes[index] = parentIndex
+    const key = `${parentIndex}:${item.level}`
+    siblingGroups.set(key, [...(siblingGroups.get(key) ?? []), index])
+    stack.push(index)
+  })
+
+  for (const siblings of siblingGroups.values()) {
+    siblings.forEach((index, position) => {
+      if (siblings.length === 1) return
+      if (position === 0) types[index] = 'first'
+      else if (position === siblings.length - 1) types[index] = 'last'
+      else types[index] = 'middle'
+      hasFollowingSibling[index] = position < siblings.length - 1
+    })
   }
 
-  return -1
+  return { types, parentIndexes, hasFollowingSibling }
 }
-
-function getBranchType(
-  items: TocItem[],
-  index: number,
-): TocBranchType {
-  const current = items[index]
-  if (!current) return 'single'
-
-  const parentIndex = getParentIndex(items, index)
-
-  const siblings = items
-    .map((item, itemIndex) => ({
-      item,
-      index: itemIndex,
-      parentIndex: getParentIndex(items, itemIndex),
-    }))
-    .filter(
-      ({ item, parentIndex: itemParentIndex }) =>
-        item.level === current.level &&
-        itemParentIndex === parentIndex,
-    )
-
-  const position = siblings.findIndex(
-    (sibling) => sibling.index === index,
-  )
-
-  if (siblings.length <= 1) return 'single'
-  if (position === 0) return 'first'
-  if (position === siblings.length - 1) return 'last'
-
-  return 'middle'
-}
-function useActiveHeading(
-  items: TocItem[],
-  enabled: boolean,
-): string | null {
+function useActiveHeading(items: TocItem[], enabled: boolean): string | null {
   const [active, setActive] = useState<string | null>(null)
 
   useEffect(() => {
@@ -150,9 +155,7 @@ function useActiveHeading(
           }
         }
 
-        const first = elements.find((element) =>
-          visible.has(element.id),
-        )
+        const first = elements.find((element) => visible.has(element.id))
 
         if (first) setActive(first.id)
       },
@@ -167,13 +170,7 @@ function useActiveHeading(
   return active
 }
 
-export function ArticleToc({
-  items,
-  variant,
-}: {
-  items: TocItem[]
-  variant: 'box' | 'side'
-}) {
+export function ArticleToc({ items, variant }: { items: TocItem[]; variant: 'box' | 'side' }) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const active = useActiveHeading(items, variant === 'side')
   const [expanded, setExpanded] = useState(false)
@@ -184,58 +181,61 @@ export function ArticleToc({
   const collapsible = items.length > TOC_COLLAPSED_COUNT
   const visibleItems = collapsible && !expanded ? items.slice(0, TOC_COLLAPSED_COUNT) : items
   const hiddenCount = items.length - TOC_COLLAPSED_COUNT
+  const branches = buildTocBranches(items)
 
   const list = (
     <>
-    <ul className="m-0 grid list-none gap-0 p-0">
-      {visibleItems.map((item, index) => {
-        const branchType = getBranchType(visibleItems, index)
-        const isChild = item.level > 2
+      <ul className="m-0 grid list-none gap-0 p-0">
+        {visibleItems.map((item, index) => {
+          const branchType = branches.types[index] ?? 'single'
+          const ancestorBranches = Array.from({ length: Math.max(0, item.level - 2) }, (_, depth) => {
+            let ancestorIndex = branches.parentIndexes[index] ?? -1
+            while (ancestorIndex >= 0 && items[ancestorIndex]?.level !== depth + 2) {
+              ancestorIndex = branches.parentIndexes[ancestorIndex] ?? -1
+            }
+            return ancestorIndex >= 0 && branches.hasFollowingSibling[ancestorIndex] ? 'continuation' : 'empty'
+          })
 
-        return (
-          <li
-            key={item.id}
-            className="flex min-w-0 items-stretch gap-2"
-          >
-            {isChild && (
-              <TocBranch
-                type="continuation"
-                className="-ms-1 w-6 shrink-0 self-stretch"
-              />
-            )}
+          return (
+            <li key={item.id} className="flex min-w-0 items-stretch gap-2">
+              {ancestorBranches.map((type, depth) => (
+                <TocBranch
+                  key={`${item.id}-ancestor-${depth}`}
+                  type={type}
+                  className="-ms-1 w-6 shrink-0 self-stretch"
+                />
+              ))}
 
-            <TocBranch
-              type={branchType}
-              className="-ms-1 w-6 shrink-0 self-stretch"
-            />
+              <TocBranch type={branchType} className="-ms-1 w-6 shrink-0 self-stretch" />
 
-            <a
-              href={`#${item.id}`}
-              aria-current={active === item.id ? 'location' : undefined}
-              className={clsx(
-                'min-w-0 flex-1 py-2 text-start text-sm no-underline transition-colors hover:text-[var(--brand)]',
-                active === item.id
-                  ? 'font-bold text-[var(--brand)]'
-                  : 'text-[var(--text-secondary)]',
-              )}
-            >
-              <TocTitle title={item.title} />
-            </a>
-          </li>
-        )
-      })}
-    </ul>
-    {collapsible && (
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((value) => !value)}
-        className="mt-2 inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 text-xs font-semibold text-[var(--brand)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--info)]"
-      >
-        {expanded ? 'نمایش کمتر' : `نمایش بیشتر (${hiddenCount.toLocaleString('fa-IR')} مورد دیگر)`}
-        <ChevronDown aria-hidden="true" className={clsx('size-3.5 transition-transform motion-reduce:transition-none', expanded && 'rotate-180')} />
-      </button>
-    )}
+              <a
+                href={`#${item.id}`}
+                aria-current={active === item.id ? 'location' : undefined}
+                className={clsx(
+                  'min-w-0 flex-1 py-2 text-start text-sm no-underline transition-colors hover:text-[var(--brand)]',
+                  active === item.id ? 'font-bold text-[var(--brand)]' : 'text-[var(--text-secondary)]',
+                )}
+              >
+                <TocTitle title={item.title} />
+              </a>
+            </li>
+          )
+        })}
+      </ul>
+      {collapsible && (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          className="mt-2 inline-flex items-center gap-1 rounded-[var(--radius-sm)] px-1 py-1 text-xs font-semibold text-[var(--brand)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--info)]"
+        >
+          {expanded ? 'نمایش کمتر' : `نمایش بیشتر (${hiddenCount.toLocaleString('fa-IR')} مورد دیگر)`}
+          <ChevronDown
+            aria-hidden="true"
+            className={clsx('size-3.5 transition-transform motion-reduce:transition-none', expanded && 'rotate-180')}
+          />
+        </button>
+      )}
     </>
   )
 
@@ -246,17 +246,11 @@ export function ArticleToc({
         className="article-toc rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] lg:border-0 lg:bg-transparent"
       >
         <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-start text-sm font-bold lg:cursor-default lg:px-0">
-          <BookOpen
-            aria-hidden="true"
-            className="size-4 text-[var(--brand)]"
-          />
+          <BookOpen aria-hidden="true" className="size-4 text-[var(--brand)]" />
           در این صفحه
         </summary>
 
-        <nav
-          aria-label="فهرست مطالب"
-          className="px-4 pb-4 lg:px-0"
-        >
+        <nav aria-label="فهرست مطالب" className="px-4 pb-4 lg:px-0">
           {list}
         </nav>
       </details>
@@ -269,17 +263,11 @@ export function ArticleToc({
       className="article-toc my-6 overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-strong)] bg-[var(--surface)]"
     >
       <summary className="flex cursor-pointer list-none items-center gap-2 bg-[var(--surface-alt)] px-4 py-3 text-start text-sm font-bold text-[var(--text)]">
-        <BookOpen
-          aria-hidden="true"
-          className="size-4 text-[var(--brand)]"
-        />
+        <BookOpen aria-hidden="true" className="size-4 text-[var(--brand)]" />
         نگاه کلی به مطالب
       </summary>
 
-      <nav
-        aria-label="فهرست مطالب"
-        className="px-4 py-3"
-      >
+      <nav aria-label="فهرست مطالب" className="px-4 py-3">
         {list}
       </nav>
     </details>

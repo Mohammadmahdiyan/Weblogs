@@ -2,17 +2,15 @@ import { spawn, spawnSync } from 'node:child_process'
 import { watch, type FSWatcher } from 'node:fs'
 import { mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
-import {
-  exists,
-  isTestFolder,
-  projectRoot,
-  readDates,
-  runContentBuild,
-  today,
-  writeDates,
-} from './lib/blog.ts'
+import { exists, isTestFolder, projectRoot, readDates, runContentBuild, today, writeDates } from './lib/blog.ts'
 import { pushBlogChanges } from './lib/git.ts'
 import { allCollections, type Collection } from './lib/collections.ts'
+import {
+  articlePathSlug,
+  discoverArticleDirectories,
+  discoverContentDirectories,
+  englishFolderName,
+} from './lib/content-path.ts'
 
 type Snapshot = Map<string, string>
 const watchers: FSWatcher[] = []
@@ -22,8 +20,7 @@ let rerunRequested = false
 let snapshots: Snapshot = new Map()
 
 async function articleDirectories(collection: Collection): Promise<string[]> {
-  const entries = await readdir(collection.root, { withFileTypes: true }).catch(() => [])
-  return entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(collection.root, entry.name))
+  return discoverArticleDirectories(collection.root)
 }
 
 async function signature(directory: string): Promise<string> {
@@ -50,7 +47,7 @@ async function takeSnapshots(): Promise<Snapshot> {
   const result: Snapshot = new Map()
   for (const collection of allCollections) {
     for (const directory of await articleDirectories(collection)) {
-      result.set(`${collection.id}/${path.basename(directory)}`, await signature(directory))
+      result.set(`${collection.id}/${articlePathSlug(collection.root, directory)}`, await signature(directory))
     }
   }
   return result
@@ -65,22 +62,47 @@ function isTrackedArticle(collection: Collection, slug: string): boolean {
   return result.status === 0
 }
 
-async function registerUnregisteredBlogs(): Promise<boolean> {
+async function registerUnregisteredArticles(): Promise<boolean> {
   let anyChanged = false
   for (const collection of allCollections) {
     const dates = await readDates(collection.datesFile)
     let changed = false
-    for (const directory of await articleDirectories(collection)) {
-      const slug = path.basename(directory)
-      if (isTestFolder(slug) || dates[slug] || !(await exists(path.join(directory, 'index.md')))) continue
+    for (const directory of await discoverContentDirectories(collection.root)) {
+      const slug = articlePathSlug(collection.root, directory)
+      const route = `/${collection.id}/${slug}`
+      const existing = dates[slug]
+      const hasIndex = await exists(path.join(directory, 'index.md'))
+      const name = existing?.name ?? englishFolderName(slug)
+
+      if (!hasIndex) {
+        if (!existing || existing.name !== name || existing.route !== route) {
+          dates[slug] = { ...existing, name, route }
+          changed = true
+        }
+        continue
+      }
+
+      if (existing?.date) {
+        if (existing.name !== name || existing.route !== route) {
+          dates[slug] = { ...existing, name, route }
+          changed = true
+        }
+        continue
+      }
+
       const info = await stat(path.join(directory, 'index.md'))
       const fileDate = Number.isNaN(info.mtimeMs) ? today() : info.mtime.toISOString().slice(0, 10)
-      // Files already tracked by Git are existing live items; new untracked folders stay incomplete.
       const completed = isTrackedArticle(collection, slug)
-      dates[slug] = { date: fileDate, updated: fileDate, completed, published: false }
+      const legacy = dates[path.basename(directory)]
+      dates[slug] = {
+        ...(legacy?.date ? legacy : { date: fileDate, updated: fileDate, completed, published: false }),
+        name: name,
+        route,
+      }
       console.log(`ℹ Automatically registered new ${collection.id === 'books' ? 'book' : 'article'}: ${slug}`)
       changed = true
     }
+
     if (changed) await writeDates(dates, collection.datesFile)
     anyChanged ||= changed
   }
@@ -96,7 +118,7 @@ async function processChanges(): Promise<void> {
   try {
     const before = snapshots
     const after = await takeSnapshots()
-    const registryChanged = await registerUnregisteredBlogs()
+    const registryChanged = await registerUnregisteredArticles()
     const completedChanged: { collection: Collection; slug: string }[] = []
 
     for (const collection of allCollections) {
@@ -107,9 +129,9 @@ async function processChanges(): Promise<void> {
         const slug = key.slice(collection.id.length + 1)
         const previousSignature = before.get(key)
         if (previousSignature === undefined || previousSignature === currentSignature || isTestFolder(slug)) continue
-        const current = dates[slug]
+        const current = dates[slug] ?? dates[path.basename(slug)]
         if (current?.completed) {
-          dates[slug] = { ...current, updated: today() }
+          dates[slug] = { ...current, updated: today(), route: `/${collection.id}/${slug}` }
           completedChanged.push({ collection, slug })
           touched = true
         }
@@ -123,11 +145,15 @@ async function processChanges(): Promise<void> {
         console.error('✖ Automatic content rebuild failed; no automatic push was attempted.')
       } else if (completedChanged.length > 0) {
         for (const collection of allCollections) {
-          const names = [...new Set(completedChanged.filter((item) => item.collection === collection).map((item) => item.slug))].sort()
+          const names = [
+            ...new Set(completedChanged.filter((item) => item.collection === collection).map((item) => item.slug)),
+          ].sort()
           if (names.length === 0) continue
           console.log(`✔ Updated modification date automatically (${collection.id}): ${names.join(', ')}`)
           if (!pushBlogChanges(`auto-update: ${names.join(', ')}`, names, collection.id)) {
-            console.error('✖ Automatic push failed. The changes remain local; fix Git authentication/branch and push manually.')
+            console.error(
+              '✖ Automatic push failed. The changes remain local; fix Git authentication/branch and push manually.',
+            )
           }
         }
       }
@@ -158,7 +184,7 @@ async function main(): Promise<void> {
   for (const collection of allCollections) {
     if (!(await exists(collection.root))) await mkdir(collection.root, { recursive: true })
   }
-  await registerUnregisteredBlogs()
+  await registerUnregisteredArticles()
   if (!runContentBuild()) throw new Error('Initial content build failed.')
   snapshots = await takeSnapshots()
 
@@ -167,7 +193,9 @@ async function main(): Promise<void> {
     watcher.on('error', (error) => console.error(`✖ File watcher error (${collection.id}): ${error.message}`))
     watchers.push(watcher)
   }
-  console.log('👀 Watching content/blog and content/books. Completed items update their date and push to GitHub after each saved change.')
+  console.log(
+    '👀 Watching content/books and content/media recursively. Completed items update their date and push to GitHub after each saved change.',
+  )
 
   const viteEntry = path.join(projectRoot, 'node_modules', 'vite', 'bin', 'vite.js')
   const vite = spawn(process.execPath, [viteEntry, ...process.argv.slice(2)], {

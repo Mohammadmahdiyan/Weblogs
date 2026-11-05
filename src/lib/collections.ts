@@ -1,28 +1,35 @@
-import articlesJson from '../generated/articles.json'
-import searchJson from '../generated/search-index.json'
-import hiddenJson from '../generated/hidden.json'
-import { articleBodies } from '../generated/bodies'
+import mediaJson from '../generated/media.json'
+import mediaFoldersJson from '../generated/media-folders.json'
+import mediaSearchJson from '../generated/media-search-index.json'
+import mediaHiddenJson from '../generated/media-hidden.json'
+import { mediaBodies } from '../generated/media-bodies'
 import booksJson from '../generated/books.json'
+import booksFoldersJson from '../generated/books-folders.json'
 import booksSearchJson from '../generated/books-search-index.json'
 import booksHiddenJson from '../generated/books-hidden.json'
 import { bookBodies } from '../generated/books-bodies'
+import mediaStoryJson from '../generated/media-story.json'
+import booksStoryJson from '../generated/books-story.json'
 import type { ArticleMeta, SearchEntry } from './types'
+import type { StoryData } from './story'
 
-export type CollectionId = 'blog' | 'books'
+export type CollectionId = 'media' | 'books'
 type BodyLoaders = Record<string, () => Promise<{ default: string }>>
 
 /** Everything the pages need to show one collection (the blog's articles, or the books). */
 export interface SiteCollection {
   id: CollectionId
   /** URL prefix: items live at `${route}/<slug>`, the list at `route` (the blog list is the home page). */
-  route: '/blog' | '/books'
+  route: '/media' | '/books'
   /** Address of the list page. */
   listPath: string
   /** Newest first. */
   items: ArticleMeta[]
+  folderNames: Record<string, string>
   searchIndex: SearchEntry[]
   bodies: BodyLoaders
   hidden: string[]
+  story: StoryData | null
   /** Texts that differ between the collections. */
   text: {
     pageTitle: string
@@ -44,28 +51,30 @@ export interface SiteCollection {
 const newestFirst = (items: ArticleMeta[]) => [...items].sort((first, second) => second.date.localeCompare(first.date))
 
 export const siteCollections: Record<CollectionId, SiteCollection> = {
-  blog: {
-    id: 'blog',
-    route: '/blog',
-    listPath: '/',
-    items: newestFirst(articlesJson as ArticleMeta[]),
-    searchIndex: searchJson as SearchEntry[],
-    bodies: articleBodies,
-    hidden: hiddenJson as string[],
+  media: {
+    id: 'media',
+    route: '/media',
+    listPath: '/media',
+    items: newestFirst(mediaJson as ArticleMeta[]),
+    folderNames: mediaFoldersJson as Record<string, string>,
+    searchIndex: mediaSearchJson as SearchEntry[],
+    bodies: mediaBodies,
+    hidden: mediaHiddenJson as string[],
+    story: mediaStoryJson as StoryData | null,
     text: {
-      pageTitle: '',
-      pageDescription: '',
-      listHeading: 'همه مقاله‌ها',
-      empty: 'هنوز مقاله‌ای منتشر نشده است.',
-      searchLabel: 'جست‌وجوی مقاله',
-      breadcrumb: 'همه مقاله‌ها',
+      pageTitle: 'رسانه‌ها',
+      pageDescription: 'مقاله‌ها، ویدیوها و رسانه‌های آموزشی.',
+      listHeading: 'همه رسانه‌ها',
+      empty: 'هنوز محتوایی اضافه نشده است.',
+      searchLabel: 'جست‌وجوی رسانه',
+      breadcrumb: 'رسانه‌ها',
       latest: 'جدیدترین نوشته‌ها',
       previous: 'مقالات پیشین',
       next: 'مقالات بعدی',
       related: 'مقالات مرتبط',
       newer: 'مقاله جدیدتر',
       older: 'مقاله قدیمی‌تر',
-      notFoundTitle: 'مقاله پیدا نشد',
+      notFoundTitle: 'محتوا پیدا نشد',
     },
   },
   books: {
@@ -73,9 +82,11 @@ export const siteCollections: Record<CollectionId, SiteCollection> = {
     route: '/books',
     listPath: '/books',
     items: newestFirst(booksJson as ArticleMeta[]),
+    folderNames: booksFoldersJson as Record<string, string>,
     searchIndex: booksSearchJson as SearchEntry[],
     bodies: bookBodies,
     hidden: booksHiddenJson as string[],
+    story: booksStoryJson as StoryData | null,
     text: {
       pageTitle: 'کتاب‌ها',
       pageDescription: 'کتاب‌های معرفی‌شده و منابع مطالعه؛ در عنوان و متن کتاب‌ها جست‌وجو کنید.',
@@ -96,7 +107,8 @@ export const siteCollections: Record<CollectionId, SiteCollection> = {
 
 /** The text of one book page (published as a plain file by the build, so a book can have thousands of pages). */
 export async function fetchBookPage(slug: string, page: number): Promise<string> {
-  const response = await fetch(`${import.meta.env.BASE_URL}content-books/${encodeURIComponent(slug)}/pages/${page}.md`)
+  const encodedSlug = slug.split('/').map(encodeURIComponent).join('/')
+  const response = await fetch(`${import.meta.env.BASE_URL}books-media/${encodedSlug}/pages/${page}.md`)
   if (!response.ok) throw new Error(`page ${page} of ${slug}: HTTP ${response.status}`)
   return response.text()
 }

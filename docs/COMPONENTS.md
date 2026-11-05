@@ -2,6 +2,24 @@
 
 Markdown directives are converted into accessible React components. Attribute names accept kebab-case; boolean attributes such as `open`, `checked`, and `faq` need no value. All components inherit colors, surfaces, borders, and radii from the CSS theme tokens.
 
+## Links to article sections
+
+Every Markdown heading gets an automatic link target. Link to it with the heading text, lowercased and with spaces replaced by hyphens:
+
+```md
+## دلیل پاسخ
+
+[رفتن به دلیل پاسخ](#دلیل-پاسخ)
+```
+
+For a section in another article, include its article path before the fragment:
+
+```md
+[دلیل پاسخ در مقاله‌ی دیگر](/media/lives-nour/spider-house/example#دلیل-پاسخ)
+```
+
+The small link icon beside a rendered heading reveals the exact URL. If a heading is repeated, later IDs receive `-1`, `-2`, and so on; use the icon's URL to get the right one.
+
 ## Accordion and FAQ
 
 ```md
@@ -211,6 +229,7 @@ show an «محتوای خارجی» notice above the frame.
 
 `grade`: `sahih` (صحیح), `hasan` (حسن), `daif` (ضعیف), `mawdu` (موضوع), `unknown`.
 Optional `lang="ar" dir="rtl"` for Arabic text.
+When the article is copied for Telegram, the quoted text is formatted as copyable inline code and the `url` is kept as a clickable «مشاهده در منبع» link.
 
 ### Which one should I use?
 
@@ -308,4 +327,3 @@ Nested `:::` containers only work when the outer one has more colons than the in
 ```
 
 The modal opens above the page (not clipped by the accordion), closes with Escape or a click outside, and returns focus to its button. A modal's own title is no longer mistaken for an extra FAQ question in the page's structured data.
-

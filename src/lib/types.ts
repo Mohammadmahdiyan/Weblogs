@@ -23,6 +23,9 @@ export interface BookPageMeta {
 
 export interface ArticleMeta {
   slug: string
+  category?: string
+  /** Folder-derived name for directory cards; editors may override it in the category JSON registry. */
+  name?: string
   title: string
   description: string
   date: string

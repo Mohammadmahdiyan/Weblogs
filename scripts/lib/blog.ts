@@ -23,19 +23,19 @@ import { normalizeSources, type SourceItem } from '../../src/lib/sources.ts'
 import { validateCoverEmbed, validateDir, validateLang } from './validators.ts'
 
 export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
-export const blogRoot = path.join(projectRoot, 'content', 'blog')
-export const datesFile = path.join(projectRoot, 'content', 'blog-dates.json')
+export const blogRoot = path.join(projectRoot, 'content', 'media')
+export const datesFile = path.join(projectRoot, 'content', 'media.json')
 
 /** Folders that start with `_` are test blogs: shown in development only, never built for production. */
 export function isTestFolder(name: string): boolean {
-  return name.startsWith('_')
+  return name.split(/[\\/]/).some((part) => part.startsWith('_'))
 }
 
 /** The folder name is the URL: lowercase letters, digits, `-` and `_` only. */
 export function validateFolderName(name: string): string {
   if (!/^_?[a-z0-9][a-z0-9_-]*$/.test(name)) {
     throw new Error(
-      `folder name "${name}" is not URL-safe: use only lowercase a-z, 0-9, "-" and "_" (the folder name becomes /blog/<name>). Rename the folder and try again.`,
+      `folder name "${name}" is not URL-safe: use only lowercase a-z, 0-9, "-" and "_" (folder segments are part of the category route). Rename the folder and try again.`,
     )
   }
   return name
@@ -60,15 +60,18 @@ export function today(): string {
 // ───────────────────────── dates registry ─────────────────────────
 
 export interface BlogDates {
-  date: string
-  updated: string
+  date?: string
+  updated?: string
   /** Whether the author has explicitly finished the article. Legacy entries count as complete. */
-  completed: boolean
+  completed?: boolean
   /**
    * true only after `npm run publishBlog -- <folder>`. Every article without it (new or old) ends with the
    * «not finished yet» notice. Entries written before this flag existed count as NOT published.
    */
-  published: boolean
+  published?: boolean
+  /** Optional display name and canonical route used by nested content listings. */
+  name?: string
+  route?: string
 }
 export type DatesRegistry = Record<string, BlogDates>
 
@@ -88,7 +91,9 @@ export async function readDates(file: string = datesFile): Promise<DatesRegistry
   try {
     parsed = JSON.parse(raw)
   } catch (error) {
-    throw new Error(`${name} is not valid JSON. It is maintained by the blog commands; fix or delete it.`, { cause: error })
+    throw new Error(`${name} is not valid JSON. It is maintained by the blog commands; fix or delete it.`, {
+      cause: error,
+    })
   }
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     throw new Error(`${name} must be an object of { "<folder>": { "date", "updated" } }`)
@@ -97,16 +102,30 @@ export async function readDates(file: string = datesFile): Promise<DatesRegistry
   const registry: DatesRegistry = {}
   for (const [slug, value] of Object.entries(parsed as Record<string, unknown>)) {
     const entry = value as Partial<BlogDates> | null
-    if (!entry || typeof entry.date !== 'string' || !isoDate.test(entry.date)) {
-      throw new Error(`${name}: "${slug}" needs "date": "YYYY-MM-DD"`)
+    if (!entry || typeof entry !== 'object') {
+      throw new Error(`${name}: "${slug}" must be an object`)
+    }
+    const hasDate = typeof entry.date === 'string'
+    if (hasDate && !isoDate.test(entry.date!)) {
+      throw new Error(`${name}: "${slug}" has an invalid "date"; expected YYYY-MM-DD`)
+    }
+    if (!hasDate && (typeof entry.name !== 'string' || typeof entry.route !== 'string')) {
+      throw new Error(`${name}: "${slug}" needs a date or both "name" and "route"`)
+    }
+    if (entry.completed !== undefined && typeof entry.completed !== 'boolean') {
+      throw new Error(`${name}: "${slug}" has an invalid "completed" value`)
+    }
+    if (entry.published !== undefined && typeof entry.published !== 'boolean') {
+      throw new Error(`${name}: "${slug}" has an invalid "published" value`)
     }
     const updated = typeof entry.updated === 'string' && isoDate.test(entry.updated) ? entry.updated : entry.date
     registry[slug] = {
-      date: entry.date,
-      updated,
-      // Existing registry entries predate this flag and should keep their current behavior.
-      completed: typeof entry.completed === 'boolean' ? entry.completed : true,
-      published: entry.published === true,
+      ...(entry.date ? { date: entry.date } : {}),
+      ...(updated ? { updated } : {}),
+      ...(entry.completed !== undefined ? { completed: entry.completed } : entry.date ? { completed: true } : {}),
+      ...(entry.published !== undefined ? { published: entry.published } : entry.date ? { published: false } : {}),
+      ...(typeof entry.name === 'string' ? { name: entry.name } : {}),
+      ...(typeof entry.route === 'string' ? { route: entry.route } : {}),
     }
   }
   return registry
@@ -193,7 +212,19 @@ export interface ParsedBlog {
 }
 
 const SOURCE_KEYS = ['sources', 'source', 'منابع', 'منبع']
-const knownKeys = new Set(['tags', 'suggestions', 'description', 'readingTime', 'cover', 'coverEmbed', 'lang', 'dir', 'adult', 'show', ...SOURCE_KEYS])
+const knownKeys = new Set([
+  'tags',
+  'suggestions',
+  'description',
+  'readingTime',
+  'cover',
+  'coverEmbed',
+  'lang',
+  'dir',
+  'adult',
+  'show',
+  ...SOURCE_KEYS,
+])
 
 /** Parses and validates one article file. Throws an Error whose message starts with `label`. */
 export function parseBlog(source: string, label: string): ParsedBlog {
@@ -201,13 +232,18 @@ export function parseBlog(source: string, label: string): ParsedBlog {
   try {
     parsed = matter(source)
   } catch (error) {
-    throw new Error(`${label}: invalid frontmatter (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`, { cause: error })
+    throw new Error(
+      `${label}: invalid frontmatter (${error instanceof Error ? error.message.split('\n')[0] : String(error)})`,
+      { cause: error },
+    )
   }
   const data = parsed.data as Record<string, unknown>
 
   const split = splitTitle(parsed.content)
   if (!split) {
-    throw new Error(`${label}: no title found. The first line that starts with "# " is the blog name, e.g. "# عنوان مقاله".`)
+    throw new Error(
+      `${label}: no title found. The first line that starts with "# " is the blog name, e.g. "# عنوان مقاله".`,
+    )
   }
 
   const tags = stringList(data, 'tags', label)
@@ -240,8 +276,13 @@ export function parseBlog(source: string, label: string): ParsedBlog {
     body: split.body,
     tags,
     suggestions: suggestions.length > 0 ? suggestions : [split.title],
-    sources: normalizeSources(SOURCE_KEYS.map((key) => data[key]).find((value) => value !== undefined), label),
-    ...(typeof data.description === 'string' && data.description.trim() ? { description: data.description.trim() } : {}),
+    sources: normalizeSources(
+      SOURCE_KEYS.map((key) => data[key]).find((value) => value !== undefined),
+      label,
+    ),
+    ...(typeof data.description === 'string' && data.description.trim()
+      ? { description: data.description.trim() }
+      : {}),
     ...(typeof data.readingTime === 'number' ? { readingTime: data.readingTime } : {}),
     ...(typeof data.cover === 'string' ? { cover: data.cover } : {}),
     ...optional('coverEmbed', validateCoverEmbed(data.coverEmbed, label)),
@@ -264,8 +305,9 @@ function optional<Key extends string, Value>(key: Key, value: Value | undefined)
 export function runContentBuild(): boolean {
   console.log('→ npm run content (validating and regenerating site data)…')
   // On Windows npm is a .cmd file, which only a shell can start; a single command string needs no argument quoting.
-  const result = process.platform === 'win32'
-    ? spawnSync('npm run content', { cwd: projectRoot, stdio: 'inherit', shell: true })
-    : spawnSync('npm', ['run', 'content'], { cwd: projectRoot, stdio: 'inherit' })
+  const result =
+    process.platform === 'win32'
+      ? spawnSync('npm run content', { cwd: projectRoot, stdio: 'inherit', shell: true })
+      : spawnSync('npm', ['run', 'content'], { cwd: projectRoot, stdio: 'inherit' })
   return result.status === 0
 }
