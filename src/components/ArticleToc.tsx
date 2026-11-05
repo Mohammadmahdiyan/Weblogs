@@ -3,6 +3,7 @@ import { BookOpen, ChevronDown } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { SVGProps } from 'react'
 import type { TocItem } from '../lib/toc'
+import { buildTocBranches, type TocBranchType } from '../lib/tocBranches'
 import { useMediaQuery } from '../lib/useMediaQuery'
 
 /** Tables of contents longer than this show only the first items until «نمایش بیشتر» is pressed. */
@@ -57,8 +58,6 @@ function TocTitle({ title }: { title: string }) {
   )
 }
 
-type TocBranchType = 'single' | 'first' | 'middle' | 'last' | 'continuation' | 'empty'
-
 interface TocBranchProps extends SVGProps<SVGSVGElement> {
   type: TocBranchType
 }
@@ -77,9 +76,7 @@ function TocBranch({ type, className, ...props }: TocBranchProps) {
     single: 'M16 12 H2',
     first: 'M16 24 V12 H2',
     middle: 'M16 0 V24 M16 12 H2',
-    continuation: 'M16 0 V24',
     last: 'M16 0 V12 H2',
-    empty: '',
   }
 
   return (
@@ -97,40 +94,6 @@ function TocBranch({ type, className, ...props }: TocBranchProps) {
   )
 }
 
-interface TocBranches {
-  types: TocBranchType[]
-  parentIndexes: number[]
-  hasFollowingSibling: boolean[]
-}
-
-function buildTocBranches(items: TocItem[]): TocBranches {
-  const types = Array<TocBranchType>(items.length).fill('single')
-  const parentIndexes = Array<number>(items.length).fill(-1)
-  const hasFollowingSibling = Array<boolean>(items.length).fill(false)
-  const stack: number[] = []
-  const siblingGroups = new Map<string, number[]>()
-
-  items.forEach((item, index) => {
-    while (stack.length > 0 && items[stack[stack.length - 1]]!.level >= item.level) stack.pop()
-    const parentIndex = stack.at(-1) ?? -1
-    parentIndexes[index] = parentIndex
-    const key = `${parentIndex}:${item.level}`
-    siblingGroups.set(key, [...(siblingGroups.get(key) ?? []), index])
-    stack.push(index)
-  })
-
-  for (const siblings of siblingGroups.values()) {
-    siblings.forEach((index, position) => {
-      if (siblings.length === 1) return
-      if (position === 0) types[index] = 'first'
-      else if (position === siblings.length - 1) types[index] = 'last'
-      else types[index] = 'middle'
-      hasFollowingSibling[index] = position < siblings.length - 1
-    })
-  }
-
-  return { types, parentIndexes, hasFollowingSibling }
-}
 function useActiveHeading(items: TocItem[], enabled: boolean): string | null {
   const [active, setActive] = useState<string | null>(null)
 
@@ -188,13 +151,7 @@ export function ArticleToc({ items, variant }: { items: TocItem[]; variant: 'box
       <ul className="m-0 grid list-none gap-0 p-0">
         {visibleItems.map((item, index) => {
           const branchType = branches.types[index] ?? 'single'
-          const ancestorBranches = Array.from({ length: Math.max(0, item.level - 2) }, (_, depth) => {
-            let ancestorIndex = branches.parentIndexes[index] ?? -1
-            while (ancestorIndex >= 0 && items[ancestorIndex]?.level !== depth + 2) {
-              ancestorIndex = branches.parentIndexes[ancestorIndex] ?? -1
-            }
-            return ancestorIndex >= 0 && branches.hasFollowingSibling[ancestorIndex] ? 'continuation' : 'empty'
-          })
+          const ancestorBranches = branches.ancestorTypes[index] ?? []
 
           return (
             <li key={item.id} className="flex min-w-0 items-stretch gap-2">
