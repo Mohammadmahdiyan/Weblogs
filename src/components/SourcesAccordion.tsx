@@ -1,10 +1,13 @@
 import { ChevronDown, ExternalLink } from 'lucide-react'
+import { parseYouTubeId } from '../lib/embed'
 import { classifySource, sourceText, type SourceItem } from '../lib/sources'
+import { SafeEmbed } from './mdx/SafeEmbed'
 
 /**
  * The article's `sources:` (frontmatter) as one accordion at its end, closed until opened:
  *   منبع ▾   →   [ویدیو یوتیوب]  youtube.com/watch?v=…
- * A picture source also shows a small preview; a source without an address is plain text.
+ * A YouTube video is shown as the same click-to-play box as `::youtube{…}` (its title, if given, under the box);
+ * a picture source shows a small preview; a source without an address is plain text.
  */
 export function SourcesAccordion({ sources }: { sources: SourceItem[] }) {
   if (sources.length === 0) return null
@@ -19,9 +22,12 @@ export function SourcesAccordion({ sources }: { sources: SourceItem[] }) {
       <ul className="m-0 grid list-none gap-3 border-t border-[var(--border-light)] p-4">
         {sources.map((source) => {
           const info = classifySource(source)
+          const isVideo = source.url !== undefined && parseYouTubeId(source.url) !== null
           return (
             <li key={source.url ?? source.title} className="grid min-w-0 gap-2 text-start">
-              {source.url ? (
+              {isVideo ? (
+                <SafeEmbed directiveName="youtube" url={source.url} {...(source.title ? { title: source.title, caption: source.title } : {})} />
+              ) : source.url ? (
                 <a href={source.url} target="_blank" rel="noopener noreferrer" className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[var(--info)] no-underline hover:underline">
                   <span className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-2 py-0.5 text-xs font-bold text-[var(--text-secondary)]">{info.label}</span>
                   <span dir="auto" className="min-w-0 break-all text-sm">{sourceText(source)}</span>
