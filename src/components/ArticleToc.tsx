@@ -74,6 +74,7 @@ function TocBranch({ type, className, ...props }: TocBranchProps) {
   // The SVG is stretched to the height of its row, so y=12 (the middle of the viewBox) is always the middle of the text.
   const paths: Record<TocBranchType, string> = {
     single: 'M16 12 H2',
+    'nested-single': 'M16 0 V24 M16 12 H2',
     first: 'M16 24 V12 H2',
     middle: 'M16 0 V24 M16 12 H2',
     last: 'M16 0 V12 H2',

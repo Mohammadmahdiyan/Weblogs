@@ -1,6 +1,6 @@
 import type { TocItem } from './toc.ts'
 
-export type TocBranchType = 'single' | 'first' | 'middle' | 'last'
+export type TocBranchType = 'single' | 'nested-single' | 'first' | 'middle' | 'last'
 
 export interface TocBranches {
   types: TocBranchType[]
@@ -24,8 +24,9 @@ export function buildTocBranches(items: TocItem[]): TocBranches {
 
   for (const siblings of siblingGroups.values()) {
     siblings.forEach((index, position) => {
-      if (siblings.length === 1) return
-      if (position === 0) types[index] = 'first'
+      if (siblings.length === 1) {
+        if (parentIndexes[index] >= 0) types[index] = 'nested-single'
+      } else if (position === 0) types[index] = 'first'
       else if (position === siblings.length - 1) types[index] = 'last'
       else types[index] = 'middle'
     })
@@ -35,7 +36,8 @@ export function buildTocBranches(items: TocItem[]): TocBranches {
     const ancestors: TocBranchType[] = []
     let ancestorIndex = parentIndexes[index] ?? -1
     while (ancestorIndex >= 0) {
-      ancestors.unshift(types[ancestorIndex] ?? 'single')
+      const ancestorType = types[ancestorIndex] ?? 'single'
+      ancestors.unshift(ancestorType === 'single' ? 'nested-single' : ancestorType)
       ancestorIndex = parentIndexes[ancestorIndex] ?? -1
     }
     return ancestors
