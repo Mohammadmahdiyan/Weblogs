@@ -47,8 +47,7 @@ Atheism
 | --- | --- |
 | [مقدمه](/Weblogs/books/alhad-noven-part1) | — |
 | [مقالاتی در رد الحاد](/Weblogs/books/alhad-noven-part1/27) | ۲۷ |
-
-| [ در  ](/Weblogs/books/alhad-noven-part1/31#برداشت-نادرست-از-قضایا) | ۲۷ |
+| [  رد ](/Weblogs/books/alhad-noven-part1/31/#برداشت-نادرست-از-قضایا) | 31 |
 | [جوانان و دلایل گرایش به سمت بی خدایی](/Weblogs/books/alhad-noven-part1/37) | ۳۷ |
 | [کپی پیستهای غیر متفکرانه دلیل اسلام گریزی جوانان](/Weblogs/books/alhad-noven-part1/42) | ۴۲ |
 | [شک گرایی مقدمه ی رسیدن به آگاهی میباشد ولی.....](/Weblogs/books/alhad-noven-part1/50) | ۵۰ |
