@@ -1,4 +1,4 @@
-import type { Root as MdastRoot } from 'mdast'
+import type { Paragraph, Root as MdastRoot } from 'mdast'
 import type { Plugin } from 'unified'
 import { visit } from 'unist-util-visit'
 
@@ -7,7 +7,7 @@ import { visit } from 'unist-util-visit'
  * element). A plain `---` line is still the ordinary thematic break (<hr>). The text may use inline Markdown
  * (`**bold**`, links…). Needs a blank line before it, like any `---` line, or Markdown reads the line above as a heading.
  */
-export const remarkDividers: Plugin<[], MdastRoot> = () => (tree) => {
+export function markDividers(tree: MdastRoot): void {
   visit(tree, 'paragraph', (node) => {
     const first = node.children[0]
     const last = node.children[node.children.length - 1]
@@ -31,6 +31,11 @@ export const remarkDividers: Plugin<[], MdastRoot> = () => (tree) => {
     }
 
     node.children = node.children.filter((child) => !(child.type === 'text' && child.value === ''))
-    node.data = { ...node.data, hName: 'mdx-divider' }
+    // `hName` is how remark-rehype is told to make a different element (mdast's own type does not list it).
+    const data = (node.data ?? {}) as Record<string, unknown>
+    data.hName = 'mdx-divider'
+    node.data = data as Paragraph['data']
   })
 }
+
+export const remarkDividers: Plugin<[], MdastRoot> = () => markDividers

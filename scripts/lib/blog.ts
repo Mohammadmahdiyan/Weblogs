@@ -19,6 +19,7 @@ import { access, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
+import { normalizeSources, type SourceItem } from '../../src/lib/sources.ts'
 import { validateCoverEmbed, validateDir, validateLang } from './validators.ts'
 
 export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -175,6 +176,8 @@ export interface ParsedBlog {
   body: string
   tags: string[]
   suggestions: string[]
+  /** `sources:` (also `source:`, `منبع:`, `منابع:`): shown in an accordion at the end of the article. */
+  sources: SourceItem[]
   description?: string
   readingTime?: number
   cover?: string
@@ -189,7 +192,8 @@ export interface ParsedBlog {
   ignoredKeys: string[]
 }
 
-const knownKeys = new Set(['tags', 'suggestions', 'description', 'readingTime', 'cover', 'coverEmbed', 'lang', 'dir', 'adult', 'show'])
+const SOURCE_KEYS = ['sources', 'source', 'منابع', 'منبع']
+const knownKeys = new Set(['tags', 'suggestions', 'description', 'readingTime', 'cover', 'coverEmbed', 'lang', 'dir', 'adult', 'show', ...SOURCE_KEYS])
 
 /** Parses and validates one article file. Throws an Error whose message starts with `label`. */
 export function parseBlog(source: string, label: string): ParsedBlog {
@@ -236,6 +240,7 @@ export function parseBlog(source: string, label: string): ParsedBlog {
     body: split.body,
     tags,
     suggestions: suggestions.length > 0 ? suggestions : [split.title],
+    sources: normalizeSources(SOURCE_KEYS.map((key) => data[key]).find((value) => value !== undefined), label),
     ...(typeof data.description === 'string' && data.description.trim() ? { description: data.description.trim() } : {}),
     ...(typeof data.readingTime === 'number' ? { readingTime: data.readingTime } : {}),
     ...(typeof data.cover === 'string' ? { cover: data.cover } : {}),

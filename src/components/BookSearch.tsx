@@ -98,20 +98,23 @@ export function BookSearch({ bookSlug, pages }: { bookSlug: string; pages: BookP
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    // `contents`: this wrapper has no box of its own. The button sits in the page's breadcrumb row and the panel is
+    // positioned against that row (`relative` there), so on a phone it can use the row's full width.
+    <div ref={rootRef} className="contents">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        className="inline-flex min-h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)] sm:text-sm"
+        aria-label="جست‌وجو در متن کتاب" className="inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] border border-[var(--border-light)] bg-[var(--surface)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:border-[var(--brand)] hover:text-[var(--brand)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)] sm:text-sm"
       >
         <Search aria-hidden="true" className="size-4 shrink-0" />
-        جست‌وجو در کتاب
+        <span aria-hidden="true" className="sm:hidden">جست‌وجو</span>
+        <span aria-hidden="true" className="hidden sm:inline">جست‌وجو در کتاب</span>
       </button>
 
       {open && (
-        <div id={panelId} role="dialog" aria-label="جست‌وجو در متن کتاب" className="absolute end-0 top-full z-30 mt-2 w-[min(92vw,26rem)] rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-3 shadow-[var(--shadow-card)]">
+        <div id={panelId} role="dialog" aria-label="جست‌وجو در متن کتاب" className="absolute inset-x-0 top-full z-30 mt-2 rounded-[var(--radius-md)] sm:inset-x-auto sm:end-0 sm:w-[26rem] border border-[var(--border-light)] bg-[var(--surface)] p-3 shadow-[var(--shadow-card)]">
           <form onSubmit={(event) => event.preventDefault()} className="flex items-center gap-2">
             <Search aria-hidden="true" className="size-4 shrink-0 text-[var(--muted)]" />
             <input
@@ -121,6 +124,7 @@ export function BookSearch({ bookSlug, pages }: { bookSlug: string; pages: BookP
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="حداقل ۳ حرف بنویسید"
               aria-label="عبارت جست‌وجو در متن کتاب"
+              enterKeyHint="search"
               className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)] outline-none placeholder:text-[var(--muted)] focus-visible:border-[var(--brand)]"
             />
             <button type="button" onClick={() => setOpen(false)} aria-label="بستن" className="inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-secondary)] hover:bg-[var(--surface-alt)] focus-visible:outline-2 focus-visible:outline-[var(--info)]">

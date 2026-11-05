@@ -311,6 +311,7 @@ async function prepareArticle(articleDirectory: string, dates: DatesRegistry, co
     // Only `publishBlog` marks an article as published (old, new, test and unregistered articles alike).
     // Test folders (`_…`) are fixtures: they never carry the «not finished yet» notice.
     ...(registered?.published === true || isTestFolder(slug) ? {} : { incomplete: true }),
+    ...(blog.sources.length > 0 ? { sources: blog.sources } : {}),
     ...(pages.length > 0 ? { pages: pages.map((page) => ({ number: page.number, ...(page.title ? { title: page.title } : {}) })) } : {}),
   }
 

@@ -9,6 +9,7 @@ import { normalizeQuotes } from './quotes.ts'
 import { isEmoji } from './emojiRegistry.ts'
 import { splitInline } from './inline.ts'
 import { honorifics } from './honorifics.ts'
+import { markDividers } from './dividers.ts'
 
 /**
  * Article Markdown → text for Telegram.
@@ -44,8 +45,11 @@ type MediaKind = 'image' | 'video' | 'audio'
 
 type Inline =
   | string
-  /** A picture / video / sound is written as its file name (numbered when there are several of the same kind). */
-  | { kind: 'media'; media: MediaKind; name: string; number?: number }
+  /**
+   * A picture is written «عکس» (numbered «عکس اول، عکس دوم …» when there are several, the pasted text links to the
+   * picture); a video / sound is written as its file name (numbered when there are several of the same kind).
+   */
+  | { kind: 'media'; media: MediaKind; name: string; number?: number; href?: string }
   | { kind: 'b' | 'i' | 'u' | 's' | 'code' | 'spoiler'; children: Inline[] }
   | { kind: 'a'; href: string; children: Inline[] }
 
@@ -67,7 +71,7 @@ interface MdNode {
   alt?: string | null
   title?: string | null
   attributes?: Record<string, string | null | undefined>
-  data?: { hProperties?: Record<string, unknown> }
+  data?: { hName?: string; hProperties?: Record<string, unknown> }
   position?: { start: { offset?: number } }
   children?: MdNode[]
 }
@@ -79,6 +83,7 @@ function parse(markdown: string): MdNode {
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkDirective)
   const tree = processor.parse(prepareSource(markdown)) as unknown as MdNode
   transformChatMessages(tree as never)
+  markDividers(tree as never)
   return tree
 }
 
@@ -149,11 +154,28 @@ function fileName(url: string): string {
   }
 }
 
+/**
+ * Where a picture can be opened from Telegram: a full https address as it is, a site path (`/Weblogs/content/…`, already
+ * including the site's base folder) on the site's own domain. A relative file name (`./a.jpg`) has no address.
+ */
+function pictureHref(url: string): string | null {
+  if (/^https?:\/\//i.test(url)) return url
+  if (url.startsWith('/') && !url.startsWith('//')) {
+    try {
+      return `${new URL(siteConfig.siteUrl).origin}${url}`
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 /** A picture, video or sound cannot be pasted as text, so only the name of its file is written. */
 function mediaOf(url: string, fallback: string, kind?: MediaKind): Inline {
   const name = fileName(url) || fallback
   const media: MediaKind = kind ?? (VIDEO_FILE.test(name) ? 'video' : AUDIO_FILE.test(name) ? 'audio' : 'image')
-  return { kind: 'media', media, name }
+  const href = media === 'image' ? pictureHref(url) : null
+  return { kind: 'media', media, name, ...(href ? { href } : {}) }
 }
 
 function inlines(nodes: MdNode[] = []): Inline[] {
@@ -237,10 +259,16 @@ function listLines(list: MdNode, depth = 0): Inline[][] {
 
 const joinLines = (lines: Inline[][]): Inline[] => lines.flatMap((line, index) => (index ? ['\n', ...line] : line))
 
+/** Telegram has no horizontal line, so `---` becomes a long row of dashes (about the width of a message). */
+const DIVIDER_LINE = '-'.repeat(42)
+const DIVIDER_SIDE = '-'.repeat(14)
+
 function blocksOf(node: MdNode): Block[] {
   switch (node.type) {
     case 'paragraph': {
       const children = node.children ?? []
+      // `--- text ---`: the same line with the text in the middle.
+      if (node.data?.hName === 'mdx-divider') return text([DIVIDER_SIDE, ' ', ...trimEdges(inlines(children)), ' ', DIVIDER_SIDE])
       const onlyImages = children.some((child) => child.type === 'image') && children.every((child) => child.type === 'image' || (child.type === 'text' && !(child.value ?? '').trim()) || child.type === 'break')
       if (onlyImages) {
         const files = children.filter((child) => child.type === 'image').map((child): Inline => mediaOf(child.url ?? '', (child.alt ?? '').trim()))
@@ -255,7 +283,7 @@ function blocksOf(node: MdNode): Block[] {
     }
     case 'list': return text(joinLines(listLines(node)))
     case 'code': return [{ kind: 'pre', text: node.value ?? '' }]
-    case 'thematicBreak': return text(['———'])
+    case 'thematicBreak': return text([DIVIDER_LINE])
     case 'html': {
       const plain = (node.value ?? '').replace(/<[^>]*>/g, '').trim()
       return plain ? text([plain]) : []
@@ -307,11 +335,23 @@ function blocksOf(node: MdNode): Block[] {
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 const escapeAttribute = (value: string) => escapeHtml(value).replace(/"/g, '&quot;')
 
-const mediaLabel = (item: { name: string; number?: number }) => (item.number ? `${item.number}. ${item.name}` : item.name)
+const ORDINALS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم', 'یازدهم', 'دوازدهم', 'سیزدهم', 'چهاردهم', 'پانزدهم', 'شانزدهم', 'هفدهم', 'هجدهم', 'نوزدهم', 'بیستم']
+
+/** «عکس» / «عکس اول» / «عکس دوم»…; a video or sound keeps its file name. */
+function mediaLabel(item: { media: MediaKind; name: string; number?: number }): string {
+  if (item.media === 'image') {
+    if (!item.number) return 'عکس'
+    return `عکس ${ORDINALS[item.number - 1] ?? item.number.toLocaleString('fa-IR')}`
+  }
+  return item.number ? `${item.number}. ${item.name}` : item.name
+}
 
 function inlineHtml(item: Inline): string {
   if (typeof item === 'string') return escapeHtml(item).replace(/\n/g, '<br>')
-  if (item.kind === 'media') return escapeHtml(mediaLabel(item))
+  if (item.kind === 'media') {
+    const label = escapeHtml(mediaLabel(item))
+    return item.href ? `<a href="${escapeAttribute(item.href)}">${label}</a>` : label
+  }
   const inner = item.children.map(inlineHtml).join('')
   if (item.kind === 'a') return `<a href="${escapeAttribute(item.href)}">${inner}</a>`
   if (item.kind === 'spoiler') return `<tg-spoiler>${inner}</tg-spoiler>`

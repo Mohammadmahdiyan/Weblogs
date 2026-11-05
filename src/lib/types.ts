@@ -1,3 +1,5 @@
+import type { SourceItem } from './sources.ts'
+
 import type { EmbedProvider } from './embed.ts'
 
 export type { EmbedProvider }
@@ -37,6 +39,8 @@ export interface ArticleMeta {
   adult?: boolean
   /** true until the author runs `npm run publishBlog -- <name>`; the page then ends with a «not finished» notice. */
   incomplete?: boolean
+  /** Frontmatter `sources:` : shown at the end of the article. */
+  sources?: SourceItem[]
   /** Books only: the page files, ascending. Missing = a single-page book (just index.md). */
   pages?: BookPageMeta[]
 }

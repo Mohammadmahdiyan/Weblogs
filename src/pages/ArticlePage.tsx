@@ -6,6 +6,7 @@ import { fetchBookPage, siteCollections, type CollectionId, type SiteCollection 
 import { parsePageParam } from '../lib/bookPages'
 import { BookPagination } from '../components/BookPagination'
 import { BookSearch } from '../components/BookSearch'
+import { SourcesAccordion } from '../components/SourcesAccordion'
 import { buildToc } from '../lib/toc'
 import { FIND_INDEX_PARAM, FIND_PARAM, parseOccurrence } from '../lib/contentSearch'
 import { useFindInPage } from '../lib/findInPage'
@@ -209,7 +210,7 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
       <ArticleLayout sidebar={<ArticleSidebar articles={articles} article={article} collection={collection} />}>
         <article className="article-card text-[var(--text)]">
           {/* A book also gets a small «search in this book» button on the same row, so it costs no extra height. */}
-          <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="relative mb-4 flex items-start justify-between gap-3">
           <nav aria-label="مسیر صفحه" className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-[var(--muted)]">
             <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">خانه</Link>
             <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
@@ -257,6 +258,9 @@ export function ArticlePage({ collection: collectionId = 'blog' }: { collection?
           </div>
 
           {markdown !== null && <TelegramCopy markdown={markdown} bodyRef={bodyRef} />}
+
+          {/* `sources:` of the frontmatter: one closed accordion at the end of the article (for a book: of its introduction). */}
+          {markdown !== null && pageNumber === undefined && article.sources && <SourcesAccordion sources={article.sources} />}
 
           {collectionId === 'books' && <BookPagination bookPath={`${route}/${slug}`} pages={article.pages} current={pageNumber ?? null} />}
 
