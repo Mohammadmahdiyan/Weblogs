@@ -366,7 +366,7 @@ function Divider({ children, id }: { children?: ReactNode; id?: string }) {
     <div
       id={id}
       className={clsx(
-        'mx-4 my-8 flex items-center gap-4 text-sm text-[var(--text-secondary)] sm:mx-8',
+        'my-8 flex w-full items-center gap-4 text-sm text-[var(--text-secondary)]',
         id && 'scroll-mt-24',
       )}
     >
