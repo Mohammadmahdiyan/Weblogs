@@ -15,25 +15,30 @@ export function markDividers(tree: MdastRoot): void {
     // One line only: a paragraph that goes on over several lines is ordinary text.
     if (node.children.some((child) => child.type === 'break' || (child.type === 'text' && child.value.includes('\n')))) return
 
-    const open = first.value.match(/^-{3,}[ \t]+/)
-    const close = last.value.match(/[ \t]+-{3,}[ \t]*$/)
+    const attributes = last.value.match(/\{id=["']([^"']+)["']\}[ \t]*$/)
+    const lastValue = attributes ? last.value.slice(0, attributes.index) : last.value
+    const open = first.value.match(/^-{3,}[ \t]*/)
+    const close = lastValue.match(/[ \t]*-{3,}[ \t]*$/)
     if (!open || !close) return
 
     if (first === last) {
       // «--- ---» has nothing between the two ends.
-      if (open[0].length + close[0].length >= first.value.length) return
-      const inner = first.value.slice(open[0].length, first.value.length - close[0].length)
+      if (open[0].length + close[0].length >= lastValue.length) return
+      const inner = lastValue.slice(open[0].length, lastValue.length - close[0].length)
       if (!inner.trim()) return
       first.value = inner
     } else {
       first.value = first.value.slice(open[0].length)
-      last.value = last.value.slice(0, last.value.length - close[0].length)
+      last.value = lastValue.slice(0, lastValue.length - close[0].length)
     }
 
     node.children = node.children.filter((child) => !(child.type === 'text' && child.value === ''))
     // `hName` is how remark-rehype is told to make a different element (mdast's own type does not list it).
     const data = (node.data ?? {}) as Record<string, unknown>
     data.hName = 'mdx-divider'
+    if (attributes) {
+      data.hProperties = { ...((data.hProperties as Record<string, unknown> | undefined) ?? {}), id: attributes[1] }
+    }
     node.data = data as Paragraph['data']
   })
 }

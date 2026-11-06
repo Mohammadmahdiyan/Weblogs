@@ -43,7 +43,7 @@ type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
     emojiName?: string
     emojiFile?: string
   }>
-  'mdx-divider'?: import('react').ComponentType<{ children?: import('react').ReactNode }>
+  'mdx-divider'?: import('react').ComponentType<{ children?: import('react').ReactNode; id?: string }>
   'mdx-spoiler'?: import('react').ComponentType<{
     children?: import('react').ReactNode
     animationText?: string

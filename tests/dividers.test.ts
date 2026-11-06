@@ -4,12 +4,13 @@ import remarkParse from 'remark-parse'
 import type { Paragraph, Root } from 'mdast'
 import { remarkDividers } from '../src/lib/dividers.ts'
 
-function dividers(markdown: string): { type: string; hName?: string; text: string }[] {
+function dividers(markdown: string): { type: string; hName?: string; id?: string; text: string }[] {
   const processor = unified().use(remarkParse).use(remarkDividers)
   const tree = processor.runSync(processor.parse(markdown)) as Root
   return tree.children.map((node) => ({
     type: node.type,
     hName: (node.data as { hName?: string } | undefined)?.hName,
+    id: (node.data as { hProperties?: { id?: string } } | undefined)?.hProperties?.id,
     text: node.type === 'paragraph' ? (node as Paragraph).children.map((child) => ('value' in child ? child.value : '')).join('') : '',
   }))
 }
@@ -17,6 +18,12 @@ function dividers(markdown: string): { type: string; hName?: string; text: strin
 describe('remarkDividers', () => {
   it('turns `--- text ---` into a divider with that text', () => {
     expect(dividers('--- سلام دنیا ---')).toEqual([{ type: 'paragraph', hName: 'mdx-divider', text: 'سلام دنیا' }])
+  })
+
+  it('keeps an id on a compact page divider as an anchor target', () => {
+    expect(dividers('---صفحه 24---{id="p24"}')).toEqual([
+      { type: 'paragraph', hName: 'mdx-divider', id: 'p24', text: 'صفحه 24' },
+    ])
   })
 
   it('accepts longer dash runs and keeps inline Markdown in the text', () => {
@@ -32,6 +39,12 @@ describe('remarkDividers', () => {
     expect(dividers('سلام --- دنیا')[0].hName).toBeUndefined()
     expect(dividers('--- فقط شروع')[0].hName).toBeUndefined()
     expect(dividers('--- ---')[0].hName).toBeUndefined()
+  })
+
+  it('leaves id attributes on ordinary paragraphs alone', () => {
+    expect(dividers('یک متن عادی {id="p24"}')).toEqual([
+      { type: 'paragraph', text: 'یک متن عادی {id="p24"}' },
+    ])
   })
 
   it('ignores a paragraph of several lines', () => {

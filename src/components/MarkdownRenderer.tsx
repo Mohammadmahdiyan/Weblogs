@@ -361,9 +361,15 @@ function HorizontalRule(props: ComponentPropsWithoutRef<'hr'>) {
 }
 
 /** `--- text ---`: the same line with the text in the middle of it. */
-function Divider({ children }: { children?: ReactNode }) {
+function Divider({ children, id }: { children?: ReactNode; id?: string }) {
   return (
-    <div className="mx-4 my-8 flex items-center gap-4 text-sm text-[var(--text-secondary)] sm:mx-8">
+    <div
+      id={id}
+      className={clsx(
+        'mx-4 my-8 flex items-center gap-4 text-sm text-[var(--text-secondary)] sm:mx-8',
+        id && 'scroll-mt-24',
+      )}
+    >
       <span aria-hidden="true" className="h-px min-w-6 flex-1 bg-[var(--text)] opacity-20" />
       <span className="max-w-[85%] text-center leading-7">{children}</span>
       <span aria-hidden="true" className="h-px min-w-6 flex-1 bg-[var(--text)] opacity-20" />
