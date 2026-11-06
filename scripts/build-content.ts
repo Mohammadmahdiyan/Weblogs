@@ -19,6 +19,7 @@ import {
   type MediaFile,
 } from './lib/media.ts'
 import { allCollections, type Collection } from './lib/collections.ts'
+import { syncFolderPageConfigs } from './lib/folder-pages.ts'
 import { buildStory } from './lib/story.ts'
 import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
 import { articlePathSlug, discoverArticleDirectories, englishFolderName } from './lib/content-path.ts'
@@ -618,6 +619,14 @@ async function buildContent(): Promise<void> {
   for (const collection of allCollections) built.push(await buildCollection(collection, isProduction))
   const media = built.find((item) => item.collection.id === 'media') as BuiltCollection
   const books = built.find((item) => item.collection.id === 'books') as BuiltCollection
+
+  await syncFolderPageConfigs(
+    path.join(projectRoot, 'content'),
+    built.map(({ collection, metadata }) => ({
+      collection: collection.id,
+      articleSlugs: metadata.map((article) => article.slug),
+    })),
+  )
 
   await buildStory({
     isProduction,

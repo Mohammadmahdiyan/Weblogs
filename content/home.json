@@ -1,0 +1,21 @@
+{
+  "title": "وبلاگ اسلامی",
+  "subtitle": "برای دیدن مقاله‌ها و کتاب‌ها، یکی از بخش‌های زیر را انتخاب کنید یا در بخش‌ها جست‌وجو کنید.",
+  "searchLabel": "جست‌وجو در همهٔ محتواها",
+  "emptyMessage": "بخشی با این عبارت پیدا نشد.",
+  "listHeading": "همه بخش‌ها",
+  "items": [
+    {
+      "collection": "media",
+      "title": "رسانه‌ها",
+      "caption": "مقاله‌ها، ویدیوها و رسانه‌های آموزشی",
+      "image": "content-media/lives-nour/spider-house/chera-shia-fohsh-mida/boghz.jpg"
+    },
+    {
+      "collection": "books",
+      "title": "کتاب‌ها",
+      "caption": "کتاب‌ها و منابع مطالعه؛ همراه با جست‌وجو در متن و صفحه‌های کتاب",
+      "image": "books-media/answer-to-shobhat/alhad-noven-part1/alhad-noven.jpg"
+    }
+  ]
+}

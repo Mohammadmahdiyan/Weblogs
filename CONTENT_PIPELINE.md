@@ -9,7 +9,9 @@ Every immediate directory under `content/` is a top-level category with its own 
 
 Discovery is recursive. A directory containing `index.md` is an article; a directory without it is a folder listing, no matter how deeply nested it is. For example, `content/media/lives-nour/spider-house/topic/index.md` is `/media/lives-nour/spider-house/topic`. The first category segment stays in every URL. Put an article's media next to its `index.md`; relative media links are rewritten to the generated public media URL.
 
-At `/`, visitors can browse the top-level categories and their first-level folders, or search each category independently. In a category folder, the page lists its immediate article and folder children. A folder becomes its article page when it contains `index.md`. The reserved `content/<category>/story/` directory is never treated as an article or listing.
+At `/`, visitors see image cards for the top-level categories and one search field to filter them. The page title, subtitle, search label, empty-state text, and each card's category, title, caption, and image are configured in `content/home.json`. Image paths are relative to `public/` (for example, `profile.jpg` or `books-media/.../cover.jpg`); absolute image URLs are also supported.
+
+Category and nested folder listings use the same search header and image-card grid. A folder with child folders gets an editable page configuration in `content/folder-pages/<category>/`; for example, `/media/` is configured by `_root.json` and `/media/lives-nour/` by `lives-nour.json`. These JSON files contain the page title, subtitle, search label, list heading, empty message, and each child folder's Persian title, caption, and optional image. `npm run dev` and `npm run content` create missing configurations and add newly discovered folders while preserving text already entered. Fill in the empty Persian fields and image paths; image paths are relative to `public/`. Folders that contain article pages but no child folders remain regular article listings. The reserved `content/<category>/story/` directory is never treated as an article or listing.
 
 ### Date registry fields
 

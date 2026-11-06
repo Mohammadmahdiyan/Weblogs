@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { Headphones, Play } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { ArticleMeta } from '../lib/types'
 import { siteCollections, type CollectionId } from '../lib/collections'
 import { usePageMeta } from '../lib/usePageMeta'
@@ -14,6 +15,57 @@ import { pageSizeFor } from '../lib/pageSize'
 import { NoImage } from '../components/NoImage'
 import { ImageWithFallback } from '../components/ImageWithFallback'
 import { StoryButton } from '../components/Stories'
+import { assetUrl } from '../lib/assetUrl'
+import homePageContent from '../../content/home.json'
+
+interface FolderCardData {
+  slug: string
+  title: string
+  caption: string
+  image: string
+}
+
+interface FolderPageData {
+  title: string
+  subtitle: string
+  searchLabel: string
+  listHeading: string
+  emptyMessage: string
+  folders: FolderCardData[]
+}
+
+interface HomeCardData {
+  collection: CollectionId
+  title: string
+  caption: string
+  image: string
+}
+
+interface HomePageContent {
+  title: string
+  subtitle: string
+  searchLabel: string
+  emptyMessage: string
+  listHeading: string
+  items: HomeCardData[]
+}
+
+const homeContent = homePageContent as HomePageContent
+const folderPageConfigs = import.meta.glob<{ default: FolderPageData }>('../../content/folder-pages/**/*.json', {
+  eager: true,
+})
+const globalArticles = Object.values(siteCollections).flatMap((collection) =>
+  collection.items.map((article) => ({
+    ...article,
+    slug: `${collection.route.slice(1)}/${article.slug}`,
+  })),
+)
+const globalSearchIndex = Object.values(siteCollections).flatMap((collection) =>
+  collection.searchIndex.map((entry) => ({
+    ...entry,
+    slug: `${collection.route.slice(1)}/${entry.slug}`,
+  })),
+)
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(`${date}T12:00:00`))
@@ -82,6 +134,39 @@ function ArticleCover({ article }: { article: ArticleMeta }) {
   return <NoImage />
 }
 
+function ListingCard({
+  href,
+  title,
+  description,
+  cover,
+  children,
+  ariaLabel,
+}: {
+  href: string
+  title: ReactNode
+  description: ReactNode
+  cover: ReactNode
+  children?: ReactNode
+  ariaLabel?: string
+}) {
+  return (
+    <article className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5">
+      <Link to={href} aria-label={ariaLabel} className="relative block overflow-hidden bg-[var(--surface-alt)]">
+        {cover}
+      </Link>
+      <div className="min-w-0 flex-1 p-4 sm:p-5">
+        <h2 className="mb-2 text-start text-lg leading-8 font-bold">
+          <Link to={href} className="text-[var(--text)] no-underline hover:text-[var(--brand)]">
+            {title}
+          </Link>
+        </h2>
+        <p className="mb-4 line-clamp-3 text-start text-sm leading-7 text-[var(--text-secondary)]">{description}</p>
+        {children}
+      </div>
+    </article>
+  )
+}
+
 function ArticleCard({
   article,
   adultConfirmed,
@@ -92,83 +177,66 @@ function ArticleCard({
   route: string
 }) {
   const censored = article.adult === true && !adultConfirmed
-  const hasCover = true
   return (
-    <article className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5">
-      {hasCover && (
-        <Link
-          to={`${route}/${article.slug}`}
-          aria-label={censored ? 'مشاهده مقاله +۱۸' : `خواندن ${article.title}`}
-          className="relative block overflow-hidden bg-[var(--surface-alt)]"
-        >
-          {censored ? (
-            <div className="relative aspect-video overflow-hidden">
-              <div className="pointer-events-none scale-110 blur-xl" aria-hidden="true">
-                <ArticleCover article={article} />
-              </div>
-              <div className="absolute inset-0 grid place-items-center bg-[var(--surface)]/75">
-                <AdultArticleNotice compact />
-              </div>
-            </div>
-          ) : (
-            <ArticleCover article={article} />
-          )}
-        </Link>
-      )}
-      {censored && !hasCover && (
-        <Link
-          to={`${route}/${article.slug}`}
-          aria-label="مشاهده مقاله +۱۸"
-          className="block border-b border-[var(--border-light)] bg-[var(--surface-alt)] no-underline"
-        >
-          <AdultArticleNotice />
-        </Link>
-      )}
-      <div className="min-w-0 flex-1 p-4 sm:p-5">
-        <h2 className="mb-2 text-start text-lg leading-8 font-bold">
-          <Link to={`${route}/${article.slug}`} className="text-[var(--text)] no-underline hover:text-[var(--brand)]">
-            {censored ? (
-              <span className="relative block">
-                <span className="block blur-sm select-none">{article.title}</span>
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <AdultArticleNotice compact />
-                </span>
-              </span>
-            ) : (
-              article.title
-            )}
-          </Link>
-        </h2>
-        <p className="mb-4 line-clamp-3 text-start text-sm leading-7 text-[var(--text-secondary)]">
-          {censored ? (
-            <span className="relative block">
-              <span className="block blur-sm select-none">{article.description}</span>
-              <span className="absolute inset-0 flex items-center justify-center">
-                <span className="rounded bg-[var(--surface)]/90 px-2 py-1 text-xs font-semibold">حاوی جملات +۱۸</span>
-              </span>
+    <ListingCard
+      href={`${route}/${article.slug}`}
+      ariaLabel={censored ? 'مشاهده مقاله +۱۸' : `خواندن ${article.title}`}
+      title={
+        censored ? (
+          <span className="relative block">
+            <span className="block blur-sm select-none">{article.title}</span>
+            <span className="absolute inset-0 flex items-center justify-center">
+              <AdultArticleNotice compact />
             </span>
-          ) : (
-            article.description
-          )}
-        </p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted)]">
-          <time dateTime={article.date}>{formatDate(article.date)}</time>
-          {!censored && <span>{article.readingTime} دقیقه مطالعه</span>}
-        </div>
-        {!censored && (
-          <ul className="mt-4 flex flex-wrap gap-2 p-0">
-            {article.tags.map((tag) => (
-              <li
-                key={tag}
-                className="list-none rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-2.5 py-1 text-xs text-[var(--text-secondary)]"
-              >
-                {tag}
-              </li>
-            ))}
-          </ul>
-        )}
+          </span>
+        ) : (
+          article.title
+        )
+      }
+      description={
+        censored ? (
+          <span className="relative block">
+            <span className="block blur-sm select-none">{article.description}</span>
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="rounded bg-[var(--surface)]/90 px-2 py-1 text-xs font-semibold">حاوی جملات +۱۸</span>
+            </span>
+          </span>
+        ) : (
+          article.description
+        )
+      }
+      cover={
+        censored ? (
+          <div className="relative aspect-video overflow-hidden">
+            <div className="pointer-events-none scale-110 blur-xl" aria-hidden="true">
+              <ArticleCover article={article} />
+            </div>
+            <div className="absolute inset-0 grid place-items-center bg-[var(--surface)]/75">
+              <AdultArticleNotice compact />
+            </div>
+          </div>
+        ) : (
+          <ArticleCover article={article} />
+        )
+      }
+    >
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--muted)]">
+        <time dateTime={article.date}>{formatDate(article.date)}</time>
+        {!censored && <span>{article.readingTime} دقیقه مطالعه</span>}
       </div>
-    </article>
+      {!censored && (
+        <ul className="mt-4 flex flex-wrap gap-2 p-0">
+          {article.tags.map((tag) => (
+            <li
+              key={tag}
+              className="list-none rounded-[var(--radius-sm)] bg-[var(--surface-alt)] px-2.5 py-1 text-xs text-[var(--text-secondary)]"
+            >
+              {tag}
+            </li>
+          ))}
+        </ul>
+      )}
+    </ListingCard>
   )
 }
 
@@ -182,6 +250,8 @@ export function HomePage({
 }) {
   const { items: categoryArticles, searchIndex, route, text } = siteCollections[collection]
   const prefix = currentPath.replace(/^\/+|\/+$/g, '')
+  const folderPageKey = `../../content/folder-pages/${collection}/${prefix || '_root'}.json`
+  const folderPage = (folderPageConfigs[folderPageKey] as { default: FolderPageData } | undefined)?.default
   const searchArticles = categoryArticles.filter((article) => !prefix || article.slug.startsWith(`${prefix}/`))
   const searchSlugs = new Set(searchArticles.map((article) => article.slug))
   const scopedSearchIndex = searchIndex.filter((entry) =>
@@ -207,11 +277,15 @@ export function HomePage({
   const isBooks = collection === 'books'
   const [searchParams, setSearchParams] = useSearchParams()
   const adultConfirmed = useAdultAccess()
+  const pageTitle =
+    folderPage?.title ||
+    (prefix
+      ? (siteCollections[collection].folderNames[prefix] ?? folderLabel(prefix.split('/').at(-1)!))
+      : text.pageTitle)
+  const pageDescription = folderPage?.subtitle || text.pageDescription
   usePageMeta({
-    title: prefix
-      ? (siteCollections[collection].folderNames[prefix] ?? prefix.split('/').at(-1) ?? text.pageTitle)
-      : text.pageTitle,
-    description: text.pageDescription,
+    title: pageTitle,
+    description: pageDescription,
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
@@ -250,13 +324,9 @@ export function HomePage({
   return (
     <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
       <section className="mb-10 text-center sm:mb-14">
-        <h1 className="mb-3 text-3xl leading-tight font-extrabold sm:text-4xl">
-          {prefix
-            ? (siteCollections[collection].folderNames[prefix] ?? folderLabel(prefix.split('/').at(-1)!))
-            : text.pageTitle}
-        </h1>
+        <h1 className="mb-3 text-3xl leading-tight font-extrabold sm:text-4xl">{pageTitle}</h1>
         <p className="mx-auto mb-7 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">
-          {text.pageDescription}
+          {pageDescription}
         </p>
         {/* key: switching between blog and books starts a fresh search box */}
         <ArticleSearch
@@ -266,6 +336,10 @@ export function HomePage({
           initialQuery={searchParams.get('q') ?? ''}
           basePath={route}
           bookMode={isBooks}
+          label={folderPage?.searchLabel || text.searchLabel}
+          placeholder={
+            folderPage ? folderPage.searchLabel || 'عنوان را جست‌وجو کنید؛ برای متن: محتوا::عبارت' : undefined
+          }
         />
         <div className="mt-5 flex justify-center">
           <div className="flex items-center gap-4">
@@ -278,38 +352,56 @@ export function HomePage({
       <section id="articles" aria-labelledby="articles-heading">
         <div className="mb-5">
           <h2 id="articles-heading" className="m-0 text-start text-xl font-bold">
-            {text.listHeading}
+            {folderPage?.listHeading || text.listHeading}
           </h2>
         </div>
-        {childFolders.length > 0 && (
-          <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {childFolders.length > 0 || visibleArticles.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {childFolders.map((folder) => {
               const childPath = prefix ? `${prefix}/${folder}` : folder
               const href = `${route}/${childPath}`
+              const folderData = folderPage?.folders.find((item) => item.slug === folder)
+              const title =
+                folderData?.title || siteCollections[collection].folderNames[childPath] || folderLabel(folder)
+              const fallbackArticle = categoryArticles.find(
+                (article) => article.slug.startsWith(`${childPath}/`) && article.cover,
+              )
               return (
-                <Link
+                <ListingCard
                   key={childPath}
-                  to={href}
-                  className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-5 text-start font-semibold text-[var(--text)] no-underline shadow-[var(--shadow-card)] hover:border-[var(--brand)]"
+                  href={href}
+                  title={title}
+                  description={folderData?.caption || 'برای مشاهدهٔ محتوا، این بخش را انتخاب کنید.'}
+                  ariaLabel={title}
+                  cover={
+                    folderData?.image ? (
+                      <ImageWithFallback
+                        src={assetUrl(folderData.image)}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="aspect-video w-full object-cover"
+                      />
+                    ) : fallbackArticle ? (
+                      <ArticleCover article={fallbackArticle} />
+                    ) : (
+                      <NoImage />
+                    )
+                  }
                 >
-                  {siteCollections[collection].folderNames[childPath] ?? folderLabel(folder)}{' '}
-                  <span className="text-xs text-[var(--muted)]">↗</span>
-                </Link>
+                  <span className="text-xs text-[var(--muted)]">مشاهدهٔ بخش</span>
+                </ListingCard>
               )
             })}
-          </div>
-        )}
-        {visibleArticles.length ? (
-          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {visibleArticles.map((article) => (
               <ArticleCard key={article.slug} article={article} adultConfirmed={adultConfirmed} route={route} />
             ))}
           </div>
-        ) : childFolders.length === 0 ? (
+        ) : (
           <p className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-6 text-center text-[var(--text-secondary)]">
-            {text.empty}
+            {folderPage?.emptyMessage || text.empty}
           </p>
-        ) : null}
+        )}
         <ArticlePagination pageCount={pageCount} current={currentPage} onChange={goToPage} />
       </section>
     </main>
@@ -317,64 +409,67 @@ export function HomePage({
 }
 
 export function GlobalHomePage() {
-  const categories = Object.values(siteCollections)
-  const folderLinks = categories.flatMap((category) =>
-    [...new Set(category.items.map((item) => item.slug.split('/')[0]))].map((folder) => ({
-      route: category.route,
-      folder,
-      name: category.folderNames[folder] ?? folderLabel(folder),
-    })),
-  )
-  usePageMeta({ title: siteConfig.siteName, description: siteConfig.siteDescription })
+  usePageMeta({ title: homeContent.title, description: homeContent.subtitle })
   return (
     <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-      <header className="mb-10 text-center">
-        <h1 className="mb-3 text-3xl font-extrabold">{siteConfig.siteName}</h1>
-        <p className="mx-auto max-w-2xl text-sm leading-7 text-[var(--text-secondary)]">{siteConfig.siteDescription}</p>
-      </header>
-      <section aria-labelledby="categories-heading" className="mb-10">
-        <h2 id="categories-heading" className="mb-4 text-xl font-bold">
-          دسته‌بندی‌ها
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              to={category.route}
-              className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-5 text-lg font-bold text-[var(--text)] no-underline shadow-[var(--shadow-card)] hover:border-[var(--brand)]"
-            >
-              {category.text.pageTitle}
-            </Link>
-          ))}
-          {folderLinks.map(({ route, folder, name }) => (
-            <Link
-              key={`${route}/${folder}`}
-              to={`${route}/${folder}`}
-              className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-5 font-semibold text-[var(--text)] no-underline hover:border-[var(--brand)]"
-            >
-              {name}
-            </Link>
-          ))}
+      <section className="mb-10 text-center sm:mb-14">
+        <h1 className="mb-3 text-3xl leading-tight font-extrabold sm:text-4xl">{homeContent.title}</h1>
+        <p className="mx-auto mb-7 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">
+          {homeContent.subtitle}
+        </p>
+        <ArticleSearch
+          articles={globalArticles}
+          searchIndex={globalSearchIndex}
+          basePath=""
+          label={homeContent.searchLabel}
+        />
+        <div className="mt-5 flex justify-center">
+          <div className="flex items-center gap-4">
+            <FontControls />
+            <StoryButton />
+          </div>
         </div>
       </section>
-      {categories.map((category) => (
-        <section key={category.id} className="mb-10">
-          <h2 className="mb-4 text-xl font-bold">{category.text.listHeading}</h2>
-          <ArticleSearch
-            key={`global-${category.id}`}
-            articles={category.items}
-            searchIndex={category.searchIndex}
-            initialQuery=""
-            basePath={category.route}
-            bookMode={category.id === 'books'}
-          />
-          <div className="mt-4">
-            <Link to={category.route} className="font-semibold text-[var(--brand)]">
-              نمایش همهٔ {category.text.pageTitle}
-            </Link>
+
+      <section aria-labelledby="home-sections-heading">
+        <div className="mb-5">
+          <h2 id="home-sections-heading" className="m-0 text-start text-xl font-bold">
+            {homeContent.listHeading}
+          </h2>
+        </div>
+        {homeContent.items.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {homeContent.items.map((item) => {
+              const route = siteCollections[item.collection].route
+              return (
+                <ListingCard
+                  key={item.collection}
+                  href={route}
+                  title={item.title}
+                  description={item.caption}
+                  ariaLabel={item.title}
+                  cover={
+                    <ImageWithFallback
+                      src={assetUrl(item.image)}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-video w-full object-cover"
+                    />
+                  }
+                ></ListingCard>
+              )
+            })}
           </div>
-        </section>
-      ))}
+        ) : (
+          <p
+            role="status"
+            className="rounded-[var(--radius-md)] border border-[var(--border-light)] bg-[var(--surface)] p-6 text-center text-[var(--text-secondary)]"
+          >
+            {homeContent.emptyMessage}
+          </p>
+        )}
+      </section>
     </main>
   )
 }

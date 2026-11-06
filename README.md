@@ -31,7 +31,7 @@ npm run lint
 
 ## ۴. افزودن، ویرایش و حذف محتوا (آموزش کامل)
 
-ساختار فعلی محتوا بازگشتی است: هر شاخهٔ مستقیم `content/<category>/` یک دستهٔ مستقل با همان پیشوند در نشانی است (`content/media/lives-nour/topic/index.md` → `/media/lives-nour/topic`). پوشه‌ای که `index.md` ندارد صفحهٔ فهرست پوشه است؛ پوشه‌ای که `index.md` دارد مقاله است. دسته‌های فعلی `media` و `books` هستند. راهنمای مرجع مسیرها، رجیستری JSON و استوری دسته‌ای: [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md).
+ساختار فعلی محتوا بازگشتی است: هر شاخهٔ مستقیم `content/<category>/` یک دستهٔ مستقل با همان پیشوند در نشانی است (`content/media/lives-nour/topic/index.md` → `/media/lives-nour/topic`). پوشه‌ای که `index.md` ندارد صفحهٔ فهرست پوشه است؛ پوشه‌ای که `index.md` دارد مقاله است. دسته‌های فعلی `media` و `books` هستند. کارت‌های تصویری خانه و عنوان، زیرعنوان، توضیح و تصویر آن‌ها در `content/home.json` تنظیم می‌شوند. راهنمای مرجع مسیرها، رجیستری JSON و استوری دسته‌ای: [CONTENT_PIPELINE.md](CONTENT_PIPELINE.md).
 
 یک مقاله در هر عمقی با `index.md` شناخته می‌شود. نام پوشه فقط از `a-z`، `0-9`، `-` و `_` ساخته شود؛ هر segment در مسیر باید همین قاعده را داشته باشد.
 
