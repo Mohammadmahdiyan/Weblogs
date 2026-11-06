@@ -26,6 +26,7 @@
   --border-strong: #e3e3e3;
   --brand: #15803d;
   --brand-bright: #1eb35b;
+  --brand-badge: hsl(from var(--brand-bright) h calc(s * 1.19) l);
   --brand-dark: #166534;
   --brand-contrast: #ffffff;
   --info: #0b72b5;
@@ -57,15 +58,38 @@
   --warning: var(--warn);
 
   /* No Image SVG Theme */
-  --no-image-sky: #E8F0EA;
-  --no-image-bg: #F5F1E8;
-  --no-image-sun: #E5B96C;
-  --no-image-hill-back: #A9BDAA;
+  --no-image-sky: #e8f0ea;
+  --no-image-bg: #f5f1e8;
+  --no-image-sun: #e5b96c;
+  --no-image-hill-back: #a9bdaa;
   --no-image-mountain: #789482;
   --no-image-foreground: #587866;
-  --no-image-snow: #F5F1E8;
-  --no-image-cloud: #FFFFFF;
-  --no-image-star: #FFFFFF;
+  --no-image-snow: #f5f1e8;
+  --no-image-cloud: #ffffff;
+  --no-image-star: #ffffff;
+
+  --badge-brown: #8a4b16;
+  --badge-amber: #a64b00;
+  --badge-orange: #b93800;
+  --badge-coral: #bf2447;
+  --badge-pink: #b51d68;
+  --badge-red: #b94f59;
+  --badge-purple: #7628a8;
+  --badge-violet: #6337c5;
+  --badge-indigo: #3945bb;
+  --badge-blue: #155bbb;
+  --badge-navy: #244b85;
+  --badge-cyan: #087c99;
+  --badge-teal: #08786d;
+  --badge-green: #16783a;
+  --badge-emerald: #08765a;
+  --badge-lime: #557d0b;
+  --badge-olive: #65720f;
+  --badge-yellow: #826000;
+  --badge-gold: #805100;
+  --badge-slate: #475569;
+  --badge-gray: #52525b;
+  --badge-graphite: #374151;
 }
 
 /* Inline Islamic honorific SVGs: a fixed box painted by a CSS mask. The ink is `currentColor`, so the symbol always has the
@@ -110,13 +134,36 @@
   /* No Image SVG Theme */
   --no-image-sky: #182536;
   --no-image-bg: #101923;
-  --no-image-sun: #F1F3F5;
-  --no-image-hill-back: #455B70;
-  --no-image-mountain: #344B61;
-  --no-image-foreground: #25384A;
-  --no-image-snow: #DCE6EF;
-  --no-image-cloud: #AFC1D2;
-  --no-image-star: #FFFFFF;
+  --no-image-sun: #f1f3f5;
+  --no-image-hill-back: #455b70;
+  --no-image-mountain: #344b61;
+  --no-image-foreground: #25384a;
+  --no-image-snow: #dce6ef;
+  --no-image-cloud: #afc1d2;
+  --no-image-star: #ffffff;
+
+  --badge-brown: #e6b98b;
+  --badge-amber: #f6b26b;
+  --badge-orange: #ff9a6b;
+  --badge-coral: #ff8da5;
+  --badge-pink: #f58ac4;
+  --badge-red: #e58c93;
+  --badge-purple: #d7a1f5;
+  --badge-violet: #baa0ff;
+  --badge-indigo: #a6a8ff;
+  --badge-blue: #8cc4ff;
+  --badge-navy: #a9c8ff;
+  --badge-cyan: #78d9ef;
+  --badge-teal: #71ddcc;
+  --badge-green: #7de39b;
+  --badge-emerald: #6ee7b7;
+  --badge-lime: #c1e879;
+  --badge-olive: #d0e58a;
+  --badge-yellow: #ffe16b;
+  --badge-gold: #ffd27b;
+  --badge-slate: #c4d0df;
+  --badge-gray: #d4d4d8;
+  --badge-graphite: #d1d5db;
 }
 
 @theme inline {
@@ -152,20 +199,80 @@
 /* ───────────── colour palettes (reader choice, `data-palette` on <html>) ─────────────
    Only the accent tokens change; surfaces, text and layout stay the same.
    Green is the default and needs no attribute. Dark rules come after light rules on purpose. */
-:root[data-palette='blue'] { --brand: #1d4ed8; --brand-bright: #3b82f6; --brand-dark: #1e40af; --brand-contrast: #ffffff; }
-.dark[data-palette='blue'] { --brand: #60a5fa; --brand-bright: #3b82f6; --brand-dark: #93c5fd; --brand-contrast: #0b1b3a; }
+:root[data-palette='blue'] {
+  --brand: #1d4ed8;
+  --brand-bright: #3b82f6;
+  --brand-dark: #1e40af;
+  --brand-contrast: #ffffff;
+}
+.dark[data-palette='blue'] {
+  --brand: #60a5fa;
+  --brand-bright: #3b82f6;
+  --brand-dark: #93c5fd;
+  --brand-contrast: #0b1b3a;
+}
 
-:root[data-palette='purple'] { --brand: #6d28d9; --brand-bright: #8b5cf6; --brand-dark: #5b21b6; --brand-contrast: #ffffff; }
-.dark[data-palette='purple'] { --brand: #c4b5fd; --brand-bright: #a78bfa; --brand-dark: #ddd6fe; --brand-contrast: #1e1052; }
+:root[data-palette='purple'] {
+  --brand: #6d28d9;
+  --brand-bright: #8b5cf6;
+  --brand-dark: #5b21b6;
+  --brand-contrast: #ffffff;
+}
+.dark[data-palette='purple'] {
+  --brand: #c4b5fd;
+  --brand-bright: #a78bfa;
+  --brand-dark: #ddd6fe;
+  --brand-contrast: #1e1052;
+}
 
-:root[data-palette='rose'] { --brand: #be123c; --brand-bright: #e11d48; --brand-dark: #9f1239; --brand-contrast: #ffffff; }
-.dark[data-palette='rose'] { --brand: #fb7185; --brand-bright: #f43f5e; --brand-dark: #fda4af; --brand-contrast: #2a0510; }
+:root[data-palette='rose'] {
+  --brand: #b94f59;
+  --brand-bright: #b44b57;
+  --brand-dark: #9b414a;
+  --brand-contrast: #ffffff;
+}
+.dark[data-palette='rose'] {
+  --brand: #e58c93;
+  --brand-bright: #e87982;
+  --brand-dark: #f0a3ab;
+  --brand-contrast: #2a0510;
+}
 
-:root[data-palette='orange'] { --brand: #c2410c; --brand-bright: #ea580c; --brand-dark: #9a3412; --brand-contrast: #ffffff; }
-.dark[data-palette='orange'] { --brand: #fb923c; --brand-bright: #f97316; --brand-dark: #fdba74; --brand-contrast: #2b1100; }
+:root[data-palette='orange'] {
+  --brand: #c2410c;
+  --brand-bright: #ea580c;
+  --brand-dark: #9a3412;
+  --brand-contrast: #ffffff;
+}
+.dark[data-palette='orange'] {
+  --brand: #fb923c;
+  --brand-bright: #f97316;
+  --brand-dark: #fdba74;
+  --brand-contrast: #2b1100;
+}
 
-:root[data-palette='teal'] { --brand: #0f766e; --brand-bright: #14b8a6; --brand-dark: #115e59; --brand-contrast: #ffffff; }
-.dark[data-palette='teal'] { --brand: #2dd4bf; --brand-bright: #14b8a6; --brand-dark: #99f6e4; --brand-contrast: #042f2e; }
+:root[data-palette='teal'] {
+  --brand: #0f766e;
+  --brand-bright: #14b8a6;
+  --brand-dark: #115e59;
+  --brand-contrast: #ffffff;
+}
+.dark[data-palette='teal'] {
+  --brand: #2dd4bf;
+  --brand-bright: #14b8a6;
+  --brand-dark: #99f6e4;
+  --brand-contrast: #042f2e;
+}
 
-:root[data-palette='graphite'] { --brand: #374151; --brand-bright: #6b7280; --brand-dark: #1f2937; --brand-contrast: #ffffff; }
-.dark[data-palette='graphite'] { --brand: #e5e7eb; --brand-bright: #9ca3af; --brand-dark: #f9fafb; --brand-contrast: #111827; }
+:root[data-palette='graphite'] {
+  --brand: #374151;
+  --brand-bright: #6b7280;
+  --brand-dark: #1f2937;
+  --brand-contrast: #ffffff;
+}
+.dark[data-palette='graphite'] {
+  --brand: #e5e7eb;
+  --brand-bright: #9ca3af;
+  --brand-dark: #f9fafb;
+  --brand-contrast: #111827;
+}

@@ -379,12 +379,7 @@ export function ArticlePage({
 
               <Basmala />
             </>
-          ) : (
-            <header className="mb-5 border-b border-[var(--border-light)] pb-4">
-              <p className="m-0 text-sm text-[var(--text-secondary)]">{article.title}</p>
-              <h1 className="article-title m-0">{pageMeta?.title ?? `صفحه ${pageNumber.toLocaleString('fa-IR')}`}</h1>
-            </header>
-          )}
+          ) : null}
 
           {tocReady && <ArticleToc items={toc} variant="box" />}
 

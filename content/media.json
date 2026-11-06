@@ -1,4 +1,12 @@
 {
+  "_example-media": {
+    "date": "2026-11-05",
+    "updated": "2026-11-05",
+    "completed": false,
+    "published": false,
+    "name": "Example Media",
+    "route": "/media/_example-media"
+  },
   "aga-quran-dar-madh-ali-bod": {
     "date": "2026-10-18",
     "updated": "2026-10-18",
