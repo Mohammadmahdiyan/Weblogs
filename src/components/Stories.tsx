@@ -12,7 +12,6 @@ import {
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import storyJson from '../generated/story.json'
 import siteConfig from '../site.config'
 import {
   isStoryExpired,
@@ -29,7 +28,6 @@ const MarkdownRenderer = lazy(() =>
   import('./MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer })),
 )
 
-const story = storyJson as StoryData | null
 const HOLD_MS = 220
 const MOVE_TOLERANCE_PX = 8
 /** After the reader stops scrolling a long story, the timer waits this long before it continues. */
@@ -119,9 +117,19 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
 
   const next = useCallback(() => {
     if (index >= last) onClose()
-    else setIndex(index + 1)
+    else {
+      window.clearTimeout(scrollTimer.current)
+      setScrolling(false)
+      setHolding(false)
+      setIndex(index + 1)
+    }
   }, [index, last, onClose])
-  const previous = useCallback(() => setIndex((current) => Math.max(0, current - 1)), [])
+  const previous = useCallback(() => {
+    window.clearTimeout(scrollTimer.current)
+    setScrolling(false)
+    setHolding(false)
+    setIndex((current) => Math.max(0, current - 1))
+  }, [])
 
   useEffect(() => {
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -135,13 +143,6 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
       window.clearTimeout(scrollTimer.current)
     }
   }, [])
-
-  // A new story starts un-paused, at the top.
-  useEffect(() => {
-    window.clearTimeout(scrollTimer.current)
-    setScrolling(false)
-    setHolding(false)
-  }, [index])
 
   // Warm the next picture so it is ready when the bar ends.
   useEffect(() => {
@@ -329,7 +330,7 @@ function StoryViewer({ data, onClose }: { data: StoryData; onClose: () => void }
 }
 
 /** The ring in the header (profile picture inside a coloured ring, grey once seen). Opens the story viewer. */
-export function StoryButton({ data = story }: { data?: StoryData | null }) {
+export function StoryButton({ data }: { data: StoryData | null }) {
   const [open, setOpen] = useState(false)
   const [seenId, setSeenId] = useState<string | null>(() => readSeenStory())
   const [expired] = useState(() => (data ? isStoryExpired(data) : true))

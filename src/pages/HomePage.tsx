@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom'
-import { Headphones, Play } from 'lucide-react'
+import { ChevronLeft, Headphones, Play } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { ArticleMeta } from '../lib/types'
 import { siteCollections, type CollectionId } from '../lib/collections'
@@ -14,7 +14,6 @@ import { useMediaQuery } from '../lib/useMediaQuery'
 import { pageSizeFor } from '../lib/pageSize'
 import { NoImage } from '../components/NoImage'
 import { ImageWithFallback } from '../components/ImageWithFallback'
-import { StoryButton } from '../components/Stories'
 import { assetUrl } from '../lib/assetUrl'
 import homePageContent from '../../content/home.json'
 
@@ -54,6 +53,12 @@ const homeContent = homePageContent as HomePageContent
 const folderPageConfigs = import.meta.glob<{ default: FolderPageData }>('../../content/folder-pages/**/*.json', {
   eager: true,
 })
+
+function getFolderPageConfig(collection: CollectionId, prefix: string): FolderPageData | undefined {
+  const key = `../../content/folder-pages/${collection}/${prefix || '_root'}.json`
+  return folderPageConfigs[key]?.default
+}
+
 const globalArticles = Object.values(siteCollections).flatMap((collection) =>
   collection.items.map((article) => ({
     ...article,
@@ -250,8 +255,7 @@ export function HomePage({
 }) {
   const { items: categoryArticles, searchIndex, route, text } = siteCollections[collection]
   const prefix = currentPath.replace(/^\/+|\/+$/g, '')
-  const folderPageKey = `../../content/folder-pages/${collection}/${prefix || '_root'}.json`
-  const folderPage = (folderPageConfigs[folderPageKey] as { default: FolderPageData } | undefined)?.default
+  const folderPage = getFolderPageConfig(collection, prefix)
   const searchArticles = categoryArticles.filter((article) => !prefix || article.slug.startsWith(`${prefix}/`))
   const searchSlugs = new Set(searchArticles.map((article) => article.slug))
   const scopedSearchIndex = searchIndex.filter((entry) =>
@@ -323,6 +327,52 @@ export function HomePage({
 
   return (
     <main id="main-content" className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+      <nav
+        aria-label="مسیر صفحه"
+        className="mb-5 flex min-w-0 flex-wrap items-center gap-1 text-xs text-[var(--muted)]"
+      >
+        <Link to="/" className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">
+          خانه
+        </Link>
+        <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
+        {prefix ? (
+          <Link to={route} className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]">
+            {text.breadcrumb}
+          </Link>
+        ) : (
+          <span aria-current="page" className="max-w-full truncate">
+            {text.breadcrumb}
+          </span>
+        )}
+        {prefix
+          .split('/')
+          .filter(Boolean)
+          .map((segment, index, segments) => {
+            const branchPath = segments.slice(0, index + 1).join('/')
+            const isCurrent = index === segments.length - 1
+            const branchTitle =
+              getFolderPageConfig(collection, branchPath)?.title ||
+              siteCollections[collection].folderNames[branchPath] ||
+              folderLabel(segment)
+            return (
+              <span key={branchPath} className="contents">
+                <ChevronLeft aria-hidden="true" className="size-3 ltr:rotate-180" />
+                {isCurrent ? (
+                  <span aria-current="page" className="max-w-full truncate">
+                    {pageTitle}
+                  </span>
+                ) : (
+                  <Link
+                    to={`${route}/${branchPath}`}
+                    className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]"
+                  >
+                    {branchTitle}
+                  </Link>
+                )}
+              </span>
+            )
+          })}
+      </nav>
       <section className="mb-10 text-center sm:mb-14">
         <h1 className="mb-3 text-3xl leading-tight font-extrabold sm:text-4xl">{pageTitle}</h1>
         <p className="mx-auto mb-7 max-w-2xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">
@@ -342,10 +392,7 @@ export function HomePage({
           }
         />
         <div className="mt-5 flex justify-center">
-          <div className="flex items-center gap-4">
-            <FontControls />
-            <StoryButton data={siteCollections[collection].story} />
-          </div>
+          <FontControls />
         </div>
       </section>
 
@@ -424,10 +471,7 @@ export function GlobalHomePage() {
           label={homeContent.searchLabel}
         />
         <div className="mt-5 flex justify-center">
-          <div className="flex items-center gap-4">
-            <FontControls />
-            <StoryButton />
-          </div>
+          <FontControls />
         </div>
       </section>
 

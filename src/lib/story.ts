@@ -27,7 +27,7 @@ export interface StorySlide {
 export interface StoryData {
   /** Changes every time a different story is published; the reader's «seen» mark is stored per id. */
   id: string
-  /** `custom`: the owner's story folder. `article`: the automatic «section of a random article» story. */
+  /** `custom`: a published story-folder feed. `article`: an automatically generated article-section story. */
   source: 'custom' | 'article'
   /** YYYY-MM-DD (Asia/Tehran) the story belongs to. */
   date: string
@@ -36,6 +36,11 @@ export interface StoryData {
   /** true in development for a story folder that has not been published yet. */
   preview?: boolean
   slides: StorySlide[]
+}
+
+export interface BranchStoriesData {
+  home: StoryData | null
+  branches: Record<string, StoryData>
 }
 
 const SEEN_KEY = 'story-seen'

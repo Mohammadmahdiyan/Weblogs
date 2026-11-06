@@ -20,7 +20,7 @@ import {
 } from './lib/media.ts'
 import { allCollections, type Collection } from './lib/collections.ts'
 import { syncFolderPageConfigs } from './lib/folder-pages.ts'
-import { buildStory } from './lib/story.ts'
+import { buildBranchStories, buildStory, storyToday } from './lib/story.ts'
 import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
 import { articlePathSlug, discoverArticleDirectories, englishFolderName } from './lib/content-path.ts'
 
@@ -626,6 +626,20 @@ async function buildContent(): Promise<void> {
       collection: collection.id,
       articleSlugs: metadata.map((article) => article.slug),
     })),
+  )
+
+  const branchStories = buildBranchStories(
+    storyToday(),
+    built.map(({ collection, articles }) => ({
+      route: `/${collection.id}`,
+      articles: articles.map(({ meta, body }) => ({ meta, body })),
+    })),
+    plainText,
+  )
+  await writeFile(
+    path.join(generatedRoot, 'branch-stories.json'),
+    `${JSON.stringify(branchStories, null, 2)}\n`,
+    'utf8',
   )
 
   await buildStory({

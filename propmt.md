@@ -95,9 +95,12 @@ content/lives-nour/spider-house = مثل صفحه خانه فعلی با سرچ 
 content/lives-nour/spider-house/tahref-quran-nazd-shia/ = مقاله هست چون داخل این پوشه index.md هست
 
 3. میخام برای هر زیر شاخه صفحه اصلی (العان میشه مدیا و بوک) استوری جدا گانه داشته باشن
-4. آره میخام وقتی کپی متن مقاله زده شد همین منبع در تلگرام اینجوری بشن
+4. آره میخام وقتی منبع کپی شد در تلگرام اینجوری بشن
 `متن آماده کپی با کلیک`
-5. میخام لینک باشه که به یک بخش مقاله اشاره کنه 
+1. میخام لینک باشه که به یک بخش مقاله اشاره کنه 
 که وقتی روش کلیک میشه بره توی همون صفحه و اسکرول رو ببره به همون بخش 
 و وقتی درست کردی یاد هم بده چطوری لینک بدیم
 6. استایل دهی سورس میخام زیبا باشه چون توی کتاب خیلی زیاد ازش استفاده میکنم
+7. داخل تمام صفحات غیر خانه میخام nav باشه چون اینطوری که العان هست حرکت توی صفحات خیلی سخته 
+
+<nav aria-label="مسیر صفحه" class="flex min-w-0 flex-wrap items-center gap-1 text-xs text-[var(--muted)]"><a class="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]" href="/Weblogs/">خانه</a><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left size-3 ltr:rotate-180" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg><a class="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]" href="/Weblogs/media">رسانه‌ها</a><span class="contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left size-3 ltr:rotate-180" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg><a class="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]" href="/Weblogs/media/lives-nour">Lives Nour</a></span><span class="contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left size-3 ltr:rotate-180" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg><a class="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]" href="/Weblogs/media/lives-nour/motaghiya">Motaghiya</a></span><span class="contents"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left size-3 ltr:rotate-180" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg><span aria-current="page" class="max-w-full truncate">کشتی نجات؛ جایگاه پیامبر و پیروی از سنت او</span></span></nav>

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeKey, parseSections, resolveSectionLink, storyDayEnd, storyToday, type ArticleSource } from '../scripts/lib/story.ts'
+import {
+  buildBranchStories,
+  normalizeKey,
+  parseSections,
+  resolveSectionLink,
+  storyDayEnd,
+  storyToday,
+  type ArticleSource,
+} from '../scripts/lib/story.ts'
 import { isStoryExpired, slideSeconds, type StoryData } from '../src/lib/story.ts'
 
 describe('story dates', () => {
@@ -31,7 +39,11 @@ describe('slideSeconds', () => {
   })
 })
 
-const plain = (markdown: string) => markdown.replace(/[#*>|]/g, ' ').replace(/\s+/g, ' ').trim()
+const plain = (markdown: string) =>
+  markdown
+    .replace(/[#*>|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 const article = {
   meta: { slug: 'eid', title: 'غدیر ، عید سیاسی' },
   body: 'مقدمه\n\n## بخش یک\n\nمتن یک\n\n### زیر بخش\n\nمتن زیر\n\n## شاید بگویند\n\nمتن دو\n\n```\n## داخل کد\n```\n',
@@ -40,13 +52,83 @@ const article = {
 describe('story section links', () => {
   it('splits an article at its ##–#### headings, skipping code fences', () => {
     const sections = parseSections(article.body, plain)
-    expect(sections.map((section) => [section.level, section.heading])).toEqual([[2, 'بخش یک'], [3, 'زیر بخش'], [2, 'شاید بگویند']])
+    expect(sections.map((section) => [section.level, section.heading])).toEqual([
+      [2, 'بخش یک'],
+      [3, 'زیر بخش'],
+      [2, 'شاید بگویند'],
+    ])
     expect(sections[0].markdown).toContain('متن زیر')
     expect(sections[2].markdown).toContain('## داخل کد')
   })
 
+  describe('branch stories', () => {
+    const sectionBody = `## بخش اصلی
+
+  ${'متن این بخش برای آزمودن استوری شاخه به اندازهٔ کافی طولانی است. '.repeat(5)}
+
+  ### زیر‌بخش
+
+  ${'این متن زیر‌بخش هم به اندازهٔ کافی طولانی است تا به‌عنوان یک اسلاید استوری انتخاب شود. '.repeat(4)}`
+    const source = (slug: string, title: string, extra: Record<string, unknown> = {}, body = sectionBody) =>
+      ({
+        meta: { slug, title, ...extra },
+        body,
+      }) as unknown as ArticleSource
+
+    it('creates one story per article branch and combines up to three branches for general routes', () => {
+      const result = buildBranchStories(
+        '2026-11-06',
+        [
+          {
+            route: '/media',
+            articles: [
+              source('lives-nour/spider-house/one', 'مقالهٔ خانهٔ عنکبوت'),
+              source('lives-nour/motaghiya/two', 'مقالهٔ متقیه'),
+              source('lives-nour/new-branch/short', 'شاخهٔ تازه', {}, '## کوتاه\n\nسلام'),
+            ],
+          },
+          { route: '/books', articles: [source('answer-to-shobhat/book-one', 'کتاب پاسخ به شبهات')] },
+          { route: '/media', articles: [source('_example-media/test', 'مقالهٔ آزمایشی')] },
+        ],
+        plain,
+      )
+
+      expect(Object.keys(result.branches).sort()).toEqual([
+        '/books/answer-to-shobhat',
+        '/media/lives-nour/motaghiya',
+        '/media/lives-nour/new-branch',
+        '/media/lives-nour/spider-house',
+      ])
+      expect(result.home?.slides).toHaveLength(3)
+      expect(result.branches['/media/lives-nour/spider-house'].slides).toHaveLength(1)
+      expect(result.branches['/media/lives-nour/spider-house'].slides[0].markdown).toMatch(/^#{2,3} /)
+    })
+
+    it('omits adult-gated and test articles but includes unfinished articles', () => {
+      const result = buildBranchStories(
+        '2026-11-06',
+        [
+          {
+            route: '/media',
+            articles: [
+              source('adult/article', 'مقالهٔ بزرگسال', { adult: true }),
+              source('unfinished/article', 'مقالهٔ ناتمام', { incomplete: true }),
+              source('_example-media/test', 'مقالهٔ آزمایشی'),
+            ],
+          },
+        ],
+        plain,
+      )
+
+      expect(Object.keys(result.branches)).toEqual(['/media/unfinished'])
+      expect(result.home?.slides).toHaveLength(1)
+    })
+  })
+
   it('finds `article / section` by title or folder name, ignoring ZWNJ and Arabic letter variants', () => {
-    expect(resolveSectionLink('غدیر ، عید سیاسی/شاید بگویند', [article], plain, 'x')?.section.heading).toBe('شاید بگویند')
+    expect(resolveSectionLink('غدیر ، عید سیاسی/شاید بگویند', [article], plain, 'x')?.section.heading).toBe(
+      'شاید بگویند',
+    )
     expect(resolveSectionLink('eid / شايد بگويند', [article], plain, 'x')?.section.heading).toBe('شاید بگویند')
   })
 

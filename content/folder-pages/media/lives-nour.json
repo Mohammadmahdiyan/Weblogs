@@ -1,21 +1,21 @@
 {
-  "title": "",
-  "subtitle": "",
+  "title": "لایو های شبکه نور",
+  "subtitle": "مجموعه‌های موضوعی لایوز نور را انتخاب کنید و مقاله‌ها و رسانه‌های هر مجموعه را ببینید.",
   "searchLabel": "عنوان را جست‌وجو کنید؛ برای متن: محتوا::عبارت",
-  "listHeading": "",
-  "emptyMessage": "",
+  "listHeading": "مجموعه‌های لایو های شبکه نور",
+  "emptyMessage": "هنوز مجموعه‌ای در این بخش برای نمایش وجود ندارد.",
   "folders": [
     {
       "slug": "motaghiya",
-      "title": "",
-      "caption": "",
-      "image": ""
+      "title": "متقیه",
+      "caption": "مطالبی دربارهٔ سیرهٔ پیامبر و پیروی از سنت.",
+      "image": "content-media/lives-nour/motaghiya/kashti-najat/ibnkasirfaghadzalzalalan.jpg"
     },
     {
       "slug": "spider-house",
-      "title": "",
-      "caption": "",
-      "image": ""
+      "title": "خانهٔ عنکبوت",
+      "caption": "مجموعه‌ای از مقاله‌ها دربارهٔ روایت‌ها و دیدگاه‌های شیعه.",
+      "image": "content-media/lives-nour/spider-house/chera-shia-fohsh-mida/boghz.jpg"
     }
   ]
 }

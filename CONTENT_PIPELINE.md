@@ -41,11 +41,11 @@ content/books/answer-to-shobhat/alhad-noven-part1/
 
 This becomes `/books/answer-to-shobhat/alhad-noven-part1` with page 27 at `/books/answer-to-shobhat/alhad-noven-part1/27`. Page media may live under `pages/` or in the book folder.
 
-## Category stories
+## Header stories
 
-Put independent stories in `content/<category>/story/` (for example `content/media/story/`). This path is excluded from normal content listings and articles. Use `npm run publishStory -- media` or `npm run publishStory -- books` to publish that category's story for today; `npm run cleanStory -- <category>` and `npm run deleteStory -- <category>` clean it. Each category has a separate story state, generated feed, media directory, and story ring on its listing pages. The existing root `/story` workflow and global header ring remain available.
+The single story button is in the site header. On a listing route whose direct children are articles, its daily story is one random eligible article and one random `##` or `###` section from that article. The build creates these stories from content structure, so newly added article branches are included automatically. On the home page and other listing routes, the header story contains up to three randomly selected branch stories. Adult-gated and test articles are never included.
 
-Story files are one Markdown file per slide (`index.md`, `index1.md`, …); image files can also become slides. Frontmatter supports `show: false`, `seconds: 12`, and `blog: <article>/<heading>` to link to a section of an article in that same category. Story media belongs beside the story files.
+The older `content/story/` and `content/<category>/story/` files are not used by the route-aware header story. The header story is generated from article sections during `npm run dev` and `npm run build`.
 
 ## Generated files and local workflow
 

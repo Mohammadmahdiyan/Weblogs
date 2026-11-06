@@ -29,17 +29,21 @@ export function folderPageConfigs(sources: FolderPageSource[]): Map<string, Fold
 
   for (const { collection, articleSlugs } of sources) {
     const branches = new Map<string, Set<string>>()
+    const pagePrefixes = new Set<string>()
     for (const slug of articleSlugs) {
       const segments = slug.split('/')
-      for (let index = 0; index < segments.length - 1; index += 1) {
+      for (let index = 0; index < segments.length; index += 1) {
         const parent = segments.slice(0, index).join('/')
-        const children = branches.get(parent) ?? new Set<string>()
-        children.add(segments[index])
-        branches.set(parent, children)
+        pagePrefixes.add(parent)
+        if (index < segments.length - 1) {
+          const children = branches.get(parent) ?? new Set<string>()
+          children.add(segments[index])
+          branches.set(parent, children)
+        }
       }
     }
 
-    for (const [prefix, folders] of branches) {
+    for (const prefix of pagePrefixes) {
       const key = `${collection}/${prefix || '_root'}`
       pages.set(key, {
         title: '',
@@ -47,7 +51,7 @@ export function folderPageConfigs(sources: FolderPageSource[]): Map<string, Fold
         searchLabel: defaultSearchLabel,
         listHeading: '',
         emptyMessage: '',
-        folders: [...folders].sort().map((slug) => ({ slug, title: '', caption: '', image: '' })),
+        folders: [...(branches.get(prefix) ?? [])].sort().map((slug) => ({ slug, title: '', caption: '', image: '' })),
       })
     }
   }

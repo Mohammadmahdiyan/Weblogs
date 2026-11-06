@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { folderPageConfigs, syncFolderPageConfigs } from '../scripts/lib/folder-pages.ts'
 
 describe('folder page configuration', () => {
-  it('creates configurations for branches and not for final article folders', () => {
+  it('creates configurations for listing branches, including branches containing articles', () => {
     const pages = folderPageConfigs([
       {
         collection: 'media',
@@ -15,7 +15,8 @@ describe('folder page configuration', () => {
 
     expect(pages.get('media/_root')?.folders.map((folder) => folder.slug)).toEqual(['lives-nour'])
     expect(pages.get('media/lives-nour')?.folders.map((folder) => folder.slug)).toEqual(['motaghiya', 'spider-house'])
-    expect(pages.has('media/lives-nour/spider-house')).toBe(false)
+    expect(pages.get('media/lives-nour/spider-house')?.folders).toEqual([])
+    expect(pages.get('media/lives-nour/motaghiya')?.folders).toEqual([])
   })
 
   it('preserves Persian edits and adds newly discovered branches', async () => {
@@ -46,6 +47,10 @@ describe('folder page configuration', () => {
         await readFile(path.join(root, 'folder-pages', 'media', 'lives-nour.json'), 'utf8'),
       ) as { folders: { slug: string }[] }
       expect(nested.folders.map((folder) => folder.slug)).toEqual(['first', 'second'])
+
+      const leafPath = path.join(root, 'folder-pages', 'media', 'lives-nour', 'first.json')
+      const leaf = JSON.parse(await readFile(leafPath, 'utf8')) as { title: string }
+      expect(leaf.title).toBe('')
     } finally {
       await rm(root, { recursive: true, force: true })
     }

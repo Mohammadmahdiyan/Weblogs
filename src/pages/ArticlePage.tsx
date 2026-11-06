@@ -24,6 +24,19 @@ import { HiddenArticlePage } from './HiddenArticlePage'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
 
+interface FolderPageData {
+  title: string
+}
+
+const folderPageConfigs = import.meta.glob<{ default: FolderPageData }>('../../content/folder-pages/**/*.json', {
+  eager: true,
+})
+
+function folderPageTitle(collection: CollectionId, path: string): string | undefined {
+  const key = `../../content/folder-pages/${collection}/${path}.json`
+  return folderPageConfigs[key]?.default.title
+}
+
 function AdultContentGate({ onYes }: { onYes: () => void }) {
   return (
     <main
@@ -327,7 +340,9 @@ export function ArticlePage({
                         to={`${route}/${parentPath}`}
                         className="text-[var(--text-secondary)] no-underline hover:text-[var(--brand)]"
                       >
-                        {collection.folderNames[parentPath] ?? segment.replace(/[-_]+/g, ' ')}
+                        {folderPageTitle(collectionId, parentPath) ||
+                          collection.folderNames[parentPath] ||
+                          segment.replace(/[-_]+/g, ' ')}
                       </Link>
                     )}
                   </span>

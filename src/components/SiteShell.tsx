@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Menu, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import siteConfig from '../site.config'
@@ -10,6 +10,10 @@ import type { ArticleMeta } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
 import { useDismissibleDetails } from '../lib/useDismissibleDetails'
 import { StoryButton } from './Stories'
+import branchStoriesJson from '../generated/branch-stories.json'
+import type { BranchStoriesData } from '../lib/story'
+
+const branchStories = branchStoriesJson as BranchStoriesData
 
 function SiteLink({
   href,
@@ -132,9 +136,11 @@ function MobileDrawer({ onClose }: { onClose: () => void }) {
 }
 
 function Header() {
+  const location = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const textSettingsRef = useRef<HTMLDetailsElement>(null)
   useDismissibleDetails(textSettingsRef)
+  const currentStory = branchStories.branches[location.pathname.replace(/\/+$/, '')] ?? branchStories.home
 
   return (
     <>
@@ -166,7 +172,7 @@ function Header() {
                 </div>
               </details>
             </div>
-            <StoryButton />
+            <StoryButton key={currentStory?.id ?? 'no-story'} data={currentStory} />
             <StyleSwitcher />
             <button
               type="button"

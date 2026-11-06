@@ -1,15 +1,15 @@
 {
-  "title": "",
-  "subtitle": "",
+  "title": "کتاب‌ها",
+  "subtitle": "کتاب‌ها و منابع مطالعه را مرور کنید؛ در عنوان و متن کتاب‌ها جست‌وجو کنید.",
   "searchLabel": "عنوان را جست‌وجو کنید؛ برای متن: محتوا::عبارت",
-  "listHeading": "",
-  "emptyMessage": "",
+  "listHeading": "همهٔ مجموعه‌های کتاب",
+  "emptyMessage": "هنوز مجموعه‌ای برای نمایش وجود ندارد.",
   "folders": [
     {
       "slug": "answer-to-shobhat",
-      "title": "",
-      "caption": "",
-      "image": ""
+      "title": "پاسخ به شبهات",
+      "caption": "کتاب‌ها و منابعی برای مطالعه و بررسی شبهات.",
+      "image": "books-media/answer-to-shobhat/alhad-noven-part1/alhad-noven.jpg"
     }
   ]
 }

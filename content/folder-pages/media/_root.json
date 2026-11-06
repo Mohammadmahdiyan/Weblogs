@@ -1,15 +1,15 @@
 {
-  "title": "",
-  "subtitle": "",
+  "title": "رسانه‌ها",
+  "subtitle": "مقاله‌ها، ویدیوها و مطالب آموزشی را در مجموعه‌های موضوعی مرور کنید.",
   "searchLabel": "عنوان را جست‌وجو کنید؛ برای متن: محتوا::عبارت",
-  "listHeading": "",
-  "emptyMessage": "",
+  "listHeading": "همهٔ مجموعه‌ها",
+  "emptyMessage": "هنوز مجموعه‌ای برای نمایش وجود ندارد.",
   "folders": [
     {
       "slug": "lives-nour",
-      "title": "",
-      "caption": "",
-      "image": ""
+      "title": "لایو های شبکه نور",
+      "caption": "مجموعهٔ برنامه‌ها و مطالب منتشرشده در لایوز نور.",
+      "image": "content-media/lives-nour/spider-house/chera-shia-fohsh-mida/boghz.jpg"
     }
   ]
 }

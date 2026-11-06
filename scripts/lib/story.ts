@@ -29,7 +29,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
 import type { ArticleMeta } from '../../src/lib/types.ts'
-import type { StoryData, StorySlide } from '../../src/lib/story.ts'
+import type { BranchStoriesData, StoryData, StorySlide } from '../../src/lib/story.ts'
 import { isTestFolder } from './blog.ts'
 import { encodeMediaPath, isAbsoluteUrl, normalizeMediaPath, prepareVideoForBrowser } from './media.ts'
 
@@ -343,6 +343,79 @@ function articleStory(
     }
   }
   return null
+}
+
+/**
+ * Builds one daily story for every listing route that directly contains articles, plus a home story
+ * made from three randomly selected branch stories.
+ */
+export function buildBranchStories(
+  date: string,
+  collections: { route: string; articles: ArticleSource[] }[],
+  plainText: (markdown: string) => string,
+): BranchStoriesData {
+  const branches: Record<string, StoryData> = {}
+
+  for (const { route, articles } of collections) {
+    const groups = new Map<string, ArticleSource[]>()
+    const eligibleArticles = articles.filter(({ meta }) => !isTestFolder(meta.slug) && !meta.adult)
+
+    for (const article of eligibleArticles) {
+      const parent = article.meta.slug.includes('/')
+        ? article.meta.slug.slice(0, article.meta.slug.lastIndexOf('/'))
+        : ''
+      const key = `${route}${parent ? `/${parent}` : ''}`
+      const group = groups.get(key) ?? []
+      group.push(article)
+      groups.set(key, group)
+    }
+
+    for (const [branchRoute, group] of groups) {
+      const random = seededRandom(`${date}:${branchRoute}`)
+      const order = [...group].sort((left, right) => left.meta.slug.localeCompare(right.meta.slug))
+      for (let index = order.length - 1; index > 0; index -= 1) {
+        const swap = Math.floor(random() * (index + 1))
+        ;[order[index], order[swap]] = [order[swap], order[index]]
+      }
+
+      for (const article of order) {
+        const sections = parseSections(article.body, plainText).filter((section) => {
+          if (section.level !== 2 && section.level !== 3) return false
+          return plainText(section.markdown).length > section.heading.length
+        })
+        if (sections.length === 0) continue
+
+        const section = sections[Math.floor(random() * sections.length)]
+        branches[branchRoute] = {
+          id: `${date}:branch:${branchRoute}:${article.meta.slug}:${section.heading}`,
+          source: 'article',
+          date,
+          expiresAt: storyDayEnd(date),
+          slides: [sectionSlide(article, section, plainText, route)],
+        }
+        break
+      }
+    }
+  }
+
+  const candidates = Object.entries(branches).sort(([left], [right]) => left.localeCompare(right))
+  const random = seededRandom(`${date}:home-branches`)
+  for (let index = candidates.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(random() * (index + 1))
+    ;[candidates[index], candidates[swap]] = [candidates[swap], candidates[index]]
+  }
+  const selected = candidates.slice(0, 3).map(([, story]) => story)
+  const home: StoryData | null = selected.length
+    ? {
+        id: `${date}:home-branches:${selected.map((story) => story.id).join('|')}`,
+        source: 'article',
+        date,
+        expiresAt: storyDayEnd(date),
+        slides: selected.flatMap((story) => story.slides),
+      }
+    : null
+
+  return { home, branches }
 }
 
 function sectionSlide(
