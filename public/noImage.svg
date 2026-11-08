@@ -4,101 +4,98 @@
      height="360"
      role="img"
      aria-labelledby="no-image-title">
-
   <title id="no-image-title">تصویر پیش‌فرض مقاله</title>
 
   <defs>
-    <linearGradient id="sky-gradient" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="var(--no-image-sky, #E8F0EA)"/>
-      <stop offset="100%" stop-color="var(--no-image-bg, #F5F1E8)"/>
+    <linearGradient id="sky-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="var(--no-image-sky, #e8f0ea)"/>
+      <stop offset="100%" stop-color="var(--no-image-bg, #f5f1e8)"/>
     </linearGradient>
-
+    <linearGradient id="sun-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="var(--no-image-sun, #e5b96c)"/>
+      <stop offset="100%" stop-color="var(--no-image-sun, #e5b96c)" stop-opacity=".55"/>
+    </linearGradient>
+    <linearGradient id="mountain-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="var(--no-image-mountain, #789482)"/>
+      <stop offset="100%" stop-color="var(--no-image-foreground, #587866)"/>
+    </linearGradient>
+    <linearGradient id="path-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="var(--no-image-snow, #f5f1e8)" stop-opacity=".78"/>
+      <stop offset="100%" stop-color="var(--no-image-snow, #f5f1e8)" stop-opacity=".12"/>
+    </linearGradient>
     <clipPath id="image-frame">
       <rect width="640" height="360"/>
     </clipPath>
   </defs>
 
   <g clip-path="url(#image-frame)">
-    <!-- آسمان -->
     <rect width="640" height="360" fill="url(#sky-gradient)"/>
 
-    <!-- خورشید؛ در حالت تاریک می‌تواند ماه شود -->
-    <circle cx="480" cy="100" r="53"
-            fill="var(--no-image-sun, #E5B96C)" opacity=".18"/>
-    <circle cx="480" cy="100" r="37"
-            fill="var(--no-image-sun, #E5B96C)"/>
+    <circle cx="486" cy="104" r="71" fill="url(#sun-gradient)" opacity=".16"/>
+    <circle cx="486" cy="104" r="48" fill="url(#sun-gradient)" opacity=".94"/>
+    <circle cx="486" cy="104" r="61" fill="none"
+            stroke="var(--no-image-sun, #e5b96c)" stroke-width="1.5" opacity=".38"/>
 
-    <!-- تپه‌های دوردست -->
-    <path d="M0 215
-             Q38 185 75 208
-             T155 201 T235 210 T315 196
-             T395 208 T475 192 T560 205 T640 190
-             V360 H0Z"
-          fill="var(--no-image-hill-back, #A9BDAA)"/>
+    <g fill="var(--no-image-cloud, #fff)" opacity=".62">
+      <path d="M75 112c0-9 7-16 16-16 3-11 13-18 25-18 13 0 24 9 26 21 9 1 16 8 16 17H75z"/>
+      <path d="M334 91c0-7 6-13 13-13 2-9 10-15 20-15 11 0 19 7 21 17 7 1 12 6 12 13h-66z" opacity=".72"/>
+    </g>
+    <g fill="none" stroke="var(--no-image-cloud, #fff)" stroke-linecap="round" opacity=".54">
+      <path d="M91 124h55" stroke-width="2"/>
+      <path d="M351 102h35" stroke-width="2"/>
+    </g>
 
-    <!-- کوه اصلی -->
-    <path d="M-30 287
-             L105 142
-             L177 218
-             L263 112
-             L390 270
-             L466 190
-             L565 276
-             L670 218
-             V380 H-30Z"
-          fill="var(--no-image-mountain, #789482)"/>
+    <g fill="var(--no-image-star, #fff)" opacity=".78">
+      <circle cx="220" cy="63" r="2"/>
+      <circle cx="285" cy="108" r="1.6"/>
+      <circle cx="572" cy="57" r="2.2"/>
+      <path d="M190 125l2.2 5.8 5.8 2.2-5.8 2.2-2.2 5.8-2.2-5.8-5.8-2.2 5.8-2.2z"/>
+      <path d="M558 153l1.5 4 4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>
+    </g>
 
-    <!-- برف قله اصلی؛ پهن‌تر و هماهنگ با شیب دو طرف کوه -->
-<!-- برف قله اصلی -->
-    <path
-      d="M229 154
-        L263 112
-        L298 154
-        L285 149
-        L275 160
-        L263 147
-        L250 163
-        L240 154
-        Z"
-      fill="var(--no-image-snow, #F5F1E8)"
-    />
+    <path d="M0 221c48-23 84-20 126-8 43-28 85-24 127-5 47-32 99-26 141-5 44-27 90-26 132-7 45-18 77-11 114 4v160H0z"
+          fill="var(--no-image-hill-back, #a9bdaa)"/>
+    <path d="M0 251c50-25 91-25 139-8 41-15 72-15 111 2 47-23 95-18 137 2 48-23 85-20 128 0 47-20 85-16 125-2v115H0z"
+          fill="var(--no-image-hill-back, #a9bdaa)" opacity=".66"/>
 
-    <!-- سایه ظریف روی دامنه -->
-    <path d="M263 112 L314 196 L292 177 L279 181 L267 164 L253 179 L245 163Z"
-          fill="var(--no-image-mountain, #789482)" opacity=".24"/>
+    <path d="M-31 305 105 165l54 61 104-117 132 159 56-62 111 92 94-56 38 29v129H-31z"
+          fill="url(#mountain-gradient)"/>
+    <path d="m87 183 18-18 19 20-9-3-5 5-6-7-7 8-5-5z"
+          fill="var(--no-image-snow, #f5f1e8)" opacity=".78"/>
+    <path d="m237 137 26-28 26 28-10-3-6 7-10-9-10 9-6-7z"
+          fill="var(--no-image-snow, #f5f1e8)"/>
+    <path d="m263 109 132 159-30-13-31 2-29-24-24 7-28-41-22-12z"
+          fill="var(--no-image-foreground, #587866)" opacity=".16"/>
+    <path d="m435 222 16-16 18 17-8-3-5 5-5-6-7 6-4-5z"
+          fill="var(--no-image-snow, #f5f1e8)" opacity=".7"/>
+    <path d="m263 109 74 144-24-18-20-5-20-37-19-19-16-30z"
+          fill="var(--no-image-snow, #f5f1e8)" opacity=".08"/>
 
-    <!-- پیش‌زمینه -->
-    <path d="M-20 320
-             Q90 266 185 310
-             T370 302 T550 293 T670 320
-             V380 H-20Z"
+    <path d="M-20 326c76-46 141-49 210-22 60-29 124-31 186-6 69-35 142-39 264 2v100H-20z"
           fill="var(--no-image-foreground, #587866)"/>
+    <path d="M286 360c-6-28-6-46 10-67 12-17 27-27 45-39-5 18-13 31-25 44-13 16-14 35-5 62z"
+          fill="url(#path-gradient)" opacity=".8"/>
+    <path d="M319 360c-3-24 1-39 14-56" fill="none"
+          stroke="var(--no-image-snow, #f5f1e8)" stroke-width="2" opacity=".38"/>
 
-    <!-- درختان ساده -->
-    <g fill="var(--no-image-foreground, #587866)" opacity=".8">
-      <path d="M70 284 L88 244 L106 284Z"/>
-      <path d="M77 301 L101 253 L125 301Z"/>
-      <path d="M535 281 L552 243 L569 281Z"/>
-      <path d="M544 300 L567 252 L590 300Z"/>
+    <g fill="var(--no-image-foreground, #587866)">
+      <path d="m62 303 23-49 23 49z"/>
+      <path d="m72 322 28-59 28 59z"/>
+      <path d="m547 296 20-43 20 43z"/>
+      <path d="m537 319 29-61 29 61z"/>
+    </g>
+    <g fill="var(--no-image-snow, #f5f1e8)" opacity=".56">
+      <path d="m85 254 8 17h-16z"/>
+      <path d="m566 253 7 15h-14z"/>
     </g>
 
-    <!-- ابرهای مینیمال -->
-    <g stroke="var(--no-image-cloud, #FFFFFF)"
-       stroke-width="3"
-       stroke-linecap="round"
-       opacity=".7">
-      <path d="M80 85 H125"/>
-      <path d="M96 75 H114"/>
-      <path d="M350 72 H389"/>
-      <path d="M364 62 H380"/>
-    </g>
-
-    <!-- نقاط تزئینی آسمان -->
-    <g fill="var(--no-image-star, #FFFFFF)" opacity=".85">
-      <circle cx="175" cy="74" r="2.5"/>
-      <circle cx="220" cy="53" r="2"/>
-      <circle cx="410" cy="145" r="2"/>
-      <circle cx="555" cy="55" r="2.5"/>
+    <g fill="var(--no-image-sun, #e5b96c)" opacity=".72">
+      <circle cx="156" cy="320" r="2"/>
+      <circle cx="178" cy="333" r="1.5"/>
+      <circle cx="466" cy="319" r="2"/>
+      <circle cx="492" cy="336" r="1.5"/>
+      <circle cx="136" cy="345" r="1.4"/>
+      <circle cx="515" cy="350" r="1.4"/>
     </g>
   </g>
 </svg>
