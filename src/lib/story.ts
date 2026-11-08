@@ -1,4 +1,7 @@
-/** Daily story: data shape (written by scripts/lib/story.ts into src/generated/story.json) + reader helpers. */
+/** Daily story data and route-selection helpers. */
+
+export const STORY_SCOPES = ['home', 'media', 'books'] as const
+export type StoryScope = (typeof STORY_SCOPES)[number]
 
 export interface StoryLink {
   /** Category route (`/media/path?find=…`, opened with the router) or a full https URL. */
@@ -35,11 +38,16 @@ export interface StoryData {
   expiresAt: string
   /** true in development for a story folder that has not been published yet. */
   preview?: boolean
+  /** A published scope was intentionally hidden with `show: false`; do not use any fallback. */
+  hidden?: boolean
+  /** Automatic story for this scope, retained behind a manual story in case it expires before a rebuild. */
+  fallback?: StoryData | null
   slides: StorySlide[]
 }
 
-export interface BranchStoriesData {
+export interface StoriesData {
   home: StoryData | null
+  sections: Record<'media' | 'books', StoryData | null>
   branches: Record<string, StoryData>
 }
 
@@ -48,6 +56,55 @@ const SEEN_KEY = 'story-seen'
 export function isStoryExpired(story: StoryData, now = Date.now()): boolean {
   const end = Date.parse(story.expiresAt)
   return Number.isFinite(end) && now >= end
+}
+
+function usableStory(story: StoryData | null | undefined, now: number): StoryData | null {
+  return story && !story.hidden && story.slides.length > 0 && !isStoryExpired(story, now) ? story : null
+}
+
+function homeStory(story: StoryData | null, now: number): StoryData | null {
+  if (story?.source !== 'custom') return usableStory(story, now)
+  if (story.hidden && !isStoryExpired(story, now)) return null
+  return usableStory(story, now) ?? usableStory(story.fallback, now)
+}
+
+/**
+ * Selects today's story for a route: scoped manual story, deepest matching directory, scoped auto story,
+ * then home. A hidden manual story suppresses every fallback for its scope.
+ */
+export function pickStory(pathname: string, stories: StoriesData, now = Date.now()): StoryData | null {
+  const route = `/${pathname.split(/[?#]/, 1)[0].split('/').filter(Boolean).join('/')}`
+  if (route === '/') return homeStory(stories.home, now)
+
+  const scope =
+    route.startsWith('/media/') || route === '/media'
+      ? 'media'
+      : route.startsWith('/books/') || route === '/books'
+        ? 'books'
+        : null
+  if (!scope) return homeStory(stories.home, now)
+
+  const scopedStory = stories.sections[scope]
+  if (scopedStory?.source === 'custom') {
+    if (scopedStory.hidden && !isStoryExpired(scopedStory, now)) return null
+    const manual = usableStory(scopedStory, now)
+    if (manual) return manual
+  }
+
+  const segments = route.split('/').filter(Boolean)
+  let directorySegments = segments
+  if (scope === 'books' && /^\d+$/.test(segments.at(-1) ?? '')) {
+    directorySegments = segments.slice(0, -2)
+  }
+  for (let length = directorySegments.length; length >= 1; length -= 1) {
+    const candidate = usableStory(stories.branches[`/${directorySegments.slice(0, length).join('/')}`], now)
+    if (candidate) return candidate
+  }
+
+  const automatic =
+    scopedStory?.source === 'custom' ? usableStory(scopedStory.fallback, now) : usableStory(scopedStory, now)
+  if (automatic) return automatic
+  return homeStory(stories.home, now)
 }
 
 export function readSeenStory(): string | null {

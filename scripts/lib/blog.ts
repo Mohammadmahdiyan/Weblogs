@@ -1,5 +1,5 @@
 /*
-  Shared helpers for the blog commands (publishBlog, deleteBlog, createTest, deleteTest) and for scripts/build-content.ts. Everything that decides what a valid article
+  Shared helpers for the media commands (publishMedia, deleteMedia, createTestMedia, deleteTestMedia; legacy aliases remain supported) and for scripts/build-content.ts. Everything that decides what a valid article
   looks like lives here so the commands and the build can never disagree.
 
   The markdown file contains ONLY:
@@ -11,7 +11,7 @@
       ---
       # Title                         # the first "# " line is the title
 
-  Dates are not written in the markdown: they live in content/blog-dates.json, which the
+  Dates are not written in the markdown: they live in content/media.json or content/books.json, which the
   commands and development watcher maintain (date = creation day, updated = last saved change after publication).
 */
 import { spawnSync } from 'node:child_process'
@@ -65,7 +65,7 @@ export interface BlogDates {
   /** Whether the author has explicitly finished the article. Legacy entries count as complete. */
   completed?: boolean
   /**
-   * true only after `npm run publishBlog -- <folder>`. Every article without it (new or old) ends with the
+   * true only after `npm run publishMedia -- <folder>` (or its `publishBlog` alias). Every article without it (new or old) ends with the
    * «not finished yet» notice. Entries written before this flag existed count as NOT published.
    */
   published?: boolean
@@ -76,6 +76,67 @@ export interface BlogDates {
 export type DatesRegistry = Record<string, BlogDates>
 
 const isoDate = /^\d{4}-\d{2}-\d{2}$/
+
+export function validateAliasUniqueness(
+  articles: { slug: string; aliases?: string[] }[],
+  collection: 'books' | 'media',
+): void {
+  const leaves = new Map<string, string[]>()
+  for (const article of articles) {
+    const leaf = path.posix.basename(article.slug)
+    leaves.set(leaf, [...(leaves.get(leaf) ?? []), article.slug])
+  }
+  const owners = new Map<string, string>()
+  for (const article of articles) {
+    for (const alias of article.aliases ?? []) {
+      const owner = owners.get(alias)
+      if (owner && owner !== article.slug) {
+        throw new Error(`Alias "${alias}" is used more than once in ${collection}: ${owner}, ${article.slug}`)
+      }
+      const leafOwners = leaves.get(alias) ?? []
+      if (leafOwners.some((slug) => slug !== article.slug)) {
+        throw new Error(`Alias "${alias}" conflicts with an article leaf in ${collection}: ${leafOwners.join(', ')}`)
+      }
+      owners.set(alias, article.slug)
+    }
+  }
+}
+
+export function syncDatesRegistry(
+  registry: DatesRegistry,
+  folderSlugs: string[],
+  collection: 'books' | 'media',
+): DatesRegistry {
+  const existingFolders = new Set(folderSlugs)
+  const foldersByLeaf = new Map<string, string[]>()
+  for (const slug of folderSlugs) {
+    const leaf = path.posix.basename(slug)
+    foldersByLeaf.set(leaf, [...(foldersByLeaf.get(leaf) ?? []), slug])
+  }
+
+  const synced: DatesRegistry = {}
+  for (const [slug, entry] of Object.entries(registry)) {
+    if (!existingFolders.has(slug)) continue
+    synced[slug] = { ...entry, route: `/${collection}/${slug}` }
+  }
+
+  for (const [legacySlug, legacyEntry] of Object.entries(registry)) {
+    if (existingFolders.has(legacySlug) || legacyEntry.route) continue
+    const candidates = foldersByLeaf.get(legacySlug) ?? []
+    if (candidates.length !== 1 || !legacyEntry.date) continue
+
+    const slug = candidates[0]
+    const current = synced[slug]
+    if (current?.date) continue
+    synced[slug] = {
+      ...legacyEntry,
+      ...current,
+      route: `/${collection}/${slug}`,
+    }
+  }
+
+  return synced
+}
 
 export async function readDates(file: string = datesFile): Promise<DatesRegistry> {
   const name = `content/${path.basename(file)}`
@@ -180,7 +241,7 @@ export function splitTitle(markdown: string): { title: string; body: string } | 
   return null
 }
 
-function stringList(data: Record<string, unknown>, key: 'tags' | 'suggestions', label: string): string[] {
+function stringList(data: Record<string, unknown>, key: string, label: string): string[] {
   const value = data[key]
   if (value === undefined || value === null) return []
   if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
@@ -195,6 +256,8 @@ export interface ParsedBlog {
   body: string
   tags: string[]
   suggestions: string[]
+  aliases: string[]
+  pageCount?: number
   /** `sources:` (also `source:`, `منبع:`, `منابع:`): shown in an accordion at the end of the article. */
   sources: SourceItem[]
   description?: string
@@ -215,6 +278,8 @@ const SOURCE_KEYS = ['sources', 'source', 'منابع', 'منبع']
 const knownKeys = new Set([
   'tags',
   'suggestions',
+  'aliases',
+  'pageCount',
   'description',
   'readingTime',
   'cover',
@@ -248,6 +313,24 @@ export function parseBlog(source: string, label: string): ParsedBlog {
 
   const tags = stringList(data, 'tags', label)
   const suggestions = stringList(data, 'suggestions', label)
+  const aliases = stringList(data, 'aliases', label)
+  if (Array.isArray(data.aliases) && new Set(data.aliases).size !== data.aliases.length) {
+    throw new Error(`${label}: "aliases" must not contain duplicates`)
+  }
+  for (const alias of aliases) {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(alias)) {
+      throw new Error(`${label}: alias "${alias}" must use lowercase kebab-case (a-z, 0-9 and hyphens)`)
+    }
+    if (
+      data.pageCount !== undefined &&
+      (typeof data.pageCount !== 'number' ||
+        !Number.isInteger(data.pageCount) ||
+        data.pageCount < 1 ||
+        data.pageCount > 999999)
+    ) {
+      throw new Error(`${label}: "pageCount" must be a whole number between 1 and 999999`)
+    }
+  }
 
   if (data.description !== undefined && typeof data.description !== 'string') {
     throw new Error(`${label}: "description" must be a string`)
@@ -276,6 +359,8 @@ export function parseBlog(source: string, label: string): ParsedBlog {
     body: split.body,
     tags,
     suggestions: suggestions.length > 0 ? suggestions : [split.title],
+    aliases,
+    ...(typeof data.pageCount === 'number' ? { pageCount: data.pageCount } : {}),
     sources: normalizeSources(
       SOURCE_KEYS.map((key) => data[key]).find((value) => value !== undefined),
       label,
@@ -302,12 +387,16 @@ function optional<Key extends string, Value>(key: Key, value: Value | undefined)
 // ───────────────────────── running the content step ─────────────────────────
 
 /** Runs `npm run content`: validates the whole site and regenerates every generated file. */
-export function runContentBuild(): boolean {
+export function runContentBuild(options: { quietLinks?: boolean } = {}): boolean {
   console.log('→ npm run content (validating and regenerating site data)…')
+  const env = {
+    ...process.env,
+    ...(options.quietLinks ? { WEBLOG_LINKS_QUIET: '1' } : {}),
+  }
   // On Windows npm is a .cmd file, which only a shell can start; a single command string needs no argument quoting.
   const result =
     process.platform === 'win32'
-      ? spawnSync('npm run content', { cwd: projectRoot, stdio: 'inherit', shell: true })
-      : spawnSync('npm', ['run', 'content'], { cwd: projectRoot, stdio: 'inherit' })
+      ? spawnSync('npm run content', { cwd: projectRoot, stdio: 'inherit', shell: true, env })
+      : spawnSync('npm', ['run', 'content'], { cwd: projectRoot, stdio: 'inherit', env })
   return result.status === 0
 }

@@ -38,10 +38,10 @@ jobs:
       - name: Delete yesterday's story
         run: |
           npm run cleanStory
-          if [ -n "$(git status --porcelain -- story content/story-state.json)" ]; then
+          if [ -n "$(git status --porcelain -- story content/media/story content/books/story content/story-state.json)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A -- story content/story-state.json
+            git add -A -- story content/media/story content/books/story content/story-state.json
             git commit -m "story: remove expired story"
             git push origin HEAD:main || echo "::warning::Could not push the story cleanup (main moved); the build below still ignores the expired story."
           fi

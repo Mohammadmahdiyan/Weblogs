@@ -6,7 +6,7 @@ import {
   discoverContentDirectories,
   englishFolderName,
 } from '../scripts/lib/content-path.ts'
-import { readDates } from '../scripts/lib/blog.ts'
+import { readDates, syncDatesRegistry } from '../scripts/lib/blog.ts'
 
 describe('nested content paths', () => {
   it('keeps every relative directory segment in the route slug', () => {
@@ -41,15 +41,22 @@ describe('nested content paths', () => {
   })
 
   it('keeps the previous leaf-slug date record when registering nested routes', async () => {
-    const registry = await readDates(path.resolve('content', 'books.json'))
+    const rawRegistry = await readDates(path.resolve('content', 'books.json'))
+    const bookRoot = path.resolve('content', 'books')
+    const folderSlugs = (await discoverContentDirectories(bookRoot)).map((directory) =>
+      articlePathSlug(bookRoot, directory),
+    )
+    const registry = syncDatesRegistry(rawRegistry, folderSlugs, 'books')
     const legacy = registry['alhad-noven-part1']
     const nested = registry['answer-to-shobhat/alhad-noven-part1']
+    const existingNested = rawRegistry['answer-to-shobhat/alhad-noven-part1']
 
+    expect(legacy).toBeUndefined()
     expect(nested).toMatchObject({
-      date: legacy.date,
-      updated: legacy.updated,
-      completed: legacy.completed,
-      published: legacy.published,
+      date: existingNested.date,
+      updated: existingNested.updated,
+      completed: existingNested.completed,
+      published: existingNested.published,
       route: '/books/answer-to-shobhat/alhad-noven-part1',
     })
     expect(nested.name).toBeTruthy()

@@ -12,6 +12,8 @@
 
 ویژگی‌ها: تغییرات جزئی ظاهر مقاله (رنگ‌بندی، آکاردئون، نقل‌قول، دکمه؛ انتخاب با خواننده)، بسم‌الله خودکار در ابتدای هر مقاله، حالت روشن/تیره/سیستم، فونت قابل‌تعویض و تنظیم اندازهٔ متن، جست‌وجوی هوشمند با `suggestions`، بزرگ‌نمایی عکس/گیف/ویدیو، کامپوننت‌های آماده در مارک‌داون، iframe امن (یوتیوب، اینستاگرام، آپارات، صفحهٔ دلخواه)، کارت نقل‌قول منبع (`:::source`)، HTML خام با Tailwind.
 
+ابزار کمکی ساخت لینک در [tools/makeLink.html](tools/makeLink.html) قرار دارد؛ پوشهٔ `content/` فقط برای محتواست.
+
 [Preview](https://mohammadmahdiyan.github.io/Weblogs/)
 
 ## ۲. فناوری‌ها
@@ -61,34 +63,57 @@ suggestions:
 - `tags` اختیاری است؛ اگر ننویسید هیچ برچسبی ثبت نمی‌شود.
 - `suggestions` اختیاری است؛ اگر ننویسید فقط خود عنوان پیشنهاد جست‌وجو می‌شود.
 - چیز دیگری لازم نیست. `date` و `updated` را دستورهای زیر خودکار می‌گذارند؛ ظاهر مقاله را خودِ خواننده از دکمهٔ «ظاهر» تغییر می‌دهد (نه از md)؛ `draft` وجود ندارد (برای وبلاگ آزمایشی از «تست» استفاده کنید). کلیدهای قدیمی (`title`، `name`، `date`، `style`، `draft`) خوانده نمی‌شوند و فقط یک هشدار می‌گیرید.
-- کلیدهای اختیاری پیشرفته: `description` (خلاصهٔ سئو؛ پیش‌فرض ۱۶۰ نویسهٔ اول متن)، `readingTime` (دقیقه؛ پیش‌فرض خودکار از تعداد کلمه‌ها)، `coverEmbed` (کاور از یوتیوب/آپارات/اینستاگرام اگر `cover.*` ندارید)، `cover` (مسیر کاور با نامی غیر از `cover.*`)، `lang`، `dir`، `show`.
+- کلیدهای اختیاری پیشرفته: `description` (خلاصهٔ سئو؛ پیش‌فرض ۱۶۰ نویسهٔ اول متن)، `readingTime` (دقیقه؛ پیش‌فرض خودکار از تعداد کلمه‌ها)، `coverEmbed` (کاور از یوتیوب/آپارات/اینستاگرام اگر `cover.*` ندارید)، `cover` (مسیر کاور با نامی غیر از `cover.*`)، `lang`، `dir`، `show` و `aliases` (فهرست نشانی‌های قدیمی برای انتقال به مسیر اصلی مقاله).
+
+### پیوند داخلی و نام جایگزین
+
+در لینک‌های داخلی **هرگز `/Weblogs/` ننویسید**؛ مسیریاب سایت پیشوند را خودش اضافه می‌کند. مسیر را از `/media/` یا `/books/` شروع کنید:
+
+```md
+[بخش همین صفحه](#دلیل پاسخ)
+[صفحهٔ دیگر همین کتاب](/books/answer-to-shobhat/alhad-noven-part1/27)
+[مقالهٔ دیگر](/media/lives-nour/spider-house/example#دلیل پاسخ)
+```
+
+مسیر قدیمی `/Weblogs/media/...` یا `/Weblogs/books/...` هم برای سازگاری پذیرفته می‌شود، اما مسیر استاندارد بدون آن است. در `index.md` می‌توانید نام‌های کوتاه و یکتای مسیر قدیمی را تعریف کنید تا به مقاله هدایت شوند:
+
+```yaml
+aliases: [elhad]
+```
+
+هر alias باید kebab-case انگلیسی و در دسته یکتا باشد. برای بررسی لینک‌های شکستهٔ همهٔ محتوا `npm run checkLinks` را اجرا کنید؛ این دستور به‌تنهایی فقط گزارش می‌دهد. برای ناموفق شدن دستور در صورت وجود خطا از `npm run checkLinks -- --strict` استفاده کنید. در زمان `npm run dev` نیز خلاصهٔ بررسی نمایش داده می‌شود. برای اصلاح خودکار لینک‌های قابل‌شناسایی در یک پوشه:
+
+```bash
+npm run fixLinks -- content/books/answer-to-shobhat/alhad-noven-part1 --dry-run
+npm run fixLinks -- content/books/answer-to-shobhat/alhad-noven-part1
+```
 - `show: false` مقاله را از سایت آنلاین (خروجی `npm run build`، مثل GitHub Pages) پنهان می‌کند: نه در خانه و جست‌وجو و sitemap و RSS هست و نه متن و فایل‌هایش در خروجی می‌آید. اگر کسی آدرس مقاله را مستقیم باز کند، صفحه‌ای ساده می‌بیند که می‌گوید «مدیر اجازهٔ نمایش این صفحه را نمی‌دهد» با دکمهٔ «درخواست از مدیر برای باز کردن قفل این صفحه» (پیام آماده در تلگرام مدیر). پیش‌فرض `show: true` است و در `npm run dev` مقاله با هر مقدار `show` دیده می‌شود تا بتوانی ویرایشش کنی.
 
 ### دستورها و انتشار خودکار
 
 | دستور | کار |
 |---|---|
-| `npm run publishBlog -- <نام-پوشه>` | اعلام پایان نگارش مقاله، ثبت وضعیت تکمیل، ساخت مجدد محتوا و `git commit`/`git push` به شاخهٔ `main` |
-| `npm run deleteBlog -- <نام-پوشه>` | حذف کامل پوشه و تاریخ‌های آن، بازسازی محتوا و push به GitHub |
-| `npm run createTest` | ساخت مجدد مقالهٔ آزمایشی کامل در `content/media/_example-article/index.md`؛ بدون ورودی و بدون بازنویسی نمونه‌ای که از قبل وجود دارد |
-| `npm run deleteTest` | حذف مقالهٔ آزمایشی ثابت `_example-article`؛ بدون ورودی |
+| `npm run publishMedia -- <نام-پوشه>` | اعلام پایان نگارش مقاله، ثبت وضعیت تکمیل، ساخت مجدد محتوا و `git commit`/`git push` به شاخهٔ `main`؛ نام قدیمی `publishBlog` هم کار می‌کند |
+| `npm run deleteMedia -- <نام-پوشه>` | حذف کامل پوشه و تاریخ‌های آن، بازسازی محتوا و push به GitHub؛ نام قدیمی `deleteBlog` هم کار می‌کند |
+| `npm run createTestMedia` | ساخت مجدد مقالهٔ آزمایشی کامل در `content/media/_example-media/index.md`؛ بدون ورودی و بدون بازنویسی نمونه‌ای که از قبل وجود دارد؛ نام قدیمی `createTest` هم کار می‌کند |
+| `npm run deleteTestMedia` | حذف مقالهٔ آزمایشی ثابت `_example-media`؛ بدون ورودی؛ نام قدیمی `deleteTest` هم کار می‌کند |
 
 دیگر نیازی به دستورهای جداگانهٔ `createNewBlog` و `updateBlog` نیست. برای افزودن رسانه/مقاله، پوشهٔ آن را در `content/media/<مسیر>/` بساز و `index.md` را قرار بده؛ برای کتاب از `content/books/<مسیر>/` استفاده کن. هر دو دسته به‌صورت بازگشتی کشف می‌شوند و `story/` رزرو است. هنگام اجرای `npm run dev`، مسیرهای تازه به‌صورت خودکار در `content/<category>.json` ثبت می‌شوند و سایت بازسازی می‌شود.
 
-**پس از اجرای `npm run publishBlog -- <نام-پوشه>`، مقاله تکمیل‌شده محسوب می‌شود.** تا وقتی `npm run dev` باز است، هر ذخیرهٔ بعدی در فایل‌ها یا رسانه‌های همان مقاله، تاریخ `updated` را خودکار به‌روز می‌کند، محتوا را بازسازی می‌کند و تغییرات مقاله را به GitHub push می‌کند. مقاله‌هایی که هنوز منتشر/تکمیل نشده‌اند خودکار push نمی‌شوند.
+**پس از اجرای `npm run publishMedia -- <نام-پوشه>`، مقاله تکمیل‌شده محسوب می‌شود.** تا وقتی `npm run dev` باز است، هر ذخیرهٔ بعدی در فایل‌ها یا رسانه‌های همان مقاله، تاریخ `updated` را خودکار به‌روز می‌کند، محتوا را بازسازی می‌کند و تغییرات مقاله را به GitHub push می‌کند. مقاله‌هایی که هنوز منتشر/تکمیل نشده‌اند خودکار push نمی‌شوند.
 
 نمونه:
 
 ```bash
 # پوشهٔ content/media/my-post از قبل ساخته شده و index.md دارد
-npm run publishBlog -- my-post
+npm run publishMedia -- my-post
 
 # حذف کامل مقاله و انتشار حذف در سایت
-npm run deleteBlog -- my-post
+npm run deleteMedia -- my-post
 
 # ساخت/حذف نمونهٔ آزمایشی؛ هیچ نامی وارد نکنید
-npm run createTest
-npm run deleteTest
+npm run createTestMedia
+npm run deleteTestMedia
 ```
 
 برای push خودکار باید مخزن محلی روی شاخهٔ `main` باشد، remote با نام `origin` به `https://github.com/mohammadmahdiyan/weblogs` متصل باشد و احراز هویت GitHub از قبل کار کند. فایل `.github/workflows/deploy.yml` سایت را پس از push به `main` می‌سازد و منتشر می‌کند؛ ممکن است نمایش تغییرات آنلاین چند دقیقه زمان ببرد.
@@ -105,7 +130,7 @@ npm run deleteTest
 
 ### مقالهٔ آزمایشی (تست)
 
-`npm run createTest` بدون آرگومان، قالب کامل `scripts/templates/example-article` را به `content/media/_example-article` کپی می‌کند. اگر پوشه موجود باشد آن را بازنویسی نمی‌کند؛ اگر حذف شده باشد دوباره ساخته می‌شود. `npm run deleteTest` همان پوشهٔ ثابت را حذف می‌کند. این مقاله برای تست محلی است و در build تولیدی منتشر نمی‌شود.
+`npm run createTestMedia` بدون آرگومان، قالب کامل `scripts/templates/example-article` را به `content/media/_example-media` کپی می‌کند. اگر پوشه موجود باشد آن را بازنویسی نمی‌کند؛ اگر حذف شده باشد دوباره ساخته می‌شود. `npm run deleteTestMedia` همان پوشهٔ ثابت را حذف می‌کند. نام‌های قبلی `createTest` و `deleteTest` همچنان به‌عنوان نام جایگزین پشتیبانی می‌شوند. این مقاله برای تست محلی است و در build تولیدی منتشر نمی‌شود.
 
 ### خروجی ساخته‌شده برای هر وبلاگ (`src/generated/articles.json`)
 
@@ -404,25 +429,37 @@ sources:
 
 **عکس پروفایل:** فایل را در `public/` بگذارید (مثلاً `public/profile.jpg`) و بنویسید `profile: { name: '…', avatar: 'profile.jpg' }`. همین عکس در جواب‌های چت آکاردئون هم دیده می‌شود.
 
-**هر فایل = یک استوری.** تعداد استوری‌ها برابر تعداد فایل‌هاست و به ترتیب نام فایل (عددها طبیعی: ۲ قبل از ۱۰) نمایش داده می‌شوند:
+**هر فایل = یک استوری.** هر پوشهٔ scope مستقل است و تعداد استوری‌ها برابر تعداد فایل‌هاست؛ ترتیب نام فایل طبیعی است (۲ قبل از ۱۰):
 
 ```
-story/index.md                          ← یک استوری
-story/index.md, index1.md, index2.md    ← سه استوری
+story/                                  ← scope خانه (/)
+content/media/story/                    ← scope رسانه‌ها (/media/**)
+content/books/story/                    ← scope کتاب‌ها (/books/**)
 ```
 
 - هر فایل یک md معمولی است: متن، **پررنگ**، نقل‌قول، `||متن سانسورشده||`، لینک، عکس و ویدیو (`![](./photo.jpg)` که عکس را هم داخل `story/` می‌گذارید). متن بلند خودش اسکرول نرم دارد و تا وقتی می‌خوانید یا اسکرول می‌کنید، زمان استوری منتظر می‌ماند.
 - فایل عکسی که هیچ md استفاده‌اش نکرده، خودش یک استوری تمام‌صفحه است. md که فقط یک عکس باشد هم همین‌طور.
+- برای scope رسانه/کتاب، عکس‌ها را کنار فایل‌های همان پوشهٔ `story/` بگذارید؛ این فایل‌ها برخلاف رسانه‌های مقاله، از Git نادیده گرفته نمی‌شوند.
 - فرانت‌متر اختیاری بالای هر فایل:
-  - `show: false` ← حلقهٔ استوری آن روز اصلاً نشان داده نمی‌شود (حتی استوری تصادفی هم نه)، ولی فایل‌ها بعد از آن روز مثل همیشه پاک می‌شوند.
+  - `show: false` ← اگر همهٔ اسلایدهای آن پوشه پنهان باشند، حلقهٔ همان scope آن روز نشان داده نمی‌شود و استوری خودکار جایگزینش نمی‌شود.
   - `blog: عنوان مقاله/عنوان بخش` ← به‌جای متن فایل، همان بخش از مقاله نشان داده می‌شود، با دکمهٔ «خواندن مقاله». مثال: `blog: غدیر ، عید سیاسی/شاید بگویند`. اگر کل متن فایل فقط همین یک خط باشد هم کار می‌کند. به‌جای عنوان می‌توانید نام پوشهٔ مقاله را بنویسید. اگر مقاله یا بخش پیدا نشود، `publishStory` با فهرست بخش‌های موجود خطا می‌دهد. مقالهٔ +۱۸ در استوری نمی‌آید.
   - `seconds: 12` ← مدت نمایش همین استوری (پیش‌فرض: خودکار، بر اساس طول متن).
 
-**انتشار:** `npm run publishStory` استوری را برای **امروز** (به وقت تهران) منتشر و push می‌کند. نیمه‌شب (۰۰:۰۵ تهران) GitHub Actions همهٔ محتوای `story/` را پاک می‌کند (`npm run cleanStory`) و سایت را دوباره می‌سازد؛ حتی اگر دیر شود، بیلد استوری قدیمی را نشان نمی‌دهد. فوراً حذف: `npm run deleteStory`.
+**انتشار و پاک‌سازی:** state هر سه scope در `content/story-state.json` نگهداری می‌شود:
 
-اگر `story/` خالی باشد، هر روز یک بخش (`##`) از یک مقالهٔ تصادفی (کامل‌شده و غیر +۱۸) به‌همان شکل نمایش داده می‌شود؛ انتخاب برای هر روز ثابت است. در `npm run dev` پوشهٔ منتشرنشده هم به‌صورت «پیش‌نمایش» دیده می‌شود. زمان پایهٔ هر استوری: `story.slideSeconds` در `site.config.ts`؛ خاموش کردن: `story.enabled: false`.
+```sh
+npm run publishStory                 # انتشار scope خانه
+npm run publishStory -- media        # انتشار scope رسانه‌ها
+npm run publishStory -- books        # انتشار scope کتاب‌ها
+npm run cleanStory                   # پاک‌کردن همهٔ scopeهای منقضی
+npm run deleteStory -- home          # حذف فوری scope خانه
+npm run deleteStory -- media         # حذف فوری scope رسانه‌ها
+npm run deleteStory -- books         # حذف فوری scope کتاب‌ها
+```
 
-برای استوری مستقل هر دسته، فایل‌ها را در `content/media/story/` یا `content/books/story/` بگذارید و دسته را به فرمان بدهید (`npm run publishStory -- media`, `npm run cleanStory -- media`, `npm run deleteStory -- media`; برای کتاب‌ها به‌جای `media` بنویسید `books`). این پوشه‌ها در فهرست عادی محتوا دیده نمی‌شوند. حلقهٔ هدر و پوشهٔ اصلی `/story` همچنان به‌عنوان استوری سراسری کار می‌کنند.
+هر فرمان انتشار، فقط پوشهٔ همان scope و فایل state مشترک را commit و push می‌کند. GitHub Actions هر روز (۰۰:۰۵ تهران) همهٔ scopeهای منقضی را پاک می‌کند؛ حتی اگر اجرا دیر شود، بیلد استوری روز قبل را نشان نمی‌دهد. در `npm run dev` پوشهٔ منتشرنشده هم به‌صورت پیش‌نمایش دیده می‌شود.
+
+در هدر، ابتدا استوری دستی امروزِ scope جاری نمایش داده می‌شود؛ اگر نباشد، استوری خودکار نزدیک‌ترین پوشهٔ والد، سپس استوری خودکار کل همان scope و در پایان استوری خانه انتخاب می‌شود. مسیر `/` همیشه scope خانه است. انتخاب خودکار برای هر روز و scope ثابت است و فقط از مقاله‌های غیرآزمایشی، غیر +۱۸، قابل‌نمایش و (در production) کامل‌شده استفاده می‌کند؛ بخش واجد شرایط باید تیتر سطح `##`، دست‌کم ۱۴۰ نویسه متن ساده و حداکثر ۴۰۰۰ نویسه Markdown داشته باشد. زمان پایهٔ هر استوری: `story.slideSeconds` در `site.config.ts`؛ خاموش کردن: `story.enabled: false`.
 
 **جست‌وجوی آیه و متن اعراب‌دار:** لازم نیست اعراب بگذارید. در همهٔ جست‌وجوها (عنوان، `محتوا::` و هایلایت داخل مقاله) حرکات، تنوین، تشدید، علامت‌های قرآنی (رسم عثمانی) و کشیده نادیده گرفته می‌شود و شکل‌های الف (آ أ إ ٱ)، ؤ، ئ، ة و ي/ی و ك/ک یکی حساب می‌شوند. پس در صفحهٔ اصلی بنویسید `محتوا::يضرب مثلا ما` یا `محتوا::ان الله لا يستحيي` تا مقالهٔ دارای `يَضْرِبَ مَثَلًا مَا` پیدا و همان تکه هایلایت شود.
 
@@ -437,6 +474,7 @@ story/index.md, index1.md, index2.md    ← سه استوری
   - `npm run deleteBook -- نام-پوشه` ← حذف
   - `npm run createTestBook` / `npm run deleteTestBook` ← کتاب آزمایشی `content/books/_example-book` (فقط در `npm run dev` دیده می‌شود، مثل `_example-article`)
 - **صفحه‌صفحه نوشتن:** کتاب بلند را با پوشهٔ `pages/` کنار `index.md` بنویسید و **نام هر فایل، شمارهٔ صفحه** باشد: `pages/1.md`، `pages/2.md` … `index.md` فقط مشخصات و معرفی کتاب است (عنوان، برچسب، کاور، suggestions). برای نمونه، `content/books/answer-to-shobhat/alhad-noven-part1/pages/27.md` در نشانی `/books/answer-to-shobhat/alhad-noven-part1/27` باز می‌شود. بالای هر فایل صفحه می‌توانید `title: "فصل اول"` بنویسید. شماره‌ها لازم نیست پشت سر هم باشند و برای اضافه کردن صفحهٔ ۳۷ فقط `37.md` را بسازید (هیچ فایلی تغییر نام نمی‌دهد). عکس صفحه‌ها را کنار خود فایل (`pages/`) یا در پوشهٔ کتاب بگذارید.
+- اگر تعداد کل صفحه‌ها معلوم است، در frontmatter معرفی کتاب `pageCount: 563` را بنویسید. لینک به صفحهٔ موجود باز می‌شود؛ صفحه‌ای که هنوز فایلش اضافه نشده ولی شماره‌اش در محدودهٔ `pageCount` است، صفحهٔ دوستانهٔ «هنوز اضافه نشده» با لینک معرفی و نزدیک‌ترین صفحه‌های موجود را نشان می‌دهد. کتابی که `pageCount` ندارد، وقتی پوشهٔ `pages/` دارد شماره‌های ۱ تا ۱۰۰۰۰ را صفحهٔ در انتظار در نظر می‌گیرد.
 - **دکمه‌های زیر کتاب:** صفحهٔ قبل/بعد، ده، صد، هزار و ده‌هزار صفحه قبل/بعد (هر کدام فقط وقتی آن‌قدر صفحه در آن سمت هست) دکمه‌های «اولین» و «آخرین» (صفحهٔ شمارهٔ اول و آخر) و کادر «برو به» که شمارهٔ آخرین صفحه در آن به‌عنوان نمونه دیده می‌شود (کتاب ۱۰۰ صفحه‌ای: ۱۰۰، ۴۰۰۰ صفحه‌ای: ۴۰۰۰). کتابی که `pages/` ندارد (فقط `index.md`) هیچ دکمه‌ای ندارد. جست‌وجوی `محتوا::` داخل همهٔ صفحه‌ها هم می‌گردد و مستقیم به همان صفحه می‌برد.
 - **جست‌وجوی صفحهٔ کتاب‌ها:** با تایپ بخشی از نام، کتاب‌هایی که آن را دارند فهرست می‌شوند (`شرح صح` ← «شرح صحیح مسلم» و «شرح صحیح بخاری»). دکمهٔ فلش رو به بالا کنار هر مورد، نام کامل را در کادر می‌گذارد؛ ↑ و ↓ بین موارد جابه‌جا می‌شوند، `Tab` مورد انتخاب‌شده (یا اولی) را کامل می‌کند و `Enter` کتاب را باز می‌کند. برای رفتن مستقیم به یک صفحه بنویسید `شرح صحیح بخاری ص۲۱۶` یا `… صفحه۲۱۶` یا `… صفحه ۲۱۶` و Enter بزنید. اگر آن صفحه در کتاب نباشد، آخرین صفحهٔ کتاب را می‌گوید.
 - تاریخ‌ها، route و نام نمایشی در `content/books.json` نگه‌داری می‌شوند و `npm run dev` کتاب‌های تو‌در‌تو را خودکار ثبت می‌کند. رسانهٔ کتاب‌ها در مسیر عمومی جداگانه منتشر می‌شود و مسیر کتاب را حفظ می‌کند.
@@ -466,23 +504,23 @@ The development watcher registers new article paths in `content/media.json` or `
 
 | Command | What it does |
 |---|---|
-| `npm run publishBlog -- <folder>` | Mark the article complete, rebuild content, then commit and push blog changes to `main`. |
-| `npm run deleteBlog -- <folder>` | Delete the article folder and its dates, rebuild content, then commit and push the deletion. |
-| `npm run createTest` | Restore the full `_example-article` test fixture, with no arguments. Existing fixtures are not overwritten. |
-| `npm run deleteTest` | Delete the fixed `_example-article` test fixture, with no arguments. |
+| `npm run publishMedia -- <folder>` (`publishBlog` alias) | Mark the article complete, rebuild content, then commit and push blog changes to `main`. |
+| `npm run deleteMedia -- <folder>` (`deleteBlog` alias) | Delete the article folder and its dates, rebuild content, then commit and push the deletion. |
+| `npm run createTestMedia` (`createTest` alias) | Restore the full `_example-media` test fixture, with no arguments. Existing fixtures are not overwritten. |
+| `npm run deleteTestMedia` (`deleteTest` alias) | Delete the fixed `_example-media` fixture. |
 
-`createNewBlog` and `updateBlog` are no longer separate commands. Create a folder under `content/media/<path>/` or `content/books/<path>/`, add `index.md`, and run `npm run dev` to register it. `publishBlog` / `publishBook` accept nested relative paths. After publishing marks an article complete, saving changes to its Markdown or media files automatically updates `updated`, rebuilds the content and pushes that category's files to GitHub. Incomplete articles are not auto-pushed.
+`createNewBlog` and `updateBlog` are no longer separate commands. Create a folder under `content/media/<path>/` or `content/books/<path>/`, add `index.md`, and run `npm run dev` to register it. `publishMedia` (`publishBlog` alias) / `publishBook` accept nested relative paths. After publishing marks an article complete, saving changes to its Markdown or media files automatically updates `updated`, rebuilds the content and pushes that category's files to GitHub. Incomplete articles are not auto-pushed.
 
 Automatic push requires the local clone to be on branch `main`, an `origin` remote pointing to `https://github.com/mohammadmahdiyan/weblogs`, and working GitHub authentication. The existing `.github/workflows/deploy.yml` builds and deploys the site after a push to `main`; the public site may take a few minutes to refresh.
 
 ```bash
-npm run publishBlog -- my-post
-npm run deleteBlog -- my-post
-npm run createTest
-npm run deleteTest
+npm run publishMedia -- my-post
+npm run deleteMedia -- my-post
+npm run createTestMedia
+npm run deleteTestMedia
 ```
 
-Until `publishBlog` / `publishBook` is run for an article (new or old), its end shows a «not finished yet» line with a Telegram link. The publish command writes `"published": true` and marks it complete in the appropriate category registry; use paths relative to that category root. Test folders begin with `_` and are excluded from production output, sitemap and RSS.
+Until `publishMedia` (`publishBlog` alias) / `publishBook` is run for an article (new or old), its end shows a «not finished yet» line with a Telegram link. The publish command writes `"published": true` and marks it complete in the appropriate category registry; use paths relative to that category root. Test folders begin with `_` and are excluded from production output, sitemap and RSS.
 
 ## Search suggestions
 

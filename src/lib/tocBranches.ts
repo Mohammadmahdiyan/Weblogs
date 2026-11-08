@@ -5,6 +5,7 @@ export type TocBranchType = 'single' | 'nested-single' | 'first' | 'middle' | 'l
 export interface TocBranches {
   types: TocBranchType[]
   ancestorTypes: TocBranchType[][]
+  rails: boolean[][]
 }
 
 export function buildTocBranches(items: TocItem[]): TocBranches {
@@ -43,5 +44,16 @@ export function buildTocBranches(items: TocItem[]): TocBranches {
     return ancestors
   })
 
-  return { types, ancestorTypes }
+  const rails = items.map((_, index) => {
+    const ancestorRails: boolean[] = []
+    let ancestorIndex = parentIndexes[index] ?? -1
+    while (ancestorIndex >= 0) {
+      const ancestorType = types[ancestorIndex] ?? 'single'
+      ancestorRails.unshift(ancestorType === 'first' || ancestorType === 'middle')
+      ancestorIndex = parentIndexes[ancestorIndex] ?? -1
+    }
+    return ancestorRails
+  })
+
+  return { types, ancestorTypes, rails }
 }

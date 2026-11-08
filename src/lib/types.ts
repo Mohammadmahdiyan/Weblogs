@@ -33,6 +33,8 @@ export interface ArticleMeta {
   updated: string
   tags: string[]
   suggestions: string[]
+  /** Alternate kebab-case leaf route names accepted as legacy article routes. */
+  aliases?: string[]
   cover: ArticleCover | null
   readingTime: number
   /** Optional per-article language / direction override (frontmatter `lang`, `dir`). */
@@ -44,8 +46,10 @@ export interface ArticleMeta {
   incomplete?: boolean
   /** Frontmatter `sources:` : shown at the end of the article. */
   sources?: SourceItem[]
-  /** Books only: the page files, ascending. Missing = a single-page book (just index.md). */
+  /** Books only: page metadata, ascending. An empty array means a pages/ folder exists but has no page files. */
   pages?: BookPageMeta[]
+  /** Books only: optional declared number of pages, used to identify pages that are not added yet. */
+  pageCount?: number
 }
 
 export interface SearchEntry {

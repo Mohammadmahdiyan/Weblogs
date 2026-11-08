@@ -28,6 +28,8 @@ On `npm run dev`, new nested articles are registered in the matching category JS
 
 `npm run content` rebuilds generated metadata and media. The production build excludes any article nested beneath a folder beginning with `_`; development includes such fixtures. `show: false` in article frontmatter hides the article from production search, sitemap, and generated text while keeping the route available for the hidden-page notice.
 
+Use the optional `aliases` frontmatter list for old route segments. A unique matching alias redirects to the canonical article route; aliases are checked after unique short-slug matches.
+
 ### Book pages
 
 Book page files stay beside the book's `index.md`, under `pages/<number>.md`. For example:
@@ -43,9 +45,9 @@ This becomes `/books/answer-to-shobhat/alhad-noven-part1` with page 27 at `/book
 
 ## Header stories
 
-The single story button is in the site header. On a listing route whose direct children are articles, its daily story is one random eligible article and one random `##` or `###` section from that article. The build creates these stories from content structure, so newly added article branches are included automatically. On the home page and other listing routes, the header story contains up to three randomly selected branch stories. Adult-gated and test articles are never included.
+The header story has three scopes: `story/` for `/`, `content/media/story/` for `/media/**`, and `content/books/story/` for `/books/**`. Manual stories are published for the current Tehran date and tracked together in `content/story-state.json`. Each Markdown file is a slide; standalone pictures are slides too. `npm run publishStory` publishes home, `npm run publishStory -- media` publishes media, and `npm run publishStory -- books` publishes books. `npm run cleanStory` removes all expired scopes; `npm run deleteStory -- <home|media|books>` removes one immediately.
 
-The older `content/story/` and `content/<category>/story/` files are not used by the route-aware header story. The header story is generated from article sections during `npm run dev` and `npm run build`.
+For a route in a category, the header uses its current manual story first, then the deepest matching directory's automatic story, then a random story for the whole category, and finally the home story. Book page routes use the book's parent directory. Automatic selection is deterministic per day and scope. Eligible sections are level-two headings with at least 140 plain-text characters and at most 4,000 Markdown characters; test, adult, hidden, and (in production) unfinished articles are excluded. The build emits the unified `src/generated/stories.json`.
 
 ## Generated files and local workflow
 

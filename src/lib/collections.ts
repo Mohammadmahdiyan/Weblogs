@@ -8,10 +8,7 @@ import booksFoldersJson from '../generated/books-folders.json'
 import booksSearchJson from '../generated/books-search-index.json'
 import booksHiddenJson from '../generated/books-hidden.json'
 import { bookBodies } from '../generated/books-bodies'
-import mediaStoryJson from '../generated/media-story.json'
-import booksStoryJson from '../generated/books-story.json'
 import type { ArticleMeta, SearchEntry } from './types'
-import type { StoryData } from './story'
 
 export type CollectionId = 'media' | 'books'
 type BodyLoaders = Record<string, () => Promise<{ default: string }>>
@@ -29,7 +26,6 @@ export interface SiteCollection {
   searchIndex: SearchEntry[]
   bodies: BodyLoaders
   hidden: string[]
-  story: StoryData | null
   /** Texts that differ between the collections. */
   text: {
     pageTitle: string
@@ -60,7 +56,6 @@ export const siteCollections: Record<CollectionId, SiteCollection> = {
     searchIndex: mediaSearchJson as SearchEntry[],
     bodies: mediaBodies,
     hidden: mediaHiddenJson as string[],
-    story: mediaStoryJson as StoryData | null,
     text: {
       pageTitle: 'رسانه‌ها',
       pageDescription: 'مقاله‌ها، ویدیوها و رسانه‌های آموزشی.',
@@ -86,7 +81,6 @@ export const siteCollections: Record<CollectionId, SiteCollection> = {
     searchIndex: booksSearchJson as SearchEntry[],
     bodies: bookBodies,
     hidden: booksHiddenJson as string[],
-    story: booksStoryJson as StoryData | null,
     text: {
       pageTitle: 'کتاب‌ها',
       pageDescription: 'کتاب‌های معرفی‌شده و منابع مطالعه؛ در عنوان و متن کتاب‌ها جست‌وجو کنید.',

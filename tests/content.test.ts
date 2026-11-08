@@ -10,8 +10,10 @@ describe('rewriteMediaUrl', () => {
     expect(rewriteMediaUrl('pic.png?x=1', 'my-slug', media)).toBe('/content/my-slug/pic.png?x=1')
   })
 
-  it('uses the media folder of the collection (books live under /content-books/)', () => {
-    expect(rewriteMediaUrl('./pic.png', 'my-book', media, '/Weblogs/', 'content-books')).toBe('/Weblogs/content-books/my-book/pic.png')
+  it('uses the media folder of the collection (books live under /books-media/)', () => {
+    expect(rewriteMediaUrl('./pic.png', 'my-book', media, '/Weblogs/', 'books-media')).toBe(
+      '/Weblogs/books-media/my-book/pic.png',
+    )
   })
 
   it('leaves absolute URLs and unknown non-media paths untouched', () => {

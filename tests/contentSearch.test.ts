@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { articleHref, bodyOccurrence, findContentMatch, findContentMatches, parseOccurrence } from '../src/lib/contentSearch.ts'
+import {
+  articleHref,
+  bodyOccurrence,
+  findContentMatch,
+  findContentMatches,
+  parseOccurrence,
+} from '../src/lib/contentSearch.ts'
 
 describe('findContentMatch', () => {
   it('finds text through letter variants and ZWNJ, and returns the original wording', () => {
@@ -27,10 +33,10 @@ describe('findContentMatch', () => {
 
 describe('articleHref', () => {
   it('links to the article, adding the text to jump to after a content search', () => {
-    expect(articleHref('a')).toBe('/blog/a')
+    expect(articleHref('a', '', 0, '/media')).toBe('/media/a')
     expect(articleHref('a', '', 0, '/books')).toBe('/books/a')
     expect(articleHref('a', 'x', 1, '/books')).toBe('/books/a?find=x&n=2')
-    expect(articleHref('a', ' سلیم بن قیس ')).toBe(`/blog/a?find=${encodeURIComponent('سلیم بن قیس')}`)
+    expect(articleHref('a', ' سلیم بن قیس ', 0, '/media')).toBe(`/media/a?find=${encodeURIComponent('سلیم بن قیس')}`)
   })
 })
 
@@ -54,8 +60,8 @@ describe('findContentMatches', () => {
 
 describe('occurrence in the link', () => {
   it('adds the 1-based occurrence only after the first one', () => {
-    expect(articleHref('a', 'x', 0)).toBe('/blog/a?find=x')
-    expect(articleHref('a', 'x', 2)).toBe('/blog/a?find=x&n=3')
+    expect(articleHref('a', 'x', 0, '/media')).toBe('/media/a?find=x')
+    expect(articleHref('a', 'x', 2, '/media')).toBe('/media/a?find=x&n=3')
     expect(parseOccurrence('3')).toBe(2)
     expect(parseOccurrence(null)).toBe(0)
     expect(parseOccurrence('abc')).toBe(0)

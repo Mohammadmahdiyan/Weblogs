@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseBlog, splitTitle } from '../scripts/lib/blog.ts'
+import { parseBlog, splitTitle, validateAliasUniqueness } from '../scripts/lib/blog.ts'
 
 describe('splitTitle', () => {
   it('uses the first "# " line as the title and removes it from the body', () => {
@@ -26,7 +26,13 @@ describe('splitTitle', () => {
 describe('parseBlog', () => {
   it('reads only tags and suggestions; the title comes from the first #', () => {
     const blog = parseBlog('---\ntags: [a, b]\nsuggestions:\n  - one\n  - two\n---\n# Title\n\nbody', 'x.md')
-    expect(blog).toMatchObject({ title: 'Title', tags: ['a', 'b'], suggestions: ['one', 'two'], body: 'body', ignoredKeys: [] })
+    expect(blog).toMatchObject({
+      title: 'Title',
+      tags: ['a', 'b'],
+      suggestions: ['one', 'two'],
+      body: 'body',
+      ignoredKeys: [],
+    })
   })
 
   it('suggestions default to the title; tags default to none', () => {
@@ -34,6 +40,37 @@ describe('parseBlog', () => {
     expect(blog.suggestions).toEqual(['عنوان'])
     expect(blog.tags).toEqual([])
     expect(parseBlog('---\ntags:\nsuggestions:\n---\n# T', 'x.md')).toMatchObject({ tags: [], suggestions: ['T'] })
+  })
+
+  it('parses alternate route aliases', () => {
+    expect(parseBlog('---\naliases: [old-name, another-name]\n---\n# Title', 'x.md').aliases).toEqual([
+      'old-name',
+      'another-name',
+    ])
+    expect(() => parseBlog('---\naliases: [Invalid_name]\n---\n# Title', 'x.md')).toThrow(/kebab-case/)
+    expect(() => parseBlog('---\naliases: [same, same]\n---\n# Title', 'x.md')).toThrow(/duplicates/)
+  })
+
+  it('parses a positive book pageCount and validates its bounds', () => {
+    expect(parseBlog('---\npageCount: 563\n---\n# Book', 'book/index.md').pageCount).toBe(563)
+    expect(() => parseBlog('---\npageCount: 0\n---\n# Book', 'book/index.md')).toThrow(/pageCount/)
+    expect(() => parseBlog('---\npageCount: 1000000\n---\n# Book', 'book/index.md')).toThrow(/pageCount/)
+    expect(() => parseBlog('---\npageCount: "563"\n---\n# Book', 'book/index.md')).toThrow(/pageCount/)
+  })
+
+  it('requires aliases to be unique across a collection and distinct from other leaf routes', () => {
+    expect(() =>
+      validateAliasUniqueness(
+        [
+          { slug: 'nested/first', aliases: ['old-name'] },
+          { slug: 'other/second', aliases: ['old-name'] },
+        ],
+        'media',
+      ),
+    ).toThrow(/used more than once/)
+    expect(() =>
+      validateAliasUniqueness([{ slug: 'nested/first', aliases: ['second'] }, { slug: 'other/second' }], 'media'),
+    ).toThrow(/conflicts with an article leaf/)
   })
 
   it('reports obsolete keys instead of using them', () => {

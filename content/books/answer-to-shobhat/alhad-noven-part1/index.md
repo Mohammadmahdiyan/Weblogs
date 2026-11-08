@@ -1,5 +1,6 @@
 ---
 cover: "https://cdn.steadylink.io/a/220b627d-7854-4f23-9a69-421c6b6aa0ba"
+aliases: [elhad]
 ---
 
 # الحاد نوین جلد 1

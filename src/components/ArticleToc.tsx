@@ -59,27 +59,10 @@ function TocTitle({ title }: { title: string }) {
 }
 
 interface TocBranchProps extends SVGProps<SVGSVGElement> {
-  type: TocBranchType
+  path: string
 }
 
-function TocBranch({ type, className, ...props }: TocBranchProps) {
-  const pathProps: SVGProps<SVGPathElement> = {
-    fill: 'none',
-    stroke: 'var(--brand)',
-    strokeWidth: 2,
-    strokeLinecap: 'butt',
-    strokeLinejoin: 'round',
-  }
-
-  // The SVG is stretched to the height of its row, so y=12 (the middle of the viewBox) is always the middle of the text.
-  const paths: Record<TocBranchType, string> = {
-    single: 'M16 12 H2',
-    'nested-single': 'M16 0 V24 M16 12 H2',
-    first: 'M16 24 V12 H2',
-    middle: 'M16 0 V24 M16 12 H2',
-    last: 'M16 0 V12 H2',
-  }
-
+function TocBranch({ path, className, ...props }: TocBranchProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -87,12 +70,33 @@ function TocBranch({ type, className, ...props }: TocBranchProps) {
       preserveAspectRatio="none"
       aria-hidden="true"
       focusable="false"
-      className={className}
+      className={clsx('text-[var(--brand)]', className)}
       {...props}
     >
-      <path {...pathProps} d={paths[type]} vectorEffect="non-scaling-stroke" />
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        d={path}
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   )
+}
+
+function getOwnBranchPath(type: TocBranchType, nested: boolean): string {
+  if (nested) {
+    return type === 'first' || type === 'middle' ? 'M16 0 V24 M16 12 H2' : 'M16 0 V12 H2'
+  }
+
+  const paths: Record<TocBranchType, string> = {
+    single: 'M16 12 H2',
+    'nested-single': 'M16 12 H2',
+    first: 'M16 24 V12 H2',
+    middle: 'M16 0 V24 M16 12 H2',
+    last: 'M16 0 V12 H2',
+  }
+  return paths[type]
 }
 
 function useActiveHeading(items: TocItem[], enabled: boolean): string | null {
@@ -152,19 +156,22 @@ export function ArticleToc({ items, variant }: { items: TocItem[]; variant: 'box
       <ul className="m-0 grid list-none gap-0 p-0">
         {visibleItems.map((item, index) => {
           const branchType = branches.types[index] ?? 'single'
-          const ancestorBranches = branches.ancestorTypes[index] ?? []
+          const ancestorRails = branches.rails[index] ?? []
 
           return (
             <li key={item.id} className="flex min-w-0 items-stretch gap-2">
-              {ancestorBranches.map((type, depth) => (
+              {ancestorRails.map((hasLaterSiblings, depth) => (
                 <TocBranch
                   key={`${item.id}-ancestor-${depth}`}
-                  type={type}
+                  path={hasLaterSiblings ? 'M16 0 V24' : ''}
                   className="-ms-1 w-6 shrink-0 self-stretch"
                 />
               ))}
 
-              <TocBranch type={branchType} className="-ms-1 w-6 shrink-0 self-stretch" />
+              <TocBranch
+                path={getOwnBranchPath(branchType, ancestorRails.length > 0)}
+                className="-ms-1 w-6 shrink-0 self-stretch"
+              />
 
               <a
                 href={`#${item.id}`}

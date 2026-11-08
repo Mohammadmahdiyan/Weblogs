@@ -7,42 +7,6 @@
     "name": "Example Media",
     "route": "/media/_example-media"
   },
-  "aga-quran-dar-madh-ali-bod": {
-    "date": "2026-10-18",
-    "updated": "2026-10-18",
-    "completed": true,
-    "published": false
-  },
-  "chera-shia-fohsh-mida": {
-    "date": "2026-10-26",
-    "updated": "2026-11-02",
-    "completed": true,
-    "published": false
-  },
-  "eid-syasi-qadir": {
-    "date": "2026-10-21",
-    "updated": "2026-10-22",
-    "completed": true,
-    "published": false
-  },
-  "hadis-in-shia": {
-    "date": "2026-10-18",
-    "updated": "2026-10-18",
-    "completed": true,
-    "published": false
-  },
-  "jansi-taren-ahadis-shia": {
-    "date": "2026-10-31",
-    "updated": "2026-10-31",
-    "completed": true,
-    "published": false
-  },
-  "kashti-najat": {
-    "date": "2026-10-22",
-    "updated": "2026-10-22",
-    "completed": false,
-    "published": false
-  },
   "lives-nour": {
     "name": "Lives Nour",
     "route": "/media/lives-nour"
@@ -134,29 +98,5 @@
     "published": true,
     "name": "Tohen Ba Ahle Beat",
     "route": "/media/lives-nour/spider-house/tohen-ba-ahle-beat"
-  },
-  "shia-nabovat-pyambar-ra-batel-kard": {
-    "date": "2026-10-20",
-    "updated": "2026-10-20",
-    "completed": false,
-    "published": false
-  },
-  "shobahat-ravafez": {
-    "date": "2026-10-18",
-    "updated": "2026-10-18",
-    "completed": false,
-    "published": false
-  },
-  "tahref-quran-nazd-shia": {
-    "date": "2026-10-18",
-    "updated": "2026-10-18",
-    "completed": true,
-    "published": false
-  },
-  "tohen-ba-ahle-beat": {
-    "date": "2026-10-18",
-    "updated": "2026-11-02",
-    "completed": true,
-    "published": true
   }
 }

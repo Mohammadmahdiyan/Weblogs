@@ -2,7 +2,16 @@ import { spawn, spawnSync } from 'node:child_process'
 import { watch, type FSWatcher } from 'node:fs'
 import { mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { exists, isTestFolder, projectRoot, readDates, runContentBuild, today, writeDates } from './lib/blog.ts'
+import {
+  exists,
+  isTestFolder,
+  projectRoot,
+  readDates,
+  runContentBuild,
+  syncDatesRegistry,
+  today,
+  writeDates,
+} from './lib/blog.ts'
 import { pushBlogChanges } from './lib/git.ts'
 import { allCollections, type Collection } from './lib/collections.ts'
 import {
@@ -65,9 +74,12 @@ function isTrackedArticle(collection: Collection, slug: string): boolean {
 async function registerUnregisteredArticles(): Promise<boolean> {
   let anyChanged = false
   for (const collection of allCollections) {
-    const dates = await readDates(collection.datesFile)
-    let changed = false
-    for (const directory of await discoverContentDirectories(collection.root)) {
+    const rawDates = await readDates(collection.datesFile)
+    const directories = await discoverContentDirectories(collection.root)
+    const folderSlugs = directories.map((directory) => articlePathSlug(collection.root, directory))
+    const dates = syncDatesRegistry(rawDates, folderSlugs, collection.id)
+    let changed = JSON.stringify(dates) !== JSON.stringify(rawDates)
+    for (const directory of directories) {
       const slug = articlePathSlug(collection.root, directory)
       const route = `/${collection.id}/${slug}`
       const existing = dates[slug]
@@ -93,9 +105,11 @@ async function registerUnregisteredArticles(): Promise<boolean> {
       const info = await stat(path.join(directory, 'index.md'))
       const fileDate = Number.isNaN(info.mtimeMs) ? today() : info.mtime.toISOString().slice(0, 10)
       const completed = isTrackedArticle(collection, slug)
-      const legacy = dates[path.basename(directory)]
       dates[slug] = {
-        ...(legacy?.date ? legacy : { date: fileDate, updated: fileDate, completed, published: false }),
+        date: fileDate,
+        updated: fileDate,
+        completed,
+        published: false,
         name: name,
         route,
       }
@@ -129,7 +143,7 @@ async function processChanges(): Promise<void> {
         const slug = key.slice(collection.id.length + 1)
         const previousSignature = before.get(key)
         if (previousSignature === undefined || previousSignature === currentSignature || isTestFolder(slug)) continue
-        const current = dates[slug] ?? dates[path.basename(slug)]
+        const current = dates[slug]
         if (current?.completed) {
           dates[slug] = { ...current, updated: today(), route: `/${collection.id}/${slug}` }
           completedChanged.push({ collection, slug })
@@ -141,7 +155,7 @@ async function processChanges(): Promise<void> {
     snapshots = after
 
     if (registryChanged || completedChanged.length > 0 || !mapsEqual(before, after)) {
-      if (!runContentBuild()) {
+      if (!runContentBuild({ quietLinks: true })) {
         console.error('✖ Automatic content rebuild failed; no automatic push was attempted.')
       } else if (completedChanged.length > 0) {
         for (const collection of allCollections) {
@@ -185,7 +199,7 @@ async function main(): Promise<void> {
     if (!(await exists(collection.root))) await mkdir(collection.root, { recursive: true })
   }
   await registerUnregisteredArticles()
-  if (!runContentBuild()) throw new Error('Initial content build failed.')
+  if (!runContentBuild({ quietLinks: true })) throw new Error('Initial content build failed.')
   snapshots = await takeSnapshots()
 
   for (const collection of allCollections) {

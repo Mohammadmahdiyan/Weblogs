@@ -7,6 +7,7 @@ interface PageMetaOptions {
   description: string
   image?: string | null
   type?: 'website' | 'article'
+  noindex?: boolean
   /** JSON-LD object(s) to inject for this page (Article, WebSite, …). */
   jsonLd?: Record<string, unknown> | Record<string, unknown>[]
 }
@@ -40,7 +41,7 @@ function setCanonical(href: string | undefined) {
   element.href = href
 }
 
-export function usePageMeta({ title, description, image, type = 'website', jsonLd }: PageMetaOptions) {
+export function usePageMeta({ title, description, image, type = 'website', noindex = false, jsonLd }: PageMetaOptions) {
   const { pathname } = useLocation()
   const jsonLdText = jsonLd ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : undefined
 
@@ -61,6 +62,7 @@ export function usePageMeta({ title, description, image, type = 'website', jsonL
     setMeta('meta[name="twitter:title"]', fullTitle)
     setMeta('meta[name="twitter:description"]', description)
     setMeta('meta[name="twitter:image"]', imageUrl)
+    setMeta('meta[name="robots"]', noindex ? 'noindex, follow' : undefined)
     setCanonical(canonical)
 
     let script: HTMLScriptElement | null = null
@@ -79,5 +81,5 @@ export function usePageMeta({ title, description, image, type = 'website', jsonL
       setMeta('meta[name="twitter:image"]', undefined)
       setCanonical(undefined)
     }
-  }, [description, image, jsonLdText, pathname, title, type])
+  }, [description, image, jsonLdText, noindex, pathname, title, type])
 }

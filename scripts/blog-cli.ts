@@ -1,10 +1,20 @@
 import { cp, readFile, rm, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { exists, isTestFolder, parseBlog, readDates, runContentBuild, today, writeDates } from './lib/blog.ts'
+import {
+  exists,
+  isTestFolder,
+  parseBlog,
+  readDates,
+  runContentBuild,
+  syncDatesRegistry,
+  today,
+  writeDates,
+} from './lib/blog.ts'
 import { pushBlogChanges } from './lib/git.ts'
 import { collections } from './lib/collections.ts'
+import { articlePathSlug, discoverContentDirectories } from './lib/content-path.ts'
 
-// `publish`, `delete`, `create-test`, `delete-test` work on the blog; the same names ending in `-book` on books.
+// `publish`, `delete`, `create-test`, `delete-test` work on media; the same names ending in `-book` work on books.
 const rawCommand = process.argv[2] ?? ''
 const isBook = rawCommand.endsWith('-book')
 const command = isBook ? rawCommand.slice(0, -'-book'.length) : rawCommand
@@ -15,7 +25,7 @@ const args = process.argv.slice(3).filter((arg) => arg !== '--')
 const templateRoot = collection.templateDir
 const testSlug = collection.testSlug
 const testDirectory = path.join(blogRoot, testSlug)
-const npmName = (name: string) => (isBook ? `${name}Book` : `${name}Blog`)
+const npmName = (name: string) => (isBook ? `${name}Book` : `${name}Media`)
 const collectionPath = `content/${collection.id}`
 
 function fail(message: string): never {
@@ -39,7 +49,7 @@ function getTarget(): string {
   return parseSlug(args[0])
 }
 
-/** `npm run publishBlog -- a b c` publishes several items in one go. */
+/** `npm run publishMedia -- a b c` publishes several items in one go. */
 function getTargets(): string[] {
   if (args.length < 1 || args.some((arg) => !arg || arg.startsWith('--'))) {
     fail(`usage: npm run ${npmName('publish')} -- <folder-name> [more folder names…]`)
@@ -49,6 +59,14 @@ function getTargets(): string[] {
 
 async function rebuildOrFail(): Promise<void> {
   if (!runContentBuild()) fail('Content validation/build failed; GitHub was not updated.')
+}
+
+async function readSyncedDates() {
+  const rawDates = await readDates(collection.datesFile)
+  const folders = (await discoverContentDirectories(blogRoot)).map((directory) => articlePathSlug(blogRoot, directory))
+  const dates = syncDatesRegistry(rawDates, folders, collection.id)
+  if (JSON.stringify(dates) !== JSON.stringify(rawDates)) await writeDates(dates, collection.datesFile)
+  return dates
 }
 
 async function publish(): Promise<void> {
@@ -65,7 +83,7 @@ async function publish(): Promise<void> {
     }
   }
 
-  const dates = await readDates(collection.datesFile)
+  const dates = await readSyncedDates()
   const previousDates = { ...dates }
   const day = today()
   for (const slug of slugs) {
@@ -93,10 +111,12 @@ async function deleteBlog(): Promise<void> {
   const slug = getTarget()
   const directory = path.join(blogRoot, slug)
   if (!(await exists(directory))) fail(`${collectionPath}/${slug} does not exist.`)
-  if (isTestFolder(slug)) fail(`Test ${noun}s are managed only by npm run ${isBook ? 'deleteTestBook' : 'deleteTest'}.`)
+  if (isTestFolder(slug)) {
+    fail(`Test ${noun}s are managed only by npm run ${isBook ? 'deleteTestBook' : 'deleteTestMedia'}.`)
+  }
 
+  const dates = await readSyncedDates()
   await rm(directory, { recursive: true, force: true })
-  const dates = await readDates(collection.datesFile)
   delete dates[slug]
   await writeDates(dates, collection.datesFile)
   await rebuildOrFail()

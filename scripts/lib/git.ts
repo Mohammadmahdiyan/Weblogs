@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { projectRoot } from './blog.ts'
 import type { CollectionId } from './collections.ts'
+import type { StoryScope } from '../../src/lib/story.ts'
 
 function pathsFor(slugs: string[], collection: CollectionId): string[] {
   return [`content/${collection}.json`, ...[...new Set(slugs)].map((slug) => `content/${collection}/${slug}`)]
@@ -37,15 +38,10 @@ export function pushBlogChanges(commitMessage: string, slugs: string[], collecti
   return pushPaths(commitMessage, pathsFor(slugs, collection), collection === 'books' ? 'book' : 'media')
 }
 
-/** Commit and push only the daily story folder and its state file. */
-export function pushStoryChanges(commitMessage: string, category?: CollectionId): boolean {
-  return pushPaths(
-    commitMessage,
-    category
-      ? [`content/${category}/story`, `content/${category}-story-state.json`]
-      : ['story', 'content/story-state.json'],
-    category ? `${category} story` : 'story',
-  )
+/** Commit and push only one scope's story folder and the unified state file. */
+export function pushStoryChanges(commitMessage: string, scope: StoryScope = 'home'): boolean {
+  const folder = scope === 'home' ? 'story' : `content/${scope}/story`
+  return pushPaths(commitMessage, [folder, 'content/story-state.json'], `${scope} story`)
 }
 
 function pushPaths(commitMessage: string, requestedPaths: string[], what: string): boolean {

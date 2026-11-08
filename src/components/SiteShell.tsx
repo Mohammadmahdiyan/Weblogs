@@ -10,10 +10,10 @@ import type { ArticleMeta } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
 import { useDismissibleDetails } from '../lib/useDismissibleDetails'
 import { StoryButton } from './Stories'
-import branchStoriesJson from '../generated/branch-stories.json'
-import type { BranchStoriesData } from '../lib/story'
+import storiesJson from '../generated/stories.json'
+import { pickStory, type StoriesData } from '../lib/story'
 
-const branchStories = branchStoriesJson as BranchStoriesData
+const stories = storiesJson as StoriesData
 
 function SiteLink({
   href,
@@ -140,7 +140,7 @@ function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const textSettingsRef = useRef<HTMLDetailsElement>(null)
   useDismissibleDetails(textSettingsRef)
-  const currentStory = branchStories.branches[location.pathname.replace(/\/+$/, '')] ?? branchStories.home
+  const currentStory = pickStory(location.pathname, stories)
 
   return (
     <>

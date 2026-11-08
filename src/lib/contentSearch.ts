@@ -21,7 +21,7 @@ export interface ContentMatch {
  * Link to an article; after a content search it also carries the text to jump to and, when the reader
  * stepped to a later occurrence with the arrows, which occurrence (0-based `occurrence`, written 1-based).
  */
-export function articleHref(slug: string, contentTerm = '', occurrence = 0, basePath = '/blog'): string {
+export function articleHref(slug: string, contentTerm: string, occurrence: number, basePath: string): string {
   const term = contentTerm.trim()
   if (!term) return `${basePath}/${slug}`
   const index = occurrence > 0 ? `&${FIND_INDEX_PARAM}=${Math.floor(occurrence) + 1}` : ''

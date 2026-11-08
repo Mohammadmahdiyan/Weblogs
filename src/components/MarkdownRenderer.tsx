@@ -13,7 +13,7 @@ import {
 import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
 import { Copy, ExternalLink, Link2, Quote } from 'lucide-react'
-import { useHref } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
 import { withMdxErrorBoundary } from '../lib/mdx-component'
 import {
@@ -63,13 +63,13 @@ function createHeading(tag: HeadingTag) {
           {children}
         </Tag>
         {id && (
-          <a
-            href={`#${id}`}
+          <Link
+            to={`#${id}`}
             aria-label="پیوند به این عنوان"
             className="absolute -start-6 top-1 hidden text-[var(--text-muted)] group-focus-within:inline-flex group-hover:inline-flex"
           >
             <Link2 aria-hidden="true" className="size-4" />
-          </a>
+          </Link>
         )}
       </div>
     )
@@ -83,14 +83,50 @@ function Paragraph(props: ComponentPropsWithoutRef<'p'>) {
 function Anchor({ href, target, rel, children, className, ...props }: ComponentPropsWithoutRef<'a'>) {
   const isExternal = typeof href === 'string' && /^https?:\/\//i.test(href)
   const isSitePath = typeof href === 'string' && href.startsWith('/') && !href.startsWith('//')
-  const siteHref = useHref(isSitePath ? href : '/')
+  const isHash = typeof href === 'string' && href.startsWith('#')
+  const isQuery = typeof href === 'string' && href.startsWith('?')
+  const { pathname, search } = useLocation()
+  const basePath = import.meta.env.BASE_URL.replace(/\/+$/, '')
+  let internalHref = href ?? '/'
+  if (
+    isSitePath &&
+    basePath &&
+    (href === basePath ||
+      href.startsWith(`${basePath}/`) ||
+      href.startsWith(`${basePath}?`) ||
+      href.startsWith(`${basePath}#`))
+  ) {
+    const remainder = href.slice(basePath.length)
+    if (!remainder) {
+      internalHref = '/'
+    } else if (remainder.startsWith('/') || remainder.startsWith('?') || remainder.startsWith('#')) {
+      internalHref = remainder
+    } else {
+      internalHref = `/${remainder}`
+    }
+  }
+  const internalTo = isHash ? `${pathname}${search}${href}` : isQuery ? `${pathname}${href}` : internalHref
   const safeTarget = isExternal ? '_blank' : target
   const safeRel = isExternal ? clsx(rel, 'noopener noreferrer') : rel
+
+  if (isSitePath || isHash || isQuery) {
+    return (
+      <Link
+        {...props}
+        to={internalTo}
+        target={safeTarget}
+        rel={safeRel}
+        className={clsx('text-[var(--info)] no-underline', className)}
+      >
+        {children}
+      </Link>
+    )
+  }
 
   return (
     <a
       {...props}
-      href={isSitePath ? siteHref : href}
+      href={href}
       target={safeTarget}
       rel={safeRel}
       className={clsx('text-[var(--info)] no-underline', className)}
@@ -365,10 +401,7 @@ function Divider({ children, id }: { children?: ReactNode; id?: string }) {
   return (
     <div
       id={id}
-      className={clsx(
-        'my-8 flex w-full items-center gap-4 text-sm text-[var(--text-secondary)]',
-        id && 'scroll-mt-24',
-      )}
+      className={clsx('my-8 flex w-full items-center gap-4 text-sm text-[var(--text-secondary)]', id && 'scroll-mt-24')}
     >
       <span aria-hidden="true" className="h-px min-w-6 flex-1 bg-[var(--text)] opacity-20" />
       <span className="max-w-[85%] text-center leading-7">{children}</span>

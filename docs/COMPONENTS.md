@@ -4,21 +4,18 @@ Markdown directives are converted into accessible React components. Attribute na
 
 ## Links to article sections
 
-Every Markdown heading gets an automatic link target. Link to it with the heading text, lowercased and with spaces replaced by hyphens:
+هر عنوان Markdown نشانی خودکار دارد. برای پیوند به آن می‌توانید متن خام عنوان را پس از `#` بنویسید؛ متن با نادیده‌گرفتن نشانه‌گذاری و اعراب پیدا می‌شود. شناسهٔ دقیق عنوان اولویت دارد، سپس تطبیق دقیق متن و در پایان تطبیق بخشیِ یکتا:
 
 ```md
 ## دلیل پاسخ
 
-[رفتن به دلیل پاسخ](#دلیل-پاسخ)
+[همین صفحه](#دلیل پاسخ)
+[صفحهٔ دیگر همین کتاب، بدون پیشوند سایت](/books/name-of-book/27#دلیل پاسخ)
+[مقالهٔ دیگر، بدون پیشوند سایت](/media/lives-nour/spider-house/example#دلیل پاسخ)
+[مقالهٔ دیگر، با پیشوند سایت](/Weblogs/media/lives-nour/spider-house/example#دلیل پاسخ)
 ```
 
-For a section in another article, include its article path before the fragment:
-
-```md
-[دلیل پاسخ در مقاله‌ی دیگر](/media/lives-nour/spider-house/example#دلیل-پاسخ)
-```
-
-The small link icon beside a rendered heading reveals the exact URL. If a heading is repeated, later IDs receive `-1`, `-2`, and so on; use the icon's URL to get the right one.
+پیوندهای داخلی با مسیریاب سایت باز می‌شوند و صفحه را دوباره بارگذاری نمی‌کنند. پیشوند `/Weblogs/` اختیاری است. آیکون کوچک کنار عنوان نشانی دقیق را نشان می‌دهد؛ اگر عنوان تکرار شده باشد، شناسه‌های بعدی `-1`، `-2` و مانند آن می‌گیرند. برای انتخاب مورد دقیق، از پیوند آیکون استفاده کنید.
 
 ## Accordion and FAQ
 

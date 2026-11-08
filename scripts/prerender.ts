@@ -38,6 +38,10 @@ interface PrerenderTarget {
 
 async function main(): Promise<void> {
   const template = await readFile(path.join(distRoot, 'index.html'), 'utf8')
+  const notFoundShell = /<meta\s+name=["']robots["'][^>]*>/i.test(template)
+    ? template.replace(/<meta\s+name=["']robots["'][^>]*>/i, '<meta name="robots" content="noindex" />')
+    : template.replace(/<\/head>/i, '  <meta name="robots" content="noindex" />\n  </head>')
+  await writeFile(path.join(distRoot, '404.html'), notFoundShell, 'utf8')
   const base = siteConfig.siteUrl.replace(/\/+$/, '')
   const targets: PrerenderTarget[] = [
     { route: 'media', meta: 'media.json', hidden: 'media-hidden.json' },

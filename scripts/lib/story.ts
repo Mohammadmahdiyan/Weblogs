@@ -1,12 +1,8 @@
 /*
   Daily story (the ring in the header).
 
-  Author flow:
-    1. put story files in /story
-    2. `npm run publishStory`            → the story is for TODAY (Asia/Tehran), committed and pushed
-    3. the next day it disappears: the daily GitHub Actions run deletes everything in /story
-       (`npm run cleanStory`), and even if that run is late the build ignores an old story.
-  Nothing in /story → a section of a random article is shown instead (the same one all day).
+  Author flow: put files in `story/` (home), `content/media/story/`, or `content/books/story/`, then publish
+  the matching scope. Expired scopes are removed by `npm run cleanStory`; a build ignores yesterday's story.
 
   ONE FILE = ONE STORY (a segment of the progress bar). Files are shown in name order (numbers sort naturally):
     index.md                   → one story
@@ -22,14 +18,14 @@
                          The same line alone as the file's whole text works too.
     seconds: 12          how long this story stays (default: automatic from the text length)
 
-  State lives OUTSIDE the folder (content/story-state.json) because the folder is wiped.
+  State lives in content/story-state.json because the folders are wiped.
 */
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
 import type { ArticleMeta } from '../../src/lib/types.ts'
-import type { BranchStoriesData, StoryData, StorySlide } from '../../src/lib/story.ts'
+import { STORY_SCOPES, type StoryData, type StoryScope, type StorySlide } from '../../src/lib/story.ts'
 import { isTestFolder } from './blog.ts'
 import { encodeMediaPath, isAbsoluteUrl, normalizeMediaPath, prepareVideoForBrowser } from './media.ts'
 
@@ -37,7 +33,15 @@ export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.u
 export const storyRoot = path.join(projectRoot, 'story')
 export const storyStateFile = path.join(projectRoot, 'content', 'story-state.json')
 const storyMediaRoot = path.join(projectRoot, 'public', 'story-media')
-const generatedStoryFile = path.join(projectRoot, 'src', 'generated', 'story.json')
+export const storyDirectories: Record<StoryScope, string> = {
+  home: storyRoot,
+  media: path.join(projectRoot, 'content', 'media', 'story'),
+  books: path.join(projectRoot, 'content', 'books', 'story'),
+}
+export const storyLegacyStateFiles = {
+  media: path.join(projectRoot, 'content', 'media-story-state.json'),
+  books: path.join(projectRoot, 'content', 'books-story-state.json'),
+}
 
 const STORY_TIME_ZONE = 'Asia/Tehran'
 /** Iran has no daylight saving time since 2022, so the offset is fixed. */
@@ -69,25 +73,73 @@ export interface StoryState {
   publishedAt: string
 }
 
-export async function readStoryState(file = storyStateFile): Promise<StoryState | null> {
+export type StoryStates = Partial<Record<StoryScope, StoryState>>
+
+function isStoryState(value: unknown): value is Record<string, unknown> & { date: string } {
+  if (!value || typeof value !== 'object') return false
+  const state = value as Record<string, unknown>
+  return typeof state.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(state.date)
+}
+
+async function readJsonIfPresent(file: string): Promise<unknown | null> {
   try {
-    const parsed = JSON.parse(await readFile(file, 'utf8')) as Partial<StoryState>
-    if (typeof parsed.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)) {
-      return { date: parsed.date, publishedAt: typeof parsed.publishedAt === 'string' ? parsed.publishedAt : '' }
-    }
-    return null
-  } catch {
-    return null
+    return JSON.parse(await readFile(file, 'utf8')) as unknown
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null
+    throw new Error(`Could not read story state ${file}: ${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    })
   }
 }
 
-export async function writeStoryState(state: StoryState | null, file = storyStateFile): Promise<void> {
-  if (state === null) {
-    await rm(file, { force: true })
-    return
+function normalizeStoryState(value: unknown): StoryState | null {
+  if (!isStoryState(value)) return null
+  return { date: value.date, publishedAt: typeof value.publishedAt === 'string' ? value.publishedAt : '' }
+}
+
+function parseStoryStates(value: unknown): StoryStates {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const record = value as Record<string, unknown>
+  if (isStoryState(record)) return { home: normalizeStoryState(record) ?? undefined }
+
+  const states: StoryStates = {}
+  for (const scope of STORY_SCOPES) {
+    const state = normalizeStoryState(record[scope])
+    if (state) states[scope] = state
   }
+  return states
+}
+
+/** Reads the unified state, migrating the previous flat and per-collection state files once. */
+export async function readStoryStates(
+  file = storyStateFile,
+  legacyFiles = storyLegacyStateFiles,
+): Promise<StoryStates> {
+  const raw = await readJsonIfPresent(file)
+  const current = parseStoryStates(raw)
+  let migrated = raw !== null && isStoryState(raw)
+  for (const scope of ['media', 'books'] as const) {
+    const legacy = await readJsonIfPresent(legacyFiles[scope])
+    if (legacy !== null) {
+      const state = normalizeStoryState(legacy)
+      if (state && !current[scope]) current[scope] = state
+      await rm(legacyFiles[scope], { force: true })
+      migrated = true
+    }
+  }
+  if (migrated) await writeStoryStates(current, file)
+  return current
+}
+
+export async function writeStoryStates(states: StoryStates, file = storyStateFile): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true })
-  await writeFile(file, `${JSON.stringify(state, null, 2)}\n`, 'utf8')
+  const normalized = Object.fromEntries(
+    STORY_SCOPES.flatMap((scope) => {
+      const state = normalizeStoryState(states[scope])
+      return state ? [[scope, state]] : []
+    }),
+  )
+  await writeFile(file, `${JSON.stringify(normalized, null, 2)}\n`, 'utf8')
 }
 
 // ───────────────────────── folder ─────────────────────────
@@ -152,7 +204,7 @@ export function storyFolderHasContent(folder: StoryFolder): boolean {
   return folder.markdown.length > 0 || folder.images.length > 0
 }
 
-/** Deletes everything inside /story (keeping the folder itself, with a .gitkeep so Git keeps it). */
+/** Deletes everything inside a story scope (keeping the folder itself, with a .gitkeep so Git keeps it). */
 export async function emptyStoryFolder(directory = storyRoot): Promise<number> {
   let removed = 0
   try {
@@ -169,20 +221,27 @@ export async function emptyStoryFolder(directory = storyRoot): Promise<number> {
   return removed
 }
 
-/**
- * Removes yesterday's (or older) story: the folder contents and the state file. Safe to run any time; returns
- * true when something was removed. A folder that was never published (a draft) is left alone.
- */
-export async function cleanExpiredStory(
-  force = false,
+/** Removes every expired scope, or one named scope when forced. Draft folders without a state are left alone. */
+export async function cleanExpiredStories(
+  forceScopes: StoryScope[] = [],
   stateFile = storyStateFile,
-  directory = storyRoot,
-): Promise<boolean> {
-  const state = await readStoryState(stateFile)
-  if (!force && (!state || state.date >= storyToday())) return false
-  const removed = await emptyStoryFolder(directory)
-  await writeStoryState(null, stateFile)
-  return removed > 0 || state !== null
+  directories: Record<StoryScope, string> = storyDirectories,
+): Promise<StoryScope[]> {
+  const states = await readStoryStates(stateFile)
+  const today = storyToday()
+  const cleaned: StoryScope[] = []
+  for (const scope of STORY_SCOPES) {
+    const state = states[scope]
+    const force = forceScopes.includes(scope)
+    if (!force && (!state || state.date >= today)) continue
+    const removed = await emptyStoryFolder(directories[scope])
+    if (removed > 0 || state || force) {
+      delete states[scope]
+      cleaned.push(scope)
+    }
+  }
+  if (cleaned.length > 0) await writeStoryStates(states, stateFile)
+  return cleaned
 }
 
 // ───────────────────────── article sections ─────────────────────────
@@ -242,15 +301,22 @@ export function parseSections(body: string, plainText: (markdown: string) => str
 export interface ArticleSource {
   meta: ArticleMeta
   body: string
+  show?: boolean
 }
 
 /** Finds an article by its folder name or title (exact first, then a unique partial match). */
 function findArticle(articles: ArticleSource[], query: string): ArticleSource | null {
   const key = normalizeKey(query)
   if (!key) return null
-  const exact = articles.filter(({ meta }) => normalizeKey(meta.slug) === key || normalizeKey(meta.title) === key)
-  if (exact.length === 1) return exact[0]
-  if (exact.length > 1) return null
+  const exactPath = articles.filter(({ meta }) => {
+    const fullPath = meta.category ? `${meta.category}/${meta.slug}` : meta.slug
+    return normalizeKey(meta.slug) === key || normalizeKey(fullPath) === key
+  })
+  if (exactPath.length === 1) return exactPath[0]
+  if (exactPath.length > 1) return null
+  const exactTitle = articles.filter(({ meta }) => normalizeKey(meta.title) === key)
+  if (exactTitle.length === 1) return exactTitle[0]
+  if (exactTitle.length > 1) return null
   const partial = articles.filter(({ meta }) => normalizeKey(meta.title).includes(key))
   return partial.length === 1 ? partial[0] : null
 }
@@ -308,19 +374,36 @@ function seededRandom(seed: string): () => number {
   }
 }
 
+function isEligibleArticle(article: ArticleSource, isProduction: boolean): boolean {
+  return (
+    !isTestFolder(article.meta.slug) &&
+    !article.meta.adult &&
+    article.show !== false &&
+    (!isProduction || !article.meta.incomplete)
+  )
+}
+
+function eligibleSections(article: ArticleSource, plainText: (markdown: string) => string): ArticleSection[] {
+  return parseSections(article.body, plainText).filter(
+    (section) => section.level === 2 && section.markdown.length <= 4000 && plainText(section.markdown).length >= 140,
+  )
+}
+
 function articleStory(
   date: string,
+  scope: string,
   articles: ArticleSource[],
   plainText: (markdown: string) => string,
   isProduction: boolean,
-  articleRoute = '/media',
 ): StoryData | null {
-  const random = seededRandom(date)
-  // Never: test articles (`_…` folders), adult-gated articles. In production also unfinished ones.
-  const pool = articles.filter(
-    ({ meta }) => !isTestFolder(meta.slug) && !meta.adult && (!isProduction || !meta.incomplete),
-  )
-  const order = [...pool].sort((left, right) => left.meta.slug.localeCompare(right.meta.slug))
+  const random = seededRandom(`${date}:${scope}`)
+  const order = articles
+    .filter((article) => isEligibleArticle(article, isProduction))
+    .sort(
+      (left, right) =>
+        (left.meta.category ?? '').localeCompare(right.meta.category ?? '') ||
+        left.meta.slug.localeCompare(right.meta.slug),
+    )
   for (let index = order.length - 1; index > 0; index -= 1) {
     const swap = Math.floor(random() * (index + 1))
     ;[order[index], order[swap]] = [order[swap], order[index]]
@@ -328,37 +411,40 @@ function articleStory(
 
   for (const article of order) {
     // Whole `##` sections that read well on their own: enough text, not so long that a story becomes a chapter.
-    const sections = parseSections(article.body, plainText).filter((section) => {
-      if (section.level !== 2 || section.markdown.length > 4000) return false
-      return plainText(section.markdown).length >= 140
-    })
+    const sections = eligibleSections(article, plainText)
     if (sections.length === 0) continue
     const section = sections[Math.floor(random() * sections.length)]
     return {
-      id: `${date}:article:${article.meta.slug}`,
+      id: `${date}:article:${scope}:${article.meta.category ?? ''}:${article.meta.slug}`,
       source: 'article',
       date,
       expiresAt: storyDayEnd(date),
-      slides: [sectionSlide(article, section, plainText, articleRoute)],
+      slides: [sectionSlide(article, section, plainText)],
     }
   }
   return null
 }
 
-/**
- * Builds one daily story for every listing route that directly contains articles, plus a home story
- * made from three randomly selected branch stories.
- */
-export function buildBranchStories(
-  date: string,
-  collections: { route: string; articles: ArticleSource[] }[],
-  plainText: (markdown: string) => string,
-): BranchStoriesData {
-  const branches: Record<string, StoryData> = {}
+export interface AutoStoriesData {
+  home: StoryData | null
+  sections: Record<'media' | 'books', StoryData | null>
+  branches: Record<string, StoryData>
+}
 
-  for (const { route, articles } of collections) {
+/** Builds deterministic daily stories for the home scope, each category scope, and article branches. */
+export function buildAutoStories(
+  date: string,
+  collections: { scope: 'media' | 'books'; route: string; articles: ArticleSource[] }[],
+  plainText: (markdown: string) => string,
+  isProduction: boolean,
+): AutoStoriesData {
+  const branches: Record<string, StoryData> = {}
+  const sections: Record<'media' | 'books', StoryData | null> = { media: null, books: null }
+
+  for (const { scope, route, articles } of collections) {
+    sections[scope] = articleStory(date, scope, articles, plainText, isProduction)
     const groups = new Map<string, ArticleSource[]>()
-    const eligibleArticles = articles.filter(({ meta }) => !isTestFolder(meta.slug) && !meta.adult)
+    const eligibleArticles = articles.filter((article) => isEligibleArticle(article, isProduction))
 
     for (const article of eligibleArticles) {
       const parent = article.meta.slug.includes('/')
@@ -379,43 +465,26 @@ export function buildBranchStories(
       }
 
       for (const article of order) {
-        const sections = parseSections(article.body, plainText).filter((section) => {
-          if (section.level !== 2 && section.level !== 3) return false
-          return plainText(section.markdown).length > section.heading.length
-        })
-        if (sections.length === 0) continue
+        const eligible = eligibleSections(article, plainText)
+        if (eligible.length === 0) continue
 
-        const section = sections[Math.floor(random() * sections.length)]
+        const section = eligible[Math.floor(random() * eligible.length)]
         branches[branchRoute] = {
-          id: `${date}:branch:${branchRoute}:${article.meta.slug}:${section.heading}`,
+          id: `${date}:branch:${branchRoute}:${article.meta.category ?? ''}:${article.meta.slug}:${section.heading}`,
           source: 'article',
           date,
           expiresAt: storyDayEnd(date),
-          slides: [sectionSlide(article, section, plainText, route)],
+          slides: [sectionSlide(article, section, plainText)],
         }
         break
       }
     }
   }
 
-  const candidates = Object.entries(branches).sort(([left], [right]) => left.localeCompare(right))
-  const random = seededRandom(`${date}:home-branches`)
-  for (let index = candidates.length - 1; index > 0; index -= 1) {
-    const swap = Math.floor(random() * (index + 1))
-    ;[candidates[index], candidates[swap]] = [candidates[swap], candidates[index]]
-  }
-  const selected = candidates.slice(0, 3).map(([, story]) => story)
-  const home: StoryData | null = selected.length
-    ? {
-        id: `${date}:home-branches:${selected.map((story) => story.id).join('|')}`,
-        source: 'article',
-        date,
-        expiresAt: storyDayEnd(date),
-        slides: selected.flatMap((story) => story.slides),
-      }
-    : null
+  const homeArticles = collections.flatMap(({ articles }) => articles)
+  const home = articleStory(date, 'home', homeArticles, plainText, isProduction)
 
-  return { home, branches }
+  return { home, sections, branches }
 }
 
 function sectionSlide(
@@ -424,7 +493,7 @@ function sectionSlide(
   plainText: (markdown: string) => string,
   articleRoute?: string,
 ): StorySlide {
-  const route = articleRoute ?? `/${article.meta.category ?? 'media'}`
+  const route = `/${article.meta.category ?? articleRoute?.replace(/^\/+|\/+$/g, '') ?? 'media'}`
   return {
     kind: 'markdown',
     markdown: section.markdown,
@@ -490,8 +559,7 @@ async function publishStoryMedia(
 
 interface FolderStories {
   slides: StorySlide[]
-  /** false when every file said `show: false`. */
-  anyVisible: boolean
+  hidden: boolean
 }
 
 async function slidesFromFolder(folder: StoryFolder, options: BuildStoryOptions): Promise<FolderStories> {
@@ -599,69 +667,60 @@ async function slidesFromFolder(folder: StoryFolder, options: BuildStoryOptions)
     path.join(projectRoot, 'public', options.mediaDirectory ?? 'story-media'),
   )
   const slides = entries.flatMap((entry) => (entry.slide ? [entry.slide] : []))
-  return { slides, anyVisible: slides.length > 0 }
+  const hidden = entries.length > 0 && entries.every((entry) => entry.slide === null) && folder.images.length === 0
+  return { slides, hidden }
 }
 
 // ───────────────────────── build step ─────────────────────────
 
 export interface BuildStoryOptions {
+  scope: StoryScope
+  date?: string
   isProduction: boolean
   /** Site base, e.g. `/Weblogs/`. */
   baseUrl: string
   articles: ArticleSource[]
   plainText: (markdown: string) => string
+  state?: StoryState
   storyDir?: string
-  stateFile?: string
-  generatedFile?: string
   mediaDirectory?: string
   articleRoute?: string
 }
 
-/** Writes src/generated/story.json (`null` = no story) and copies the story media to public/story-media. */
+/** Builds one scope's manual story and copies its media; automatic stories are assembled separately. */
 export async function buildStory(options: BuildStoryOptions): Promise<StoryData | null> {
-  const today = storyToday()
+  const today = options.date ?? storyToday()
   const storyDir = options.storyDir ?? storyRoot
-  const generatedFile = options.generatedFile ?? generatedStoryFile
-  const mediaDirectory = options.mediaDirectory ?? 'story-media'
+  const mediaDirectory = options.mediaDirectory ?? `story-media/${options.scope}`
   const mediaRoot = path.join(projectRoot, 'public', mediaDirectory)
-  const state = await readStoryState(options.stateFile)
   const folder = await readStoryFolder(storyDir)
   await rm(mediaRoot, { recursive: true, force: true })
 
-  let story: StoryData | null = null
+  const state = options.state
   const publishedToday = state?.date === today
   // Production shows the owner's story only when it was published today. Development also previews a draft.
-  const useFolder = storyFolderHasContent(folder) && (publishedToday || (!options.isProduction && state === null))
+  const useFolder = storyFolderHasContent(folder) && (publishedToday || (!options.isProduction && state == null))
+  if (!useFolder) return null
 
-  if (useFolder) {
-    const { slides, anyVisible } = await slidesFromFolder(folder, { ...options, mediaDirectory })
-    // The folder claims the day: when every file is `show: false` nothing (not even a random article) is shown.
-    if (anyVisible) {
-      story = {
-        id: `${today}:custom:${options.articleRoute ?? 'global'}:${state?.publishedAt || 'draft'}`,
-        source: 'custom',
-        date: today,
-        expiresAt: storyDayEnd(today),
-        ...(publishedToday ? {} : { preview: true }),
-        slides,
-      }
-    } else {
-      console.log('Story: hidden for today (every story file has `show: false`).')
-    }
-  } else {
-    story = articleStory(today, options.articles, options.plainText, options.isProduction, options.articleRoute)
-    if (storyFolderHasContent(folder) && state !== null && state.date < today) {
-      console.warn(
-        '[story] /story holds an old story that is no longer shown; `npm run cleanStory` deletes it (done automatically every day on GitHub).',
-      )
-    }
+  const { slides, hidden } = await slidesFromFolder(folder, {
+    ...options,
+    mediaDirectory,
+  })
+  const story: StoryData = {
+    id: `${today}:custom:${options.scope}:${state?.publishedAt || 'draft'}`,
+    source: 'custom',
+    date: today,
+    expiresAt: storyDayEnd(today),
+    ...(publishedToday ? {} : { preview: true }),
+    ...(hidden ? { hidden: true } : {}),
+    slides,
   }
-
-  await mkdir(path.dirname(generatedFile), { recursive: true })
-  await writeFile(generatedFile, `${JSON.stringify(story, null, 2)}\n`, 'utf8')
-  if (story)
+  if (hidden) console.log(`Story: hidden for ${options.scope} today (every story file has \`show: false\`).`)
+  else if (slides.length === 0) return null
+  else {
     console.log(
-      `Story: ${story.source} · ${story.slides.length} stor${story.slides.length === 1 ? 'y' : 'ies'}${story.preview ? ' (draft preview)' : ''}`,
+      `Story (${options.scope}): custom · ${slides.length} stor${slides.length === 1 ? 'y' : 'ies'}${story.preview ? ' (draft preview)' : ''}`,
     )
+  }
   return story
 }

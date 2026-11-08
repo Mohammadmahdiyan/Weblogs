@@ -64,7 +64,7 @@ export function ArticleSearch({
   articles,
   searchIndex,
   initialQuery = '',
-  basePath = '/blog',
+  basePath,
   bookMode = false,
   label,
   placeholder,
@@ -72,7 +72,7 @@ export function ArticleSearch({
   articles: ArticleMeta[]
   searchIndex: SearchEntry[]
   initialQuery?: string
-  basePath?: string
+  basePath: string
   bookMode?: boolean
   label?: string
   placeholder?: string

@@ -20,9 +20,25 @@ import {
 } from './lib/media.ts'
 import { allCollections, type Collection } from './lib/collections.ts'
 import { syncFolderPageConfigs } from './lib/folder-pages.ts'
-import { buildBranchStories, buildStory, storyToday } from './lib/story.ts'
-import { isTestFolder, parseBlog, readDates, validateFolderName, type DatesRegistry } from './lib/blog.ts'
-import { articlePathSlug, discoverArticleDirectories, englishFolderName } from './lib/content-path.ts'
+import { buildAutoStories, buildStory, readStoryStates, storyDirectories, storyToday } from './lib/story.ts'
+import type { StoriesData } from '../src/lib/story.ts'
+import { checkContentLinks } from './lib/link-check.ts'
+import {
+  isTestFolder,
+  parseBlog,
+  readDates,
+  syncDatesRegistry,
+  validateAliasUniqueness,
+  validateFolderName,
+  writeDates,
+  type DatesRegistry,
+} from './lib/blog.ts'
+import {
+  articlePathSlug,
+  discoverArticleDirectories,
+  discoverContentDirectories,
+  englishFolderName,
+} from './lib/content-path.ts'
 
 interface PreparedPage {
   number: number
@@ -208,7 +224,7 @@ async function readBookPages(
   slug: string,
   mediaFiles: MediaFile[],
   collection: Collection,
-): Promise<PreparedPage[]> {
+): Promise<{ pages: PreparedPage[]; hasPagesFolder: boolean }> {
   const pagesDirectory = path.join(articleDirectory, 'pages')
   let names: string[]
   try {
@@ -216,7 +232,7 @@ async function readBookPages(
       .filter((entry) => entry.isFile())
       .map((entry) => entry.name)
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { pages: [], hasPagesFolder: false }
     throw error
   }
 
@@ -251,7 +267,7 @@ async function readBookPages(
       body: rewriteMarkdownMedia(parsed.content.trim(), slug, mediaFiles, collection.mediaDir, true),
     })
   }
-  return pages.sort((first, second) => first.number - second.number)
+  return { pages: pages.sort((first, second) => first.number - second.number), hasPagesFolder: true }
 }
 
 async function prepareArticle(
@@ -261,7 +277,6 @@ async function prepareArticle(
 ): Promise<PreparedArticle> {
   const indexPath = path.join(articleDirectory, 'index.md')
   const label = relativeFilePath(indexPath)
-  const folderName = path.basename(articleDirectory)
   const slug = articlePathSlug(collection.root, articleDirectory)
 
   for (const segment of slug.split('/')) {
@@ -280,7 +295,7 @@ async function prepareArticle(
   }
 
   // date / updated come from the category's content/<category>.json registry.
-  const registered = dates[slug] ?? dates[folderName]
+  const registered = dates[slug]
   const fileDay = (await stat(indexPath)).mtime.toISOString().slice(0, 10)
   if (!registered && !isTestFolder(slug)) {
     console.warn(
@@ -293,7 +308,14 @@ async function prepareArticle(
   const allFiles = await collectMediaFiles(articleDirectory)
   // `pages/<number>.md` are the book's pages, not media.
   const mediaFiles = allFiles.filter((media) => !/^pages\/\d+\.md$/i.test(media.relativePath))
-  const pages = collection.id === 'books' ? await readBookPages(articleDirectory, slug, mediaFiles, collection) : []
+  if (collection.id !== 'books' && blog.pageCount !== undefined) {
+    return fail(indexPath, '"pageCount" is only supported for books')
+  }
+  const bookPages =
+    collection.id === 'books'
+      ? await readBookPages(articleDirectory, slug, mediaFiles, collection)
+      : { pages: [], hasPagesFolder: false }
+  const pages = bookPages.pages
   let coverFile: MediaFile | undefined
   /** `cover: https://…` : a picture hosted elsewhere (nothing to commit to Git). */
   let remoteCover: string | undefined
@@ -330,6 +352,8 @@ async function prepareArticle(
     updated,
     tags: blog.tags,
     suggestions: blog.suggestions,
+    ...(blog.aliases.length > 0 ? { aliases: blog.aliases } : {}),
+    ...(blog.pageCount !== undefined ? { pageCount: blog.pageCount } : {}),
     cover: coverFile?.type
       ? {
           url: `${baseUrl}${collection.mediaDir}/${encodeMediaPath(slug)}/${encodeMediaPath(coverFile.relativePath)}`,
@@ -348,7 +372,7 @@ async function prepareArticle(
     // Test folders (`_…`) are fixtures: they never carry the «not finished yet» notice.
     ...(registered?.published === true || isTestFolder(slug) ? {} : { incomplete: true }),
     ...(blog.sources.length > 0 ? { sources: blog.sources } : {}),
-    ...(pages.length > 0
+    ...(bookPages.hasPagesFolder
       ? { pages: pages.map((page) => ({ number: page.number, ...(page.title ? { title: page.title } : {}) })) }
       : {}),
   }
@@ -474,10 +498,16 @@ async function buildCollection(collection: Collection, isProduction: boolean): P
     (directory) => !isProduction || !isTestFolder(articlePathSlug(collection.root, directory)),
   )
   const articles: PreparedArticle[] = []
+  const allPreparedArticles: PreparedArticle[] = []
   // Items with `show: false`: left out of the online build completely (no page text, no media, no search,
   // no sitemap); only their address is kept so the site can answer «the admin does not allow this page».
   const hiddenSlugs: string[] = []
-  const dates = await readDates(collection.datesFile)
+  const rawDates = await readDates(collection.datesFile)
+  const folderSlugs = (await discoverContentDirectories(collection.root)).map((directory) =>
+    articlePathSlug(collection.root, directory),
+  )
+  const dates = syncDatesRegistry(rawDates, folderSlugs, collection.id)
+  if (JSON.stringify(dates) !== JSON.stringify(rawDates)) await writeDates(dates, collection.datesFile)
   const seenSlugs = new Map<string, string>()
 
   for (const articleDirectory of directories) {
@@ -489,11 +519,20 @@ async function buildCollection(collection: Collection, isProduction: boolean): P
       fail(indexPath, `duplicate slug "${article.meta.slug}"; already used by ${relativeFilePath(duplicatePath)}`)
     }
     seenSlugs.set(article.meta.slug, indexPath)
+    allPreparedArticles.push(article)
     if (isProduction && !article.show) {
       hiddenSlugs.push(article.meta.slug)
       continue
     }
     articles.push(article)
+  }
+  try {
+    validateAliasUniqueness(
+      allPreparedArticles.map(({ meta }) => ({ slug: meta.slug, aliases: meta.aliases })),
+      collection.id,
+    )
+  } catch (error) {
+    return fail(collection.root, error instanceof Error ? error.message : String(error))
   }
 
   const metadata = articles
@@ -615,6 +654,13 @@ async function buildCollection(collection: Collection, isProduction: boolean): P
 
 async function buildContent(): Promise<void> {
   const isProduction = process.argv.includes('--production')
+  await checkContentLinks({ quiet: process.env.WEBLOG_LINKS_QUIET === '1' })
+  const publicRoot = path.join(projectRoot, 'public')
+  await Promise.all(
+    ['content', 'content-books'].map((directory) =>
+      rm(path.join(publicRoot, directory), { recursive: true, force: true }),
+    ),
+  )
   const built: BuiltCollection[] = []
   for (const collection of allCollections) built.push(await buildCollection(collection, isProduction))
   const media = built.find((item) => item.collection.id === 'media') as BuiltCollection
@@ -628,46 +674,63 @@ async function buildContent(): Promise<void> {
     })),
   )
 
-  const branchStories = buildBranchStories(
-    storyToday(),
-    built.map(({ collection, articles }) => ({
-      route: `/${collection.id}`,
-      articles: articles.map(({ meta, body }) => ({ meta, body })),
-    })),
-    plainText,
-  )
-  await writeFile(
-    path.join(generatedRoot, 'branch-stories.json'),
-    `${JSON.stringify(branchStories, null, 2)}\n`,
-    'utf8',
-  )
-
-  await buildStory({
+  const date = storyToday()
+  const storyArticles = built.map(({ collection, articles }) => ({
+    scope: collection.id,
+    route: `/${collection.id}`,
+    articles: articles.map(({ meta, body, show }) => ({ meta, body, show })),
+  }))
+  const autoStories = buildAutoStories(date, storyArticles, plainText, isProduction)
+  const states = await readStoryStates()
+  const allArticles = storyArticles.flatMap(({ articles }) => articles)
+  const manualHome = await buildStory({
+    scope: 'home',
+    date,
     isProduction,
     baseUrl,
-    articles: media.metadata.flatMap((meta) => {
-      const prepared = media.articles.find((article) => article.meta.slug === meta.slug)
-      return prepared ? [{ meta, body: prepared.body }] : []
-    }),
+    articles: allArticles,
     plainText,
+    state: states.home,
+    storyDir: storyDirectories.home,
   })
-
-  for (const item of built) {
-    await buildStory({
-      isProduction,
-      baseUrl,
-      articles: item.metadata.flatMap((meta) => {
-        const prepared = item.articles.find((article) => article.meta.slug === meta.slug)
-        return prepared ? [{ meta, body: prepared.body }] : []
-      }),
-      plainText,
-      storyDir: path.join(item.collection.root, 'story'),
-      stateFile: path.join(projectRoot, 'content', `${item.collection.id}-story-state.json`),
-      generatedFile: path.join(generatedRoot, `${item.collection.id}-story.json`),
-      mediaDirectory: `story-media/${item.collection.id}`,
-      articleRoute: `/${item.collection.id}`,
-    })
+  const manualMedia = await buildStory({
+    scope: 'media',
+    date,
+    isProduction,
+    baseUrl,
+    articles: allArticles,
+    plainText,
+    state: states.media,
+    storyDir: storyDirectories.media,
+  })
+  const manualBooks = await buildStory({
+    scope: 'books',
+    date,
+    isProduction,
+    baseUrl,
+    articles: allArticles,
+    plainText,
+    state: states.books,
+    storyDir: storyDirectories.books,
+  })
+  const withScopeFallback = (
+    manual: Awaited<ReturnType<typeof buildStory>>,
+    automatic: Awaited<ReturnType<typeof buildStory>>,
+  ) => (manual ? { ...manual, fallback: automatic } : automatic)
+  const stories: StoriesData = {
+    home: withScopeFallback(manualHome, autoStories.home),
+    sections: {
+      media: withScopeFallback(manualMedia, autoStories.sections.media),
+      books: withScopeFallback(manualBooks, autoStories.sections.books),
+    },
+    branches: autoStories.branches,
   }
+  await Promise.all(
+    ['branch-stories.json', 'story.json', 'media-story.json', 'books-story.json'].map((file) =>
+      rm(path.join(generatedRoot, file), { force: true }),
+    ),
+  )
+  await writeFile(path.join(generatedRoot, 'stories.json'), `${JSON.stringify(stories, null, 2)}\n`, 'utf8')
 
   await writeSiteFiles(media.metadata, books.metadata)
 }

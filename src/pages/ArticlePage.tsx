@@ -23,6 +23,7 @@ import { TelegramCopy } from '../components/TelegramCopy'
 import { HiddenArticlePage } from './HiddenArticlePage'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
+import { resolveHeadingTarget } from '../lib/headingTarget'
 
 interface FolderPageData {
   title: string
@@ -252,32 +253,48 @@ export function ArticlePage({
 
   useEffect(() => {
     if (!markdown || !location.hash) return
-    let frame = 0
-    let timeout = 0
     let finished = false
+    let flashTimeout = 0
     const fragment = location.hash.slice(1)
-    let id = fragment
+    let decodedFragment = fragment
     try {
-      id = decodeURIComponent(fragment)
+      decodedFragment = decodeURIComponent(fragment)
     } catch {
-      /* use the literal fragment */
+      // Keep the literal fragment when it contains malformed percent-encoding.
     }
+    const body = bodyRef.current
+    if (!body) return
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const scrollToTarget = () => {
-      const target = document.getElementById(id)
+      const headings = [...body.querySelectorAll<HTMLElement>('h1, h2, h3, h4, h5, h6')].map((heading) => ({
+        id: heading.id,
+        text: heading.textContent ?? '',
+      }))
+      const id = resolveHeadingTarget(decodedFragment, headings)
+      const target = id
+        ? [...body.querySelectorAll<HTMLElement>('h1, h2, h3, h4, h5, h6')].find((heading) => heading.id === id)
+        : null
       if (!target || finished) return
       finished = true
-      target.scrollIntoView({ block: 'start' })
+      target.scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth', block: 'start' })
+      target.classList.remove('article-heading-flash')
+      void target.offsetWidth
+      target.classList.add('article-heading-flash')
+      flashTimeout = window.setTimeout(() => target.classList.remove('article-heading-flash'), 2000)
       observer.disconnect()
-      window.clearTimeout(timeout)
+      window.clearTimeout(deadline)
     }
     const observer = new MutationObserver(scrollToTarget)
-    observer.observe(bodyRef.current ?? document.body, { childList: true, subtree: true })
-    frame = window.requestAnimationFrame(scrollToTarget)
-    timeout = window.setTimeout(() => observer.disconnect(), 3000)
+    observer.observe(body, { childList: true, subtree: true })
+    const deadline = window.setTimeout(() => observer.disconnect(), 5000)
+    scrollToTarget()
     return () => {
-      window.cancelAnimationFrame(frame)
-      window.clearTimeout(timeout)
+      window.clearTimeout(deadline)
+      window.clearTimeout(flashTimeout)
       observer.disconnect()
+      body.querySelectorAll('.article-heading-flash').forEach((heading) => {
+        heading.classList.remove('article-heading-flash')
+      })
     }
   }, [bodyKey, location.hash, markdown])
 
