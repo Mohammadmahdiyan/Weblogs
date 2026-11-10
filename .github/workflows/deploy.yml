@@ -32,8 +32,16 @@ jobs:
           node-version: 22
           cache: npm
 
+      # --ignore-scripts: skip dependency install scripts. The only one this site does not need online is
+      # ffmpeg-static, which downloads a ~30 MB binary from GitHub releases and failed the whole deploy with an HTTP 504
+      # (it is only used on a developer's computer to fix video audio; the build falls back gracefully without it).
+      # The other install script (esbuild) is only an optimization: its binary comes from an optional package.
+      # Up to 3 attempts, so a short npm registry hiccup does not fail the deploy either.
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci --ignore-scripts \
+            || (echo "npm ci failed, retrying in 15s" && sleep 15 && npm ci --ignore-scripts) \
+            || (echo "npm ci failed again, last try in 45s" && sleep 45 && npm ci --ignore-scripts)
 
       - name: Delete yesterday's story
         run: |

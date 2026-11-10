@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  classifyLink,
   extractHeadingIds,
   extractInternalLinks,
+  isPendingPage,
   resolveContentRoute,
   rewriteResolvableLinks,
+  type ArticleRoute,
   type RouteTable,
 } from '../scripts/lib/link-check.ts'
 
@@ -131,5 +134,50 @@ describe('rewriteResolvableLinks', () => {
       markdown,
       replacements: [],
     })
+  })
+})
+
+describe('pages that are announced but not written yet', () => {
+  const book = routes.articles[0] as ArticleRoute
+  const withCount: RouteTable = { ...routes, articles: [{ ...book, pageCount: 563 }, ...routes.articles.slice(1)] }
+  const link = (href: string) => ({ file: 'x.md', href, line: 1, start: 0, end: href.length })
+
+  it('is pending between 1 and pageCount (or 10000 when there is no pageCount) and never when the page exists', () => {
+    expect(isPendingPage(book, '100')).toBe(true)
+    expect(isPendingPage(book, '27')).toBe(false)
+    expect(isPendingPage(book, '0')).toBe(false)
+    expect(isPendingPage(book, '10001')).toBe(false)
+    expect(isPendingPage({ ...book, pageCount: 563 }, '563')).toBe(true)
+    expect(isPendingPage({ ...book, pageCount: 563 }, '564')).toBe(false)
+    expect(isPendingPage({ ...book, pages: new Set() }, '5')).toBe(false)
+  })
+
+  it('counts a link to a not-yet-written page as pending, whichever way the book is named', () => {
+    const canonical = '/books/answer-to-shobhat/alhad-noven-part1'
+    for (const href of [`${canonical}/100`, '/Weblogs/books/alhad-noven-part1/100#x', '/books/elhad/100']) {
+      expect(classifyLink(link(href), routes)).toEqual({ kind: 'pending', book: canonical, page: 100 })
+    }
+  })
+
+  it('is ok for existing pages and reports a missing heading on an existing page as an error', () => {
+    expect(classifyLink(link('/books/alhad-noven-part1/27#page-heading'), routes)).toEqual({ kind: 'ok' })
+    expect(classifyLink(link('/books/alhad-noven-part1/27#nope'), routes)).toMatchObject({ kind: 'error' })
+  })
+
+  it('reports a page above pageCount and an unknown book as errors', () => {
+    expect(classifyLink(link('/books/elhad/564'), withCount)).toMatchObject({
+      kind: 'error',
+      reason: expect.stringContaining('563'),
+      suggestion: '/books/answer-to-shobhat/alhad-noven-part1',
+    })
+    expect(classifyLink(link('/books/unknown-book/10'), routes)).toMatchObject({ kind: 'error' })
+    expect(classifyLink(link('/media/unknown'), routes)).toMatchObject({ kind: 'error' })
+  })
+
+  it('rewrites old-style links to a not-yet-written page to the canonical route', () => {
+    const result = rewriteResolvableLinks('[x](/books/elhad/100) [y](/Weblogs/books/alhad-noven-part1/101#h)', routes)
+    expect(result.markdown).toBe(
+      '[x](/books/answer-to-shobhat/alhad-noven-part1/100) [y](/books/answer-to-shobhat/alhad-noven-part1/101#h)',
+    )
   })
 })

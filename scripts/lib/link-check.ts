@@ -15,6 +15,8 @@ export interface ArticleRoute {
   directory: string
   aliases: string[]
   pages: Set<string>
+  /** Books: the total number of pages the author has announced (`pageCount:` frontmatter). */
+  pageCount?: number
   headings: Map<string, Set<string>>
 }
 
@@ -36,13 +38,32 @@ export interface BrokenLink extends ContentLink {
   suggestion?: string
 }
 
+/** A link to a book page whose pages/N.md the author has not written yet. Not an error. */
+export interface PendingLink extends ContentLink {
+  /** Canonical route of the book. */
+  book: string
+  page: number
+}
+
+export interface LinkReport {
+  /** Links that lead nowhere (wrong folder, unknown book, missing heading, page beyond the book...). */
+  errors: BrokenLink[]
+  /** Links to pages that are announced (pageCount / pages folder) but not written yet. */
+  pending: PendingLink[]
+}
+
+export type LinkVerdict = { kind: 'ok' } | { kind: 'error'; reason: string; suggestion?: string } | { kind: 'pending'; book: string; page: number }
+
 interface CheckOptions {
   quiet?: boolean
   strict?: boolean
+  verbose?: boolean
 }
 
 interface CheckResult {
+  /** The errors (what `--strict` fails on). */
   broken: BrokenLink[]
+  pending: PendingLink[]
 }
 
 interface LinkReplacement {
@@ -139,6 +160,7 @@ async function buildRouteTable(): Promise<RouteTable> {
         slug,
         directory: path.dirname(file),
         aliases: frontmatter.aliases,
+        ...(frontmatter.pageCount !== undefined ? { pageCount: frontmatter.pageCount } : {}),
         pages: new Set(
           pageFiles
             .map((candidate) => path.basename(candidate).match(/^(\d+)\.md$/i)?.[1])
@@ -261,6 +283,73 @@ export function resolveContentRoute(pathname: string, routes: RouteTable): Route
   return null
 }
 
+/**
+ * A page is "pending" when the book announced it but pages/N.md does not exist yet: 1..pageCount when the book
+ * has `pageCount:`, else 1..10000 for a book that has a pages/ folder. (Same rule as the site's route resolution.)
+ */
+export function isPendingPage(article: ArticleRoute, page: string): boolean {
+  const number = Number(page)
+  if (!Number.isInteger(number) || number < 1 || article.pages.has(page)) return false
+  if (article.pageCount !== undefined) return number <= article.pageCount
+  return article.pages.size > 0 && number <= 10000
+}
+
+/**
+ * The book a `/books/<book>/<N>` link means, found by exact slug, unique tail of the slug, or unique alias, WITHOUT
+ * requiring page N to exist. null when no book (or several) match.
+ */
+export function resolveBookForPage(pathname: string, routes: RouteTable): { article: ArticleRoute; page: string } | null {
+  const decoded = decodePathname(routeWithBase(pathname))
+  if (decoded === null) return null
+  const normalized = decoded.replace(/\/+$/, '')
+  const sectionMatch = normalized.match(SECTION_ROOT)
+  if (!sectionMatch) return null
+  const collection = sectionMatch[1] as CollectionId
+  const remainder = normalized.slice(sectionMatch[0].length).replace(/^\/+/, '')
+  const pageMatch = remainder.match(/^(.*)\/(\d+)$/)
+  if (!pageMatch) return null
+  const [, bookSlug, page] = pageMatch
+  const inCollection = routes.articles.filter((article) => article.collection === collection)
+
+  const exact = inCollection.find((article) => article.slug === bookSlug)
+  if (exact) return { article: exact, page }
+  const byTail = inCollection.filter((article) => article.slug.endsWith(`/${bookSlug}`))
+  if (byTail.length === 1) return { article: byTail[0], page }
+  if (byTail.length > 1) return null
+  const [alias, ...rest] = bookSlug.split('/')
+  const byAlias = inCollection.filter(
+    (article) => article.aliases.includes(alias) && (rest.length === 0 || rest.join('/') === path.posix.basename(article.slug)),
+  )
+  return byAlias.length === 1 ? { article: byAlias[0], page } : null
+}
+
+/** Judges one link. Pure (no file access), so it can be tested. */
+export function classifyLink(link: ContentLink, routes: RouteTable): LinkVerdict {
+  const { pathname, fragment } = fragmentFor(link.href)
+  const route = resolveContentRoute(pathname, routes)
+  if (!route) {
+    const book = resolveBookForPage(pathname, routes)
+    if (book) {
+      if (isPendingPage(book.article, book.page)) return { kind: 'pending', book: canonicalRoute(book.article), page: Number(book.page) }
+      const limit = book.article.pageCount !== undefined ? ` (the book has ${book.article.pageCount} pages)` : ''
+      return { kind: 'error', reason: `book page does not exist${limit}`, suggestion: canonicalRoute(book.article) }
+    }
+    const suggestion = suggestCanonicalPath(pathname, routes)
+    return {
+      kind: 'error',
+      reason: /\/\d+$/.test(pathname) ? 'book page does not exist' : 'route does not exist',
+      ...(suggestion ? { suggestion } : {}),
+    }
+  }
+  if (fragment) {
+    const headings = route.article?.headings.get(route.page ?? '')
+    if (!headings?.has(fragment)) {
+      return { kind: 'error', reason: `heading fragment "${fragment}" does not exist`, ...(route.canonical ? { suggestion: route.canonical } : {}) }
+    }
+  }
+  return { kind: 'ok' }
+}
+
 export function suggestCanonicalPath(pathname: string, routes: RouteTable): string | undefined {
   const normalizedPath = routeWithBase(pathname).replace(/\/+$/, '')
   const routeMatch = normalizedPath.match(SECTION_ROOT)
@@ -273,15 +362,13 @@ export function suggestCanonicalPath(pathname: string, routes: RouteTable): stri
   const suffixCandidates = routes.articles.filter(
     (article) =>
       article.collection === collection &&
-      (article.slug === suffix || article.slug.endsWith(`/${suffix}`)) &&
-      (!page || article.pages.has(page)),
+      (article.slug === suffix || article.slug.endsWith(`/${suffix}`)),
   )
   if (suffixCandidates.length === 1) return canonicalRoute(suffixCandidates[0], page)
   if (suffixCandidates.length > 1) return undefined
   const alias = suffix.split('/')[0]
   const aliasCandidates = routes.articles.filter(
-    (article) =>
-      article.collection === collection && article.aliases.includes(alias) && (!page || article.pages.has(page)),
+    (article) => article.collection === collection && article.aliases.includes(alias),
   )
   return aliasCandidates.length === 1 ? canonicalRoute(aliasCandidates[0], page) : undefined
 }
@@ -357,9 +444,9 @@ export function extractInternalLinks(markdown: string): ContentLink[] {
   return links
 }
 
-export async function inspectContentLinks(): Promise<BrokenLink[]> {
+export async function inspectContentLinks(): Promise<LinkReport> {
   const routes = await buildRouteTable()
-  const broken: BrokenLink[] = []
+  const report: LinkReport = { errors: [], pending: [] }
   const contentRoot = path.join(projectRoot, 'content')
   const files = await walkMarkdown(contentRoot)
 
@@ -367,41 +454,33 @@ export async function inspectContentLinks(): Promise<BrokenLink[]> {
     const markdown = await readFile(file, 'utf8')
     const label = path.relative(projectRoot, file).split(path.sep).join('/')
     for (const link of extractInternalLinks(markdown)) {
-      const { pathname, fragment } = fragmentFor(link.href)
-      const route = resolveContentRoute(pathname, routes)
-      if (!route) {
-        const suggestion = suggestCanonicalPath(pathname, routes)
-        broken.push({
-          ...link,
-          file: label,
-          reason: /\/\d+$/.test(pathname) ? 'book page does not exist' : 'route does not exist',
-          ...(suggestion ? { suggestion } : {}),
-        })
-        continue
-      }
-      if (fragment) {
-        const headings = route.article?.headings.get(route.page ?? '')
-        if (!headings?.has(fragment)) {
-          broken.push({
-            ...link,
-            file: label,
-            reason: `heading fragment "${fragment}" does not exist`,
-            ...(route.canonical ? { suggestion: route.canonical } : {}),
-          })
-        }
+      const verdict = classifyLink(link, routes)
+      if (verdict.kind === 'error') {
+        report.errors.push({ ...link, file: label, reason: verdict.reason, ...(verdict.suggestion ? { suggestion: verdict.suggestion } : {}) })
+      } else if (verdict.kind === 'pending') {
+        report.pending.push({ ...link, file: label, book: verdict.book, page: verdict.page })
       }
     }
   }
-  return broken
+  return report
+}
+
+/** "27, 28, 29 ... (and 172 more)" for the pending-pages summary. */
+function listPages(pages: number[], limit = 10): string {
+  const sorted = [...new Set(pages)].sort((left, right) => left - right)
+  const shown = sorted.slice(0, limit).join(', ')
+  return sorted.length > limit ? `${shown} ... (+${sorted.length - limit} more)` : shown
 }
 
 export async function checkContentLinks(options: CheckOptions = {}): Promise<CheckResult> {
-  const broken = await inspectContentLinks()
+  const { errors, pending } = await inspectContentLinks()
+  const pendingPages = new Set(pending.map((link) => `${link.book}/${link.page}`)).size
+
   if (options.quiet) {
-    console.log(`Internal links: ${broken.length} broken link(s).`)
-  } else if (broken.length > 0) {
+    console.log(`Internal links: ${errors.length} broken, ${pending.length} to pages not written yet.`)
+  } else {
     const grouped = new Map<string, BrokenLink[]>()
-    for (const link of broken) grouped.set(link.file, [...(grouped.get(link.file) ?? []), link])
+    for (const link of errors) grouped.set(link.file, [...(grouped.get(link.file) ?? []), link])
     for (const [file, links] of grouped) {
       console.warn(file)
       for (const link of links) {
@@ -409,12 +488,21 @@ export async function checkContentLinks(options: CheckOptions = {}): Promise<Che
         console.warn(`  ${file}:${link.line}  ${link.href}  ->  ${link.reason}${suggestion}`)
       }
     }
-    console.warn(`Internal links: ${broken.length} broken link(s).`)
-  } else {
-    console.log('Internal links: 0 broken links.')
+    console.log(errors.length > 0 ? `Internal links: ${errors.length} broken link(s).` : 'Internal links: 0 broken links.')
+
+    if (pending.length > 0) {
+      console.log(`Pages not written yet (not an error): ${pending.length} link(s) to ${pendingPages} page(s).`)
+      const byBook = new Map<string, PendingLink[]>()
+      for (const link of pending) byBook.set(link.book, [...(byBook.get(link.book) ?? []), link])
+      for (const [book, links] of byBook) {
+        console.log(`  ${book}: ${links.length} link(s); pages ${listPages(links.map((link) => link.page))}`)
+        if (options.verbose) for (const link of links) console.log(`    ${link.file}:${link.line}  ${link.href}`)
+      }
+      if (!options.verbose) console.log('  (run with --verbose to list every link)')
+    }
   }
-  if (options.strict && broken.length > 0) process.exitCode = 1
-  return { broken }
+  if (options.strict && errors.length > 0) process.exitCode = 1
+  return { broken: errors, pending }
 }
 
 export function rewriteResolvableLinks(
