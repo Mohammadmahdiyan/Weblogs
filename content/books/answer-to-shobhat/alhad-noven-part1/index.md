@@ -46,10 +46,10 @@ Atheism
 
 | عنوان | صفحه |
 | --- | --- |
-| [مقدمه](/Weblogs/books/alhad-noven-part1) | — |
-| [مقالاتی در رد الحاد](/Weblogs/books/alhad-noven-part1/27) | ۲۷ |
-| [جوانان و دلایل گرایش به سمت بی خدایی](/Weblogs/books/alhad-noven-part1/37) | ۳۷ |
-| [کپی پیستهای غیر متفکرانه دلیل اسلام گریزی جوانان](/Weblogs/books/alhad-noven-part1/42) | ۴۲ |
+| [مقدمه](/books/answer-to-shobhat/alhad-noven-part1/#p15) | — |
+| [مقالاتی در رد الحاد](/Weblogs/books/alhad-noven-part1/1) | ۲۷ |
+| [جوانان و دلایل گرایش به سمت بی خدایی](/Weblogs/books/alhad-noven-part1/2) | ۳۷ |
+| [کپی پیستهای غیر متفکرانه دلیل اسلام گریزی جوانان](/Weblogs/books/alhad-noven-part1/3) | ۴۲ |
 | [شک گرایی مقدمه ی رسیدن به آگاهی میباشد ولی.....](/Weblogs/books/alhad-noven-part1/50) | ۵۰ |
 | [آیا برنامه ای وجود دارد که آن را جایگزین اسلام کنیم؟](/Weblogs/books/alhad-noven-part1/53) | ۵۳ |
 | [بی خدایی چه ربطی به علم دارد؟](/Weblogs/books/alhad-noven-part1/58) | ۵۸ |
