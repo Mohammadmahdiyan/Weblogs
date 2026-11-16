@@ -89,6 +89,7 @@ export const honorifics: Record<string, HonorificConfig> = {
   // درود بر پیامبر و خاندان ایشان
   صا: createHonorific('saa.svg', 'صلى الله عليه و آله'),
   'صلى الله عليه و آله': createHonorific('saa.svg', 'صلى الله عليه و آله'),
+  'صلى الله عليه وآله': createHonorific('saa.svg', 'صلى الله عليه و آله'),
 
   // حفظه الله
   حف: createHonorific('haf.svg', 'حفظه الله'),
