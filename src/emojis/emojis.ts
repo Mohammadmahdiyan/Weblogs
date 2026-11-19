@@ -5,12 +5,12 @@
  * Only the names listed here are replaced; any other `{text}` stays as written.
  */
 export const emojis: Readonly<Record<string, string>> = {
-  'خخخ': 'funnyface.svg',
-  'لبخند': 'smile.svg',
-  'چشمک': 'wink.svg',
-  'باحال': 'cool.svg',
-  'تعجب': 'wow.svg',
-  'گریه': 'cry.svg',
-  'عصبانی': 'angry.svg',
-  'قلب': 'heart.svg',
+  '😂': 'funnyface.svg',
+  '🙂': 'smile.svg',
+  '😉': 'wink.svg',
+  '😎': 'cool.svg',
+  '😮': 'wow.svg',
+  '😭': 'cry.svg',
+  '😡': 'angry.svg',
+  '♥': 'heart.svg',
 }
