@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { inlineToPlainText, parseMiniOptions, splitInline } from '../src/lib/inline.ts'
 
-const isEmoji = (name: string) => ['خخخ', 'قلب'].includes(name)
+const isEmoji = (name: string) => ['خخخ', 'قلب', '😂', '♥'].includes(name)
 
 describe('parseMiniOptions', () => {
   it('defaults to medium size, top placement', () => {
@@ -40,6 +40,27 @@ describe('splitInline', () => {
       { type: 'emoji', name: 'خخخ' },
       { type: 'text', value: ' و {ناشناس}' },
     ])
+  })
+})
+
+describe('splitInline with bare emoji', () => {
+  it('turns a registered emoji character into a sticker and keeps the character', () => {
+    expect(splitInline('خنده 😂 تمام', isEmoji)).toEqual([
+      { type: 'text', value: 'خنده ' },
+      { type: 'emoji', name: '😂', literal: '😂' },
+      { type: 'text', value: ' تمام' },
+    ])
+  })
+
+  it('treats ♥ and ♥️ (with the emoji selector) alike, also inside braces', () => {
+    expect(splitInline('♥️{😂}', isEmoji)).toEqual([
+      { type: 'emoji', name: '♥', literal: '♥️' },
+      { type: 'emoji', name: '😂' },
+    ])
+  })
+
+  it('leaves an emoji that is not registered as text', () => {
+    expect(splitInline('نه 😍 نه', isEmoji)).toEqual([{ type: 'text', value: 'نه 😍 نه' }])
   })
 })
 

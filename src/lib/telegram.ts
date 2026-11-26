@@ -124,10 +124,10 @@ function absoluteUrl(href: string): string | null {
   return null // `#section`, `./file`, `javascript:` … cannot work inside Telegram
 }
 
-/** Plain text of the article: mini-text keeps its words and emoji names disappear. */
+/** Plain text of the article: mini-text keeps its words; a `{name}` sticker disappears, a typed emoji stays as the emoji. */
 function extras(value: string): Inline[] {
   return splitInline(value, isEmoji).flatMap((segment): Inline[] =>
-    segment.type === 'text' ? [segment.value] : segment.type === 'mini' ? [segment.text] : [],
+    segment.type === 'text' ? [segment.value] : segment.type === 'mini' ? [segment.text] : segment.literal ? [segment.literal] : [],
   )
 }
 

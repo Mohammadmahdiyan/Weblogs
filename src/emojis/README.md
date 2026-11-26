@@ -1,12 +1,12 @@
 # Emoji
 
-`emojis.ts` maps the name written in an article to an svg file in this folder:
+`emojis.ts` maps an emoji to an svg file in this folder:
 
 ```ts
-'خخخ': 'funnyface.svg',
+'😂': 'funnyface.svg',
 ```
 
-In Markdown, `{خخخ}` then shows `funnyface.svg` inline (about 1.4em tall, aligned with the text).
+In Markdown, writing 😂 (or `{😂}`) then shows `funnyface.svg` inline (about 1.4em tall, aligned with the text). Several emoji may share one svg (😂 and 🤣 both use `funnyface.svg`).
 
-Add one: drop `name.svg` here (square `viewBox` works best) and add `'name': 'name.svg',` to `emojis.ts`.
-Only registered names are replaced; other `{text}` is left alone. Emoji are removed from search text and the table of contents.
+Add one: drop `name.svg` here (square `viewBox` works best) and add `'😍': 'name.svg',` to `emojis.ts`.
+Only registered emoji are replaced; any other emoji or `{text}` is left alone. Emoji are removed from search text and the table of contents.

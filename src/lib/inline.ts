@@ -4,7 +4,7 @@ import { normalizeSearchText } from './normalize.ts'
  * Small inline syntaxes written in Markdown text (never inside code):
  *
  *   ((متن))(سایز: کوچک، قرارگیری: وسط)   → small raised/lowered text, like ³¹²⁴ in Telegram
- *   {خخخ}                               → an emoji registered in src/emojis/emojis.ts
+ *   😂 or {😂}                           → a sticker registered in src/emojis/emojis.ts (the key is the emoji itself)
  *
  * This file only finds them; markdown.ts turns them into nodes and plainText.ts into search text.
  */
@@ -46,14 +46,24 @@ export function parseMiniOptions(raw: string | undefined): MiniOptions {
 export type InlineSegment =
   | { type: 'text'; value: string }
   | ({ type: 'mini'; text: string } & MiniOptions)
-  | { type: 'emoji'; name: string }
+  /** `literal` is the emoji character as written (a bare emoji in the text, not in braces). */
+  | { type: 'emoji'; name: string; literal?: string }
 
-// ((text)) optionally followed by (سایز: …) / (قرارگیری: …); or {name}
-const INLINE_PATTERN = /\(\(([^()\n]+?)\)\)(?:\(\s*((?:سایز|قرار[\s\u200c]*گیری)\s*[:：][^()\n]*)\))?|\{([^{}\n]+)\}/gu
+/** One emoji as typed: the pictograph, skin tone / variation selectors, and joined (ZWJ) sequences. */
+const EMOJI_CHARACTER = String.raw`\p{Extended_Pictographic}[\uFE0F\u{1F3FB}-\u{1F3FF}]*(?:\u200D\p{Extended_Pictographic}[\uFE0F\u{1F3FB}-\u{1F3FF}]*)*`
+
+// ((text)) optionally followed by (سایز: …) / (قرارگیری: …); or {name}; or a bare emoji character
+const INLINE_PATTERN = new RegExp(
+  String.raw`\(\(([^()\n]+?)\)\)(?:\(\s*((?:سایز|قرار[\s\u200c]*گیری)\s*[:：][^()\n]*)\))?|\{([^{}\n]+)\}|(${EMOJI_CHARACTER})`,
+  'gu',
+)
+
+/** An emoji key without the invisible «emoji style» selector, so ♥ and ♥️ are the same sticker. */
+export const emojiKey = (value: string): string => value.trim().replace(/\uFE0F/g, '')
 
 /**
- * Splits text into plain text, mini-text and emoji segments. A `{name}` that is not a registered emoji
- * (see `isEmoji`) stays ordinary text, so other uses of braces are never touched.
+ * Splits text into plain text, mini-text and emoji segments. A `{name}` or a bare emoji character that is not a
+ * registered emoji (see `isEmoji`) stays ordinary text, so other uses of braces and emoji are never touched.
  */
 export function splitInline(value: string, isEmoji: (name: string) => boolean): InlineSegment[] {
   const segments: InlineSegment[] = []
@@ -67,10 +77,15 @@ export function splitInline(value: string, isEmoji: (name: string) => boolean): 
   for (const match of value.matchAll(INLINE_PATTERN)) {
     const start = match.index ?? 0
     if (match[3] !== undefined) {
-      const name = match[3].trim()
+      const name = emojiKey(match[3])
       if (!isEmoji(name)) continue
       flushText(start)
       segments.push({ type: 'emoji', name })
+    } else if (match[4] !== undefined) {
+      const name = emojiKey(match[4])
+      if (!isEmoji(name)) continue
+      flushText(start)
+      segments.push({ type: 'emoji', name, literal: match[4] })
     } else {
       flushText(start)
       segments.push({ type: 'mini', text: match[1].trim(), ...parseMiniOptions(match[2]) })

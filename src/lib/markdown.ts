@@ -43,6 +43,7 @@ type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
   'mdx-emoji'?: import('react').ComponentType<{
     emojiName?: string
     emojiFile?: string
+    emojiLiteral?: string
   }>
   'mdx-divider'?: import('react').ComponentType<{ children?: import('react').ReactNode; id?: string }>
   'mdx-spoiler'?: import('react').ComponentType<{
@@ -343,8 +344,8 @@ const remarkSpoilers: Plugin<[], MdastRoot> = () => (tree) => {
 
 
 /**
- * ((text))(سایز: …، قرارگیری: …) → small raised/lowered text, and {name} → a registered emoji.
- * Only text nodes are scanned, so code is never touched; an unregistered {name} stays text.
+ * ((text))(سایز: …، قرارگیری: …) → small raised/lowered text, and an emoji (bare, or in braces) → its sticker.
+ * Only text nodes are scanned, so code is never touched; an unregistered emoji or {name} stays text.
  */
 const remarkInlineExtras: Plugin<[], MdastRoot> = () => (tree) => {
   visit(tree, 'text', (node, index, parent) => {
@@ -364,7 +365,12 @@ const remarkInlineExtras: Plugin<[], MdastRoot> = () => (tree) => {
       }
       return {
         type: 'emphasis',
-        data: { hName: 'mdx-emoji', hProperties: { emojiName: segment.name, emojiFile: emojiFile(segment.name) ?? '' } },
+        data: { hName: 'mdx-emoji', hProperties: {
+            emojiName: segment.name,
+            emojiFile: emojiFile(segment.name) ?? '',
+            ...(segment.literal ? { emojiLiteral: segment.literal } : {}),
+          },
+        },
         children: [],
       }
     })
