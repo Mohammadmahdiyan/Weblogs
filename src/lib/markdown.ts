@@ -20,6 +20,7 @@ import { transformChatMessages } from './chat.ts'
 import { emojiFile, isEmoji } from './emojiRegistry.ts'
 import { ITEMS_MARKER } from './quotes.ts'
 import { honorifics } from './honorifics.ts'
+import { markClosingHeadings, removeClosingHeadings } from './closingHeadings.ts'
 
 type MarkdownComponents = NonNullable<RehypeReactOptions['components']> & {
   'mdx-honorific'?: import('react').ComponentType<{
@@ -144,6 +145,16 @@ function collectFaqItems(node: Node): { question: string; answer: string }[] {
     for (const child of node.children as Node[]) collected.push(...collectFaqItems(child))
   }
   return collected
+}
+
+/**
+ * A repeated `###` (or deeper) line right where a section should end is only an end marker for copying
+ * (see closingHeadings.ts): it is removed here, so it is not shown and does not take a heading id.
+ * Runs before remarkHeadingLevels, which still sees the depth the author wrote.
+ */
+export const remarkClosingHeadings: Plugin<[], MdastRoot> = () => (tree) => {
+  markClosingHeadings(tree)
+  removeClosingHeadings(tree)
 }
 
 /**
@@ -455,6 +466,7 @@ export function createMarkdownProcessor(components: MarkdownComponents) {
     .use(remarkSpoilers)
     .use(remarkInlineExtras)
     .use(remarkHonorifics)
+    .use(remarkClosingHeadings)
     .use(remarkHeadingLevels)
     .use(remarkComponents)
     .use(remarkSourceOffsets)

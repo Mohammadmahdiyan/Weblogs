@@ -738,6 +738,102 @@ body {
   cursor: copy;
 }
 
+/* The box under selected article text: copy as a Telegram link / Markdown link / plain text (SelectionCopyMenu.tsx). */
+.selection-menu {
+  position: absolute;
+  z-index: 70;
+  width: min(19rem, calc(100vw - 1rem));
+  transform: translateX(-50%);
+  padding: 0.35rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-card);
+  font-size: 0.875rem;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.selection-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+}
+/* A long selection: the «full text» switch sits across from the two link options (rows 2 and 3). */
+.selection-menu-grid[data-long='true'] {
+  grid-template-columns: 1fr auto;
+}
+.selection-menu-grid[data-long='true'] .selection-menu-item {
+  grid-column: 1;
+}
+.selection-menu-grid[data-long='true'] .selection-menu-plain {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+.selection-menu-item,
+.selection-menu-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.7rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.selection-menu-item:hover,
+.selection-menu-switch:hover,
+.selection-menu-item:focus-visible,
+.selection-menu-switch:focus-visible {
+  background: var(--surface-alt);
+  outline: none;
+}
+.selection-menu-switch {
+  grid-column: 2;
+  grid-row: 2 / 4;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  border-inline-start: 1px solid var(--border-light);
+  border-radius: 0;
+  font-size: 0.75rem;
+}
+.selection-menu-switch-track {
+  display: inline-flex;
+  width: 2rem;
+  height: 1.1rem;
+  padding: 2px;
+  border-radius: 9999px;
+  background: var(--border-strong);
+  transition: background 150ms ease;
+}
+.selection-menu-switch[aria-checked='true'] .selection-menu-switch-track {
+  background: var(--brand);
+}
+.selection-menu-switch-thumb {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 9999px;
+  background: #fff;
+  transition: transform 150ms ease;
+}
+.selection-menu-switch[aria-checked='true'] .selection-menu-switch-thumb {
+  transform: translateX(0.9rem);
+}
+[dir='rtl'] .selection-menu-switch[aria-checked='true'] .selection-menu-switch-thumb {
+  transform: translateX(-0.9rem);
+}
+@media print {
+  .selection-menu {
+    display: none;
+  }
+}
+
 /* ───────────── daily story (header ring + viewer), see src/components/Stories.tsx ───────────── */
 .story-ring {
   display: inline-grid;

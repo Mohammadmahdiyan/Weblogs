@@ -8,7 +8,7 @@ import { BookPagination } from '../components/BookPagination'
 import { BookSearch } from '../components/BookSearch'
 import { SourcesAccordion } from '../components/SourcesAccordion'
 import { buildToc } from '../lib/toc'
-import { FIND_INDEX_PARAM, FIND_PARAM, parseOccurrence } from '../lib/contentSearch'
+import { FIND_END_PARAM, FIND_INDEX_PARAM, FIND_PARAM, parseOccurrence } from '../lib/contentSearch'
 import { useFindInPage } from '../lib/findInPage'
 import { usePageMeta } from '../lib/usePageMeta'
 import siteConfig from '../site.config'
@@ -20,6 +20,7 @@ import { ArticleLayout } from '../layouts'
 import { Basmala } from '../components/Basmala'
 import { IncompleteNotice } from '../components/IncompleteNotice'
 import { TelegramCopy } from '../components/TelegramCopy'
+import { SelectionCopyMenu } from '../components/SelectionCopyMenu'
 import { HiddenArticlePage } from './HiddenArticlePage'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
@@ -169,7 +170,14 @@ export function ArticlePage({
   const toc = useMemo(() => buildToc(markdown ?? ''), [markdown])
   const [searchParams] = useSearchParams()
   // Set by a content search on the home page: scroll to this text and highlight it.
-  useFindInPage(searchParams.get(FIND_PARAM), markdown !== null, parseOccurrence(searchParams.get(FIND_INDEX_PARAM)))
+  // The same works for a link made from a selected piece of text (SelectionCopyMenu): `find` is the text (or its
+  // beginning), `e` the end of a long passage, `n` which occurrence.
+  useFindInPage(
+    searchParams.get(FIND_PARAM),
+    markdown !== null,
+    parseOccurrence(searchParams.get(FIND_INDEX_PARAM)),
+    searchParams.get(FIND_END_PARAM),
+  )
   const articleIndex = articles.findIndex((item) => item.slug === slug)
 
   const pageUrl = `${siteConfig.siteUrl}${route}/${bodyKey}`
@@ -417,6 +425,7 @@ export function ArticlePage({
           </div>
 
           {markdown !== null && <TelegramCopy markdown={markdown} bodyRef={bodyRef} />}
+          {markdown !== null && <SelectionCopyMenu bodyRef={bodyRef} articleUrl={pageUrl} />}
 
           {/* `sources:` of the frontmatter: one closed accordion at the end of the article (for a book: of its introduction). */}
           {markdown !== null && pageNumber === undefined && article.sources && (

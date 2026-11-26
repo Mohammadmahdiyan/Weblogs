@@ -6,6 +6,9 @@ export const FIND_PARAM = 'find'
 /** Query-string key with the 1-based occurrence to jump to when the text appears several times (omitted = first). */
 export const FIND_INDEX_PARAM = 'n'
 
+/** Query-string key with the END of a long passage: `find` is its beginning, this is where the highlight stops. */
+export const FIND_END_PARAM = 'e'
+
 /** Characters of context kept on EACH side of the match, so the match is always in the middle. */
 export const SNIPPET_CONTEXT = 45
 

@@ -10,6 +10,7 @@ import { isEmoji } from './emojiRegistry.ts'
 import { splitInline } from './inline.ts'
 import { honorifics } from './honorifics.ts'
 import { markDividers } from './dividers.ts'
+import { isClosingHeading, markClosingHeadings } from './closingHeadings.ts'
 
 /**
  * Article Markdown → text for Telegram.
@@ -81,6 +82,9 @@ function parse(markdown: string): MdNode {
   const tree = processor.parse(prepareSource(markdown)) as unknown as MdNode
   transformChatMessages(tree as never)
   markDividers(tree as never)
+  // A repeated heading that only marks the end of a section (closingHeadings.ts) stays in the tree so the section
+  // stops there, but it is never written out.
+  markClosingHeadings(tree)
   return tree
 }
 
@@ -333,7 +337,7 @@ function blocksOf(node: MdNode): Block[] {
       return text(trimEdges(inlines(children)))
     }
     case 'heading':
-      return text([{ kind: 'b', children: inlines(node.children) }])
+      return isClosingHeading(node) ? [] : text([{ kind: 'b', children: inlines(node.children) }])
     case 'blockquote': {
       const inner = (node.children ?? []).flatMap(blocksOf)
       return inner.length ? [{ kind: 'quote', blocks: inner }] : []
@@ -553,7 +557,8 @@ function locate(node: MdNode, offset: number): { node: MdNode; siblings: MdNode[
 
 /**
  * One part of the article, chosen by where it starts in the source: a heading gives its whole section (up to the
- * next heading of the same or a higher level, so `##` includes its `###` parts); a quote gives itself.
+ * next heading of the same or a higher level, so `##` includes its `###` parts, or up to a repeated identical
+ * heading that marks its end, which is not copied); a quote gives itself.
  */
 export function telegramPart(
   markdown: string,
