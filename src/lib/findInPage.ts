@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { normalizeWithMap, type NormalizedText } from './normalize'
+import { QUOTE_EXPAND_EVENT } from './quotes'
 
 const HIGHLIGHT_NAME = 'search-hit'
 /** How long the found text stays highlighted before the colour fades away. */
@@ -150,6 +151,10 @@ export function revealRange(range: Range): boolean {
   for (let element = range.startContainer.parentElement; element; element = element.parentElement) {
     if (element instanceof HTMLDetailsElement && !element.open) {
       element.open = true
+      opened = true
+    }
+    if (element.classList.contains('md-quote-long') && element.getAttribute('data-expanded') !== 'true') {
+      element.dispatchEvent(new CustomEvent(QUOTE_EXPAND_EVENT))
       opened = true
     }
     if (element.classList.contains('accordion-item') && element.getAttribute('data-open') === 'false') {

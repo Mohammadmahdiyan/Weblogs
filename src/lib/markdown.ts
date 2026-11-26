@@ -18,7 +18,7 @@ import { splitInline } from './inline.ts'
 import { remarkDividers } from './dividers.ts'
 import { transformChatMessages } from './chat.ts'
 import { emojiFile, isEmoji } from './emojiRegistry.ts'
-import { ITEMS_MARKER } from './quotes.ts'
+import { ITEMS_MARKER, LONG_MARKER } from './quotes.ts'
 import { honorifics } from './honorifics.ts'
 import { markClosingHeadings, removeClosingHeadings } from './closingHeadings.ts'
 
@@ -458,6 +458,23 @@ export const remarkQuoteItems: Plugin<[], MdastRoot> = () => (tree) => {
   })
 }
 
+/**
+ * A `>$` quote (see quotes.ts) is written as the LONG_MARKER comment followed by its paragraph: the comment is
+ * removed and the paragraph gets `data-long`, so the renderer shows only its first lines until it is clicked.
+ */
+export const remarkQuoteLong: Plugin<[], MdastRoot> = () => (tree) => {
+  visit(tree, 'blockquote', (node) => {
+    const children = node.children
+    for (let index = children.length - 2; index >= 0; index -= 1) {
+      const marker = children[index]
+      const paragraph = children[index + 1]
+      if (marker.type !== 'html' || marker.value.trim() !== LONG_MARKER || paragraph.type !== 'paragraph') continue
+      paragraph.data = { ...paragraph.data, hProperties: { ...paragraph.data?.hProperties, dataLong: 'true' } }
+      children.splice(index, 1)
+    }
+  })
+}
+
 /** سوال۱: (...) / جواب۱: (...) lines inside accordion items become chat bubbles (see ./chat.ts). */
 const remarkChat: Plugin<[], MdastRoot> = () => (tree) => transformChatMessages(tree as unknown as Parameters<typeof transformChatMessages>[0])
 
@@ -468,6 +485,7 @@ export function createMarkdownProcessor(components: MarkdownComponents) {
     .use(remarkDirective)
     .use(remarkDividers)
     .use(remarkQuoteItems)
+    .use(remarkQuoteLong)
     .use(remarkChat)
     .use(remarkSpoilers)
     .use(remarkInlineExtras)

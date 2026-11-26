@@ -193,6 +193,91 @@
   box-shadow: 0 5px 18px rgb(0 0 0 / 10%);
 }
 
+/* a link inside a quote: a soft tinted chip with an underline, so it stands out from the tinted card */
+.blog-scope .article-body .md-quote a {
+  padding: 0.05em 0.4em;
+  border-radius: 0.5em;
+  background: color-mix(in srgb, var(--info) 12%, transparent);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--info) 55%, transparent);
+  font-weight: 600;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.blog-scope .article-body .md-quote a:hover,
+.blog-scope .article-body .md-quote a:focus-visible {
+  background: color-mix(in srgb, var(--info) 22%, transparent);
+  box-shadow: inset 0 -2px 0 var(--info);
+}
+.blog-scope .article-body .md-quote a:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: 2px;
+}
+
+/* a long quote (`>$ text`): the first lines, the last one faded; a click opens the rest */
+.blog-scope .md-quote-long {
+  position: relative;
+}
+.blog-scope .md-quote-long[data-expanded='false'] > .md-quote-long-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--quote-long-lines, 4);
+  line-clamp: var(--quote-long-lines, 4);
+  overflow: hidden;
+}
+.blog-scope .md-quote-long[data-expanded='false'][data-overflow='true'] > .md-quote-long-text {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.2rem), rgb(0 0 0 / 0.12));
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2.2rem), rgb(0 0 0 / 0.12));
+}
+.blog-scope .md-quote-more {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  cursor: pointer;
+}
+.blog-scope .md-quote-more:hover {
+  background: color-mix(in srgb, var(--quote-accent) 7%, transparent);
+}
+.blog-scope .md-quote-more:focus-visible,
+.blog-scope .md-quote-less:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: 2px;
+}
+.blog-scope .md-quote-less {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+@media print {
+  .blog-scope .md-quote-long > .md-quote-long-text {
+    display: block !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    overflow: visible !important;
+  }
+  .blog-scope .md-quote-more,
+  .blog-scope .md-quote-less {
+    display: none !important;
+  }
+}
+
 /* several quotes in one box (`> الف` / `> ب` on consecutive lines): a thin divider between them */
 .blog-scope .md-quote-item > p {
   margin: 0;

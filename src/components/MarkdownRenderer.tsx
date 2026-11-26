@@ -3,6 +3,7 @@ import {
   cloneElement,
   isValidElement,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,7 +13,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
-import { Copy, ExternalLink, Link2, Quote } from 'lucide-react'
+import { ChevronDown, ChevronUp, Copy, ExternalLink, Link2, Quote } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { copyToClipboard } from '../lib/clipboard'
@@ -49,7 +50,7 @@ import { Source } from './mdx/Source'
 import { Emoji, Mini } from './mdx/InlineExtras'
 import { ChatMessage, ChatThread } from './mdx/ChatBlocks'
 import { normalizeDirectiveFences } from '../lib/directives'
-import { normalizeQuotes } from '../lib/quotes'
+import { QUOTE_EXPAND_EVENT, normalizeQuotes } from '../lib/quotes'
 import { highlightCode } from '../lib/highlight'
 import { confirmAdultAccess, isAdultConfirmed, rejectAdultAccess } from '../lib/adultAccess'
 
@@ -97,7 +98,78 @@ function createHeading(tag: HeadingTag) {
   }
 }
 
+/**
+ * A `>$` quote: only its first lines show, the last one faded. A click on it opens the rest (and a button closes
+ * it again). A quote that already fits in those lines is shown as it is, with no button.
+ */
+function LongQuoteParagraph({ children, className, ...rest }: ComponentPropsWithoutRef<'p'>) {
+  const paragraph = useRef<HTMLParagraphElement>(null)
+  const text = useRef<HTMLSpanElement>(null)
+  const [expanded, setExpanded] = useState(false)
+  const [overflowing, setOverflowing] = useState(false)
+  const { ['data-long']: marker, ...props } = rest as ComponentPropsWithoutRef<'p'> & { 'data-long'?: string }
+  void marker
+
+  // Is there more text than the visible lines? Measured while collapsed, and again whenever the size changes.
+  useLayoutEffect(() => {
+    const element = text.current
+    if (!element || expanded) return
+    const measure = () => setOverflowing(element.scrollHeight - element.clientHeight > 1)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [expanded, children])
+
+  useEffect(() => {
+    const element = paragraph.current
+    if (!element) return
+    const open = () => setExpanded(true)
+    element.addEventListener(QUOTE_EXPAND_EVENT, open)
+    return () => element.removeEventListener(QUOTE_EXPAND_EVENT, open)
+  }, [])
+
+  return (
+    <p
+      {...props}
+      ref={paragraph}
+      data-expanded={expanded ? 'true' : 'false'}
+      data-overflow={overflowing ? 'true' : 'false'}
+      className={clsx('md-quote-long text-start leading-8', className)}
+    >
+      <span ref={text} className="md-quote-long-text">
+        {children}
+      </span>
+      {overflowing && !expanded && (
+        <button
+          type="button"
+          className="md-quote-more"
+          aria-expanded="false"
+          aria-label="نمایش ادامهٔ نقل‌قول"
+          title="نمایش ادامه"
+          onClick={() => setExpanded(true)}
+        >
+          <ChevronDown aria-hidden="true" className="size-5" />
+        </button>
+      )}
+      {overflowing && expanded && (
+        <button
+          type="button"
+          className="md-quote-less"
+          aria-expanded="true"
+          aria-label="بستن نقل‌قول"
+          title="بستن"
+          onClick={() => setExpanded(false)}
+        >
+          <ChevronUp aria-hidden="true" className="size-5" />
+        </button>
+      )}
+    </p>
+  )
+}
+
 function Paragraph(props: ComponentPropsWithoutRef<'p'>) {
+  if ((props as Record<string, unknown>)['data-long'] === 'true') return <LongQuoteParagraph {...props} />
   return <p {...props} className={clsx('text-start leading-8', props.className)} />
 }
 

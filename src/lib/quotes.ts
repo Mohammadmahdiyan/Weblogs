@@ -19,17 +19,28 @@
  *   (blank line)
  *   و سلام درود                   → plain text, outside the quote
  *
+ *   >$ متن خیلی طولانی             a LONG quote: only its first lines show (the last one faded); a click opens the rest.
+ *   >$ متن طولانی دیگر            Written one under another, each is its own collapsible quote in ONE box. `>$` and `>`
+ *                                 lines mix freely. Like `>`, a `$` quote is one paragraph: keep it on one line (a line
+ *                                 without `>` under it continues it).
+ *
  * The "several quotes in one box" form is marked with `ITEMS_MARKER` as the first line of the quote;
  * `remarkQuoteItems` (markdown.ts) removes it and tells the renderer to give each item its own icons.
  * Text inside code fences is never touched; an opener without a closing `<<` is left as Markdown wrote it.
  */
 
 export const ITEMS_MARKER = '<!--quote-items-->'
+/** Comment line right before the paragraph of a `>$` quote; `remarkQuoteLong` (markdown.ts) turns it into `data-long`. */
+export const LONG_MARKER = '<!--quote-long-->'
+/** Sent to a collapsed long quote to open it (e.g. when search / a link points at text inside it). */
+export const QUOTE_EXPAND_EVENT = 'quote-long-expand'
 
 const CODE_FENCE = /^\s{0,3}(`{3,}|~{3,})/
 const LONG_OPEN = /^(\s{0,3})>>(.*)$/
 const QUOTE_LINE = /^(\s{0,3})>(.*)$/
 const DIRECTIVE_FENCE = /^\s{0,3}:{3,}/
+/** `>$ text`: the `$` must touch the `>` and be followed by a space (so `> $5` stays an ordinary quote). */
+const LONG_FLAG = /^\$(?:[ \t]|$)/
 /** Content that starts its own Markdown block (list, heading, nested quote, code, table, HTML…). */
 const BLOCK_START = /^(?:[-*+][ \t]|\d+[.)][ \t]|#{1,6}[ \t]|>|`{3,}|~{3,}|\||:{2,}|<|-{3,}|={3,}|[ \t]{4,})/
 
@@ -69,17 +80,26 @@ function writeLongQuote(indent: string, rawBody: string[]): string[] {
 }
 
 /** Gathers a run of `>` lines (plus the lazy continuation lines under them). Returns null if it is not simple. */
-function readQuoteRun(lines: string[], start: number): { groups: { indent: string; first: string; lazy: string[] }[]; end: number } | null {
-  const groups: { indent: string; first: string; lazy: string[] }[] = []
+interface QuoteGroup {
+  indent: string
+  first: string
+  lazy: string[]
+  /** Written with `>$`: collapsible. */
+  long: boolean
+}
+
+function readQuoteRun(lines: string[], start: number): { groups: QuoteGroup[]; end: number } | null {
+  const groups: QuoteGroup[] = []
   let end = start
   let simple = true
 
   for (let index = start; index < lines.length && !isBlank(lines[index]); index += 1) {
     const quote = QUOTE_LINE.exec(lines[index])
     if (quote) {
-      const content = stripOneSpace(quote[2])
+      const long = LONG_FLAG.test(quote[2])
+      const content = long ? quote[2].slice(1).replace(/^[ \t]/, '') : stripOneSpace(quote[2])
       if (isBlank(content) || BLOCK_START.test(content)) simple = false
-      groups.push({ indent: quote[1], first: content, lazy: [] })
+      groups.push({ indent: quote[1], first: content, lazy: [], long })
     } else if (BLOCK_START.test(lines[index].trimStart()) || CODE_FENCE.test(lines[index]) || DIRECTIVE_FENCE.test(lines[index])) {
       break
     } else {
@@ -125,11 +145,12 @@ export function normalizeQuotes(markdown: string): string {
     if (QUOTE_LINE.test(line)) {
       const run = readQuoteRun(lines, index)
       if (run) {
-        if (run.groups.length >= 2) {
+        if (run.groups.length >= 2 || run.groups.some((group) => group.long)) {
           const indent = run.groups[0].indent
-          output.push(`${indent}> ${ITEMS_MARKER}`, `${indent}>`)
+          if (run.groups.length >= 2) output.push(`${indent}> ${ITEMS_MARKER}`, `${indent}>`)
           run.groups.forEach((group, position) => {
             if (position > 0) output.push(`${indent}>`)
+            if (group.long) output.push(`${group.indent}> ${LONG_MARKER}`, `${group.indent}>`)
             output.push(`${group.indent}> ${group.first}`, ...group.lazy)
           })
         } else {

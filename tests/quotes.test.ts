@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ITEMS_MARKER, normalizeQuotes } from '../src/lib/quotes.ts'
+import { ITEMS_MARKER, LONG_MARKER, normalizeQuotes } from '../src/lib/quotes.ts'
 
 const lines = (...rows: string[]) => rows.join('\n')
 
@@ -45,5 +45,27 @@ describe('normalizeQuotes', () => {
     const code = lines('```', '>> x', 'y<<', '```')
     expect(normalizeQuotes(code)).toBe(code)
     expect(normalizeQuotes('> الف\r\n> ب')).toBe([`> ${ITEMS_MARKER}`, '>', '> الف', '>', '> ب'].join('\r\n'))
+  })
+})
+
+describe('normalizeQuotes: long quotes (>$)', () => {
+  it('marks a single >$ quote', () => {
+    expect(normalizeQuotes('>$ متن طولانی')).toBe(lines(`> ${LONG_MARKER}`, '>', '> متن طولانی'))
+  })
+
+  it('puts consecutive >$ lines into one box, each collapsible', () => {
+    expect(normalizeQuotes(lines('>$ اول', '>$ دوم'))).toBe(
+      lines(`> ${ITEMS_MARKER}`, '>', `> ${LONG_MARKER}`, '>', '> اول', '>', `> ${LONG_MARKER}`, '>', '> دوم'),
+    )
+  })
+
+  it('lets >$ and > mix', () => {
+    expect(normalizeQuotes(lines('> کوتاه', '>$ بلند'))).toBe(
+      lines(`> ${ITEMS_MARKER}`, '>', '> کوتاه', '>', `> ${LONG_MARKER}`, '>', '> بلند'),
+    )
+  })
+
+  it('does not mistake `> $5` for a long quote', () => {
+    expect(normalizeQuotes('> $5 تومان')).toBe('> $5 تومان')
   })
 })
