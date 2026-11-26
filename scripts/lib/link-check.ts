@@ -8,6 +8,8 @@ import remarkParse from 'remark-parse'
 import { visit } from 'unist-util-visit'
 import { parseBlog, projectRoot, validateAliasUniqueness } from './blog.ts'
 import { collections, type CollectionId } from './collections.ts'
+import { markClosingHeadings, removeClosingHeadings } from '../../src/lib/closingHeadings.ts'
+import { parseVideoHash } from '../../src/lib/videoLink.ts'
 
 export interface ArticleRoute {
   collection: CollectionId
@@ -124,6 +126,9 @@ function nodeText(node: unknown): string {
 export function extractHeadingIds(markdown: string): Set<string> {
   const body = matter(markdown.replace(/^\uFEFF/, '')).content
   const tree = MARKDOWN_LINK_PROCESSOR.parse(body)
+  // A repeated heading that only marks the end of a section is not rendered, so it has no id either.
+  markClosingHeadings(tree)
+  removeClosingHeadings(tree)
   const slugger = new GithubSlugger()
   const ids = new Set<string>()
   visit(tree, 'heading', (node) => {
@@ -341,7 +346,8 @@ export function classifyLink(link: ContentLink, routes: RouteTable): LinkVerdict
       ...(suggestion ? { suggestion } : {}),
     }
   }
-  if (fragment) {
+  // `#t=2m30s&v=2` points at a moment of a video, not at a heading.
+  if (fragment && !parseVideoHash(fragment)) {
     const headings = route.article?.headings.get(route.page ?? '')
     if (!headings?.has(fragment)) {
       return { kind: 'error', reason: `heading fragment "${fragment}" does not exist`, ...(route.canonical ? { suggestion: route.canonical } : {}) }

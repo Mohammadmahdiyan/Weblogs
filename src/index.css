@@ -397,6 +397,18 @@
   color: inherit;
 }
 
+/* The link icon beside a heading (MarkdownRenderer): a phone has no hover, so it is always faintly there;
+   stories show no such icon (the address would be the page the story is on). */
+@media (hover: none) {
+  .md-heading-link {
+    display: inline-flex !important;
+    opacity: 0.55;
+  }
+}
+.story-md .md-heading-link {
+  display: none !important;
+}
+
 @keyframes article-heading-flash {
   0%,
   100% {

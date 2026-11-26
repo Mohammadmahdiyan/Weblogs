@@ -13,7 +13,9 @@ import {
 import { createPortal } from 'react-dom'
 import { clsx } from 'clsx'
 import { Copy, ExternalLink, Link2, Quote } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { copyToClipboard } from '../lib/clipboard'
 import { createMarkdownProcessor, type MarkdownComponents } from '../lib/markdown'
 import { withMdxErrorBoundary } from '../lib/mdx-component'
 import {
@@ -54,6 +56,33 @@ import { confirmAdultAccess, isAdultConfirmed, rejectAdultAccess } from '../lib/
 type HeadingTag = 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
 type HeadingProps = ComponentPropsWithoutRef<'h2'> & { id?: string }
 
+/** The link icon next to a heading: copies the address of this very heading (page + `#id`) and goes there. */
+function HeadingLink({ id }: { id: string }) {
+  const navigate = useNavigate()
+  async function copy() {
+    const address = `${window.location.origin}${window.location.pathname}#${encodeURIComponent(id)}`
+    try {
+      await copyToClipboard({ html: '', text: address })
+      toast.success('پیوند این عنوان کپی شد.')
+    } catch (error) {
+      console.error('Copying the heading link failed:', error)
+      toast.error('کپی کردن پیوند با شکست مواجه شد.')
+    }
+    navigate({ hash: id }, { replace: true })
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => void copy()}
+      aria-label="کپی پیوند به این عنوان"
+      title="کپی پیوند به این عنوان"
+      className="md-heading-link absolute -start-6 top-1 hidden cursor-pointer border-0 bg-transparent p-0 text-[var(--text-muted)] group-focus-within:inline-flex group-hover:inline-flex"
+    >
+      <Link2 aria-hidden="true" className="size-4" />
+    </button>
+  )
+}
+
 function createHeading(tag: HeadingTag) {
   return function Heading({ id, children, className, ...props }: HeadingProps) {
     const Tag = tag
@@ -62,15 +91,7 @@ function createHeading(tag: HeadingTag) {
         <Tag id={id} className={clsx('scroll-mt-24 text-start', className)} {...props}>
           {children}
         </Tag>
-        {id && (
-          <Link
-            to={`#${id}`}
-            aria-label="پیوند به این عنوان"
-            className="absolute -start-6 top-1 hidden text-[var(--text-muted)] group-focus-within:inline-flex group-hover:inline-flex"
-          >
-            <Link2 aria-hidden="true" className="size-4" />
-          </Link>
-        )}
+        {id && <HeadingLink id={id} />}
       </div>
     )
   }

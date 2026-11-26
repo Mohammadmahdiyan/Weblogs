@@ -25,6 +25,8 @@ import { HiddenArticlePage } from './HiddenArticlePage'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
 import { resolveHeadingTarget } from '../lib/headingTarget'
+import { parseVideoHash } from '../lib/videoLink'
+import { VIDEO_SELECTOR, openAncestors, seekToVideo } from '../lib/videoSeek'
 
 interface FolderPageData {
   title: string
@@ -260,7 +262,8 @@ export function ArticlePage({
   }, [article, adultConfirmed, articleBodies, bodyKey, pageNumber, pageMeta])
 
   useEffect(() => {
-    if (!markdown || !location.hash) return
+    // `#t=2m30s&v=2` is a link to a moment of a video, handled by the effect below, not a heading.
+    if (!markdown || !location.hash || parseVideoHash(location.hash)) return
     let finished = false
     let flashTimeout = 0
     const fragment = location.hash.slice(1)
@@ -284,6 +287,8 @@ export function ArticlePage({
         : null
       if (!target || finished) return
       finished = true
+      // A heading inside a closed accordion / spoiler is opened first, or there would be nothing to scroll to.
+      openAncestors(target)
       target.scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth', block: 'start' })
       target.classList.remove('article-heading-flash')
       void target.offsetWidth
@@ -305,6 +310,34 @@ export function ArticlePage({
       })
     }
   }, [bodyKey, location.hash, markdown])
+
+  // A link to a moment of a video (`#t=2m30s`, `#t=2:30&v=2`): go to that video on this page and play it from there.
+  // `location.key` changes with every followed link, so following the same link again plays it again.
+  useEffect(() => {
+    const link = parseVideoHash(location.hash)
+    const body = bodyRef.current
+    if (!markdown || !link || !body) return
+    let finished = false
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const attempt = () => {
+      const target = body.querySelectorAll<HTMLElement>(VIDEO_SELECTOR)[link.index]
+      if (!target || finished) return
+      finished = true
+      observer.disconnect()
+      window.clearTimeout(deadline)
+      openAncestors(target)
+      target.scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth', block: 'center' })
+      seekToVideo(target, link.seconds)
+    }
+    const observer = new MutationObserver(attempt)
+    observer.observe(body, { childList: true, subtree: true })
+    const deadline = window.setTimeout(() => observer.disconnect(), 5000)
+    attempt()
+    return () => {
+      window.clearTimeout(deadline)
+      observer.disconnect()
+    }
+  }, [bodyKey, location.hash, location.key, markdown])
 
   if (!article)
     return collection.hidden.includes(slug) ? <HiddenArticlePage slug={slug} basePath={route} /> : <NotFoundPage />

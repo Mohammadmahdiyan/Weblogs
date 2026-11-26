@@ -18,6 +18,7 @@ import {
   youtubePoster,
   type EmbedProvider,
 } from '../../lib/embed'
+import { VIDEO_SEEK_EVENT } from '../../lib/videoSeek'
 
 type Flag = boolean | string | undefined
 
@@ -50,6 +51,8 @@ interface ResolvedEmbed {
   minHeight?: number
   isVideo: boolean
   needsFacade: boolean
+  /** The frame's address when it must start at `seconds` and play at once (a link to a moment of the video). */
+  startAt?: (seconds: number) => string
 }
 
 const LOAD_TIMEOUT_MS = 8000
@@ -87,6 +90,7 @@ function resolveEmbed(props: SafeEmbedProps): ResolvedEmbed | null {
     return {
       provider, iframeSrc: youtubeEmbedUrl(id, start), sourceUrl: `https://www.youtube.com/watch?v=${id}`,
       poster: youtubePoster(id), ratio, isVideo: true, needsFacade: true,
+      startAt: (seconds) => youtubeEmbedUrl(id, seconds, true),
     }
   }
 
@@ -179,6 +183,8 @@ function EmbedFrame({ props, resolved }: { props: SafeEmbedProps; resolved: Reso
   const [timedOut, setTimedOut] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [posterFailed, setPosterFailed] = useState(false)
+  /** A link to a moment of this video was followed: the frame is opened (again) at that moment. */
+  const [seek, setSeek] = useState<{ src: string; token: number } | null>(null)
 
   const fallbackOnly = flag(props.fallbackOnly)
   const host = hostOf(resolved.iframeSrc) || hostOf(resolved.sourceUrl) || 'سایت میزبان'
@@ -186,9 +192,26 @@ function EmbedFrame({ props, resolved }: { props: SafeEmbedProps; resolved: Reso
   const allowed = relative || resolved.provider !== 'other' || isHostAllowed(host, siteConfig.embedAllowlist)
   const title = props.title || props.caption || host
   const sandbox = buildSandbox(resolved.iframeSrc, flag(props.allowForms))
-  const allow = resolved.isVideo ? 'fullscreen; picture-in-picture; encrypted-media' : undefined
+  const allow = resolved.isVideo ? 'autoplay; fullscreen; picture-in-picture; encrypted-media' : undefined
   const mount = !fallbackOnly && !timedOut && (resolved.needsFacade ? activated : inView)
   const fixedHeight = cleanHeight(props.height)
+  const frameSrc = seek?.src ?? resolved.iframeSrc
+  const startAt = resolved.startAt
+
+  useEffect(() => {
+    const figure = figureRef.current
+    if (!figure || !startAt) return
+    const onSeek = (event: Event) => {
+      const seconds = (event as CustomEvent<{ seconds: number }>).detail?.seconds
+      if (typeof seconds !== 'number') return
+      setSeek((previous) => ({ src: startAt(seconds), token: (previous?.token ?? 0) + 1 }))
+      setActivated(true)
+      setLoaded(false)
+      setTimedOut(false)
+    }
+    figure.addEventListener(VIDEO_SEEK_EVENT, onSeek)
+    return () => figure.removeEventListener(VIDEO_SEEK_EVENT, onSeek)
+  }, [startAt])
 
   useEffect(() => {
     if (!allowed && import.meta.env.DEV) {
@@ -224,7 +247,7 @@ function EmbedFrame({ props, resolved }: { props: SafeEmbedProps; resolved: Reso
   const facadeLabel = resolved.isVideo ? `پخش ویدیو: ${title}` : `نمایش محتوا: ${title}`
 
   return (
-    <figure ref={figureRef} className="not-prose my-6 overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-strong)] bg-[var(--surface-alt)] text-[var(--text)]">
+    <figure ref={figureRef} data-video-embed={resolved.isVideo ? resolved.provider : undefined} className="not-prose my-6 overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-strong)] bg-[var(--surface-alt)] text-[var(--text)]">
       {!allowed && (
         <div role="note" className="border-b border-[var(--border-light)] bg-[color-mix(in_srgb,var(--warn)_12%,transparent)] px-4 py-2 text-start text-xs text-[var(--text)]">
           محتوای خارجی · {host}
@@ -247,8 +270,9 @@ function EmbedFrame({ props, resolved }: { props: SafeEmbedProps; resolved: Reso
         ) : mount ? (
           <>
             <iframe
+              key={seek?.token ?? 0}
               title={title}
-              src={resolved.iframeSrc}
+              src={frameSrc}
               loading="lazy"
               referrerPolicy="strict-origin-when-cross-origin"
               sandbox={sandbox}
@@ -297,7 +321,7 @@ function EmbedFrame({ props, resolved }: { props: SafeEmbedProps; resolved: Reso
       </div>
 
       {props.caption && <figcaption className="border-t border-[var(--border-light)] px-4 py-2 text-start text-sm text-[var(--text-secondary)]">{props.caption}</figcaption>}
-      {expanded && <ExpandDialog src={resolved.iframeSrc} title={title} allow={allow} sandbox={sandbox} onClose={() => setExpanded(false)} />}
+      {expanded && <ExpandDialog src={frameSrc} title={title} allow={allow} sandbox={sandbox} onClose={() => setExpanded(false)} />}
     </figure>
   )
 }

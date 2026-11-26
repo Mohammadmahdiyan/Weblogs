@@ -54,9 +54,10 @@ export function parseYouTubeStartFromUrl(input: string | undefined | null): numb
   return parseStart(url.searchParams.get('t') ?? url.searchParams.get('start'))
 }
 
-export function youtubeEmbedUrl(id: string, start?: number): string {
+export function youtubeEmbedUrl(id: string, start?: number, autoplay = false): string {
   const params = new URLSearchParams({ rel: '0', modestbranding: '1' })
   if (start && start > 0) params.set('start', String(start))
+  if (autoplay) params.set('autoplay', '1')
   return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`
 }
 
