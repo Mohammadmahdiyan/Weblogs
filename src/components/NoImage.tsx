@@ -1,4 +1,5 @@
-import { useId, type CSSProperties } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
+import { createSkyEvent, crossing, type SkyActor } from '../lib/skyEvents'
 
 /** The animation delay of one star / tree / sparkle (read by the CSS as `--d`). */
 const delay = (seconds: number): CSSProperties => ({ '--d': `${seconds}s` }) as CSSProperties
@@ -36,12 +37,33 @@ const RAYS = Array.from({ length: 12 }, (_, index) => {
 /**
  * The picture shown where an article has no image: a mountain landscape that follows the site's theme.
  * By day the sun's light swells and fades, its rays turn slowly, clouds drift and the trees sway; by night (the
- * dark theme) stars twinkle, the moon glows, clouds drift and a crow now and then flies across the sky.
- * Only CSS animations (src/index.css, `.no-image …`); with "reduce motion" switched on nothing moves.
+ * dark theme) stars twinkle and the moon glows. In both, clouds and crows cross the sky from one side to the other,
+ * so slowly that it goes unnoticed at first glance; what crosses is picked at random each time (one to three clouds,
+ * one to three crows, or a cloud with a crow: src/lib/skyEvents.ts). The movement is CSS (src/index.css, `.no-image …`);
+ * with "reduce motion" switched on nothing moves.
  */
 export function NoImage({ className = '' }: { className?: string }) {
   const uid = useId().replace(/:/g, '')
   const id = (name: string) => `${uid}-${name}`
+
+  // The first event is already under way when the picture appears. When everything of an event has crossed,
+  // after a pause the next, different event begins.
+  const [event, setEvent] = useState(() => ({ id: 0, actors: createSkyEvent(Math.random, true) }))
+  const finished = useRef(0)
+  const pause = useRef(0)
+  useEffect(() => () => window.clearTimeout(pause.current), [])
+
+  function onActorEnd() {
+    finished.current += 1
+    if (finished.current < event.actors.length) return
+    pause.current = window.setTimeout(
+      () => {
+        finished.current = 0
+        setEvent((previous) => ({ id: previous.id + 1, actors: createSkyEvent() }))
+      },
+      3000 + Math.random() * 9000,
+    )
+  }
 
   return (
     <div role="img" aria-label="تصویر پیش‌فرض مقاله" className={`no-image aspect-video w-full overflow-hidden ${className}`}>
@@ -83,7 +105,7 @@ export function NoImage({ className = '' }: { className?: string }) {
             <circle cx="486" cy="104" r="61" fill="none" stroke={color('sun')} strokeWidth="1.5" opacity=".38" />
           </g>
 
-          {/* ── night: stars, the moon and a crow */}
+          {/* ── night: stars and the moon */}
           <g className="no-image-night">
             <g fill={color('star')}>
               {STARS.map(([x, y, r, starDelay]) => (
@@ -99,31 +121,18 @@ export function NoImage({ className = '' }: { className?: string }) {
               <circle cx="500" cy="118" r="6" />
               <circle cx="494" cy="88" r="3.5" />
             </g>
-
-            {/* The crow: one pass across the sky, with a wave in its flight and flapping wings. */}
-            <g className="ni-crow-path">
-              <g transform="translate(700 98)">
-                <g className="ni-crow-bob">
-                  <g fill="#06090d" stroke="rgba(175,193,210,.45)" strokeWidth=".6" strokeLinejoin="round">
-                    <path d="M8 0 16 -2.6 15 2.4Z" />
-                    <ellipse cx="0" cy="0" rx="9.5" ry="3.8" />
-                    <circle cx="-10.5" cy="-1.6" r="3.1" />
-                    <path d="M-13.2 -2.4 -19 -0.9 -13.2 0.2Z" />
-                    <path className="ni-wing" d="M-2 -1C2 -11 10 -16 21 -16 15 -10 13 -5 12 1Z" />
-                  </g>
-                </g>
-              </g>
-            </g>
           </g>
 
-          {/* ── clouds, by day and by night */}
-          <g className="ni-cloud-a">
-            <path d="M75 112c0-9 7-16 16-16 3-11 13-18 25-18 13 0 24 9 26 21 9 1 16 8 16 17H75z" fill={color('cloud')} opacity=".62" />
-            <path d="M91 124h55" fill="none" stroke={color('cloud')} strokeWidth="2" strokeLinecap="round" opacity=".54" />
+          {/* ── what passes through the sky: clouds and crows, chosen at random, crossing very slowly */}
+          <g>
+            {event.actors.map((actor, index) => (
+              <SkyActorShape key={`${event.id}-${index}`} actor={actor} onEnd={onActorEnd} />
+            ))}
           </g>
-          <g className="ni-cloud-b">
-            <path d="M334 91c0-7 6-13 13-13 2-9 10-15 20-15 11 0 19 7 21 17 7 1 12 6 12 13h-66z" fill={color('cloud')} opacity=".45" />
-            <path d="M351 102h35" fill="none" stroke={color('cloud')} strokeWidth="2" strokeLinecap="round" opacity=".54" />
+          {/* With "reduce motion" nothing travels: two clouds stand still instead. */}
+          <g className="ni-still-cloud" fill={color('cloud')}>
+            <path d="M75 112c0-9 7-16 16-16 3-11 13-18 25-18 13 0 24 9 26 21 9 1 16 8 16 17H75z" opacity=".6" />
+            <path d="M334 91c0-7 6-13 13-13 2-9 10-15 20-15 11 0 19 7 21 17 7 1 12 6 12 13h-66z" opacity=".45" />
           </g>
 
           {/* ── the land */}
@@ -179,5 +188,51 @@ export function NoImage({ className = '' }: { className?: string }) {
         </g>
       </svg>
     </div>
+  )
+}
+
+// A cloud, shaped around its own middle so that `y` is where it floats.
+const CLOUD_SHAPES = [
+  'M0 16c0-9 7-16 16-16 3-11 13-18 25-18 13 0 24 9 26 21 9 1 16 8 16 17z',
+  'M0 13c0-7 6-13 13-13 2-9 10-15 20-15 11 0 19 7 21 17 7 1 12 6 12 13z',
+] as const
+
+/** One cloud or crow crossing the picture once (the movement itself is the CSS animation `ni-cross`). */
+function SkyActorShape({ actor, onEnd }: { actor: SkyActor; onEnd: () => void }) {
+  const { from, to } = crossing(actor)
+  const style = {
+    '--from': `${from}px`,
+    '--to': `${to}px`,
+    animationDuration: `${actor.duration}s`,
+    animationDelay: `${actor.delay}s`,
+  } as CSSProperties
+
+  return (
+    <g
+      className="ni-actor"
+      style={style}
+      onAnimationEnd={(animation) => {
+        if (animation.target === animation.currentTarget) onEnd()
+      }}
+    >
+      {actor.kind === 'cloud' ? (
+        <g transform={`translate(0 ${actor.y}) scale(${actor.scale})`} fill={color('cloud')} opacity={actor.opacity}>
+          <path d={CLOUD_SHAPES[actor.shape]} />
+        </g>
+      ) : (
+        // The crow faces left; one that flies to the right is mirrored.
+        <g transform={`translate(0 ${actor.y}) scale(${actor.direction === 1 ? -actor.scale : actor.scale} ${actor.scale})`}>
+          <g className="ni-crow-bob" style={{ animationDelay: `${-actor.flapOffset * 2}s` }}>
+            <g fill="#06090d" stroke="rgba(175,193,210,.45)" strokeWidth=".6" strokeLinejoin="round">
+              <path d="M8 0 16 -2.6 15 2.4Z" />
+              <ellipse cx="0" cy="0" rx="9.5" ry="3.8" />
+              <circle cx="-10.5" cy="-1.6" r="3.1" />
+              <path d="M-13.2 -2.4 -19 -0.9 -13.2 0.2Z" />
+              <path className="ni-wing" style={{ animationDelay: `${-actor.flapOffset}s` }} d="M-2 -1C2 -11 10 -16 21 -16 15 -10 13 -5 12 1Z" />
+            </g>
+          </g>
+        </g>
+      )}
+    </g>
   )
 }

@@ -774,12 +774,6 @@ body {
     ni-turn 90s linear infinite,
     ni-rays-pulse 5s ease-in-out infinite;
 }
-.ni-cloud-a {
-  animation: ni-drift 16s ease-in-out infinite alternate;
-}
-.ni-cloud-b {
-  animation: ni-drift 22s ease-in-out infinite alternate-reverse;
-}
 .ni-tree {
   transform-origin: 50% 100%;
   animation: ni-sway 4.6s ease-in-out infinite;
@@ -793,16 +787,30 @@ body {
   animation: ni-twinkle 2.6s ease-in-out infinite;
   animation-delay: var(--d, 0s);
 }
-.no-image svg .ni-crow-path {
-  transform-box: view-box;
-  animation: ni-fly 22s linear infinite;
-}
 .ni-crow-bob {
-  animation: ni-bob 3.4s ease-in-out infinite;
+  animation: ni-bob 5s ease-in-out infinite;
+}
+/* A cloud or a crow crossing the picture once, from --from to --to, at a constant, very slow pace (NoImage.tsx). */
+.no-image svg .ni-actor {
+  animation-name: ni-cross;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+}
+.ni-still-cloud {
+  display: none;
+}
+@keyframes ni-cross {
+  from {
+    transform: translateX(var(--from));
+  }
+  to {
+    transform: translateX(var(--to));
+  }
 }
 .ni-wing {
   transform-origin: 0% 100%;
-  animation: ni-flap 0.6s ease-in-out infinite;
+  animation: ni-flap 1.1s ease-in-out infinite;
 }
 @keyframes ni-breathe {
   0%,
@@ -829,14 +837,6 @@ body {
     opacity: 0.65;
   }
 }
-@keyframes ni-drift {
-  from {
-    transform: translateX(-30px);
-  }
-  to {
-    transform: translateX(36px);
-  }
-}
 @keyframes ni-sway {
   0%,
   100% {
@@ -853,16 +853,6 @@ body {
   }
   50% {
     opacity: 1;
-  }
-}
-/* One pass of the crow from the right edge to the left, then a pause off-screen. */
-@keyframes ni-fly {
-  0% {
-    transform: translateX(0);
-  }
-  65%,
-  100% {
-    transform: translateX(-820px);
   }
 }
 @keyframes ni-bob {
@@ -887,9 +877,12 @@ body {
   .no-image svg * {
     animation: none !important;
   }
-  /* The crow would stand still in the middle of the sky: keep it out of the picture. */
-  .ni-crow-path {
+  /* Nothing may cross the sky: two still clouds take its place. */
+  .ni-actor {
     display: none;
+  }
+  .ni-still-cloud {
+    display: inline;
   }
 }
 
