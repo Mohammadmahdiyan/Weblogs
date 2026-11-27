@@ -750,6 +750,182 @@ body {
   cursor: copy;
 }
 
+/* ───────────── the picture for an article without an image (NoImage.tsx): day and night, each with a little motion */
+.no-image-night {
+  display: none;
+}
+.dark .no-image-day {
+  display: none;
+}
+.dark .no-image-night {
+  display: inline;
+}
+.no-image svg * {
+  transform-box: fill-box;
+}
+.ni-glow {
+  transform-origin: center;
+  animation: ni-breathe 5s ease-in-out infinite;
+}
+.no-image svg .ni-rays {
+  transform-box: view-box;
+  transform-origin: 486px 104px;
+  animation:
+    ni-turn 90s linear infinite,
+    ni-rays-pulse 5s ease-in-out infinite;
+}
+.ni-cloud-a {
+  animation: ni-drift 16s ease-in-out infinite alternate;
+}
+.ni-cloud-b {
+  animation: ni-drift 22s ease-in-out infinite alternate-reverse;
+}
+.ni-tree {
+  transform-origin: 50% 100%;
+  animation: ni-sway 4.6s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+.ni-star {
+  animation: ni-twinkle 3.2s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+.ni-spark {
+  animation: ni-twinkle 2.6s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+.no-image svg .ni-crow-path {
+  transform-box: view-box;
+  animation: ni-fly 22s linear infinite;
+}
+.ni-crow-bob {
+  animation: ni-bob 3.4s ease-in-out infinite;
+}
+.ni-wing {
+  transform-origin: 0% 100%;
+  animation: ni-flap 0.6s ease-in-out infinite;
+}
+@keyframes ni-breathe {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.1);
+  }
+}
+@keyframes ni-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ni-rays-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+@keyframes ni-drift {
+  from {
+    transform: translateX(-30px);
+  }
+  to {
+    transform: translateX(36px);
+  }
+}
+@keyframes ni-sway {
+  0%,
+  100% {
+    transform: rotate(-1.6deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
+  }
+}
+@keyframes ni-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* One pass of the crow from the right edge to the left, then a pause off-screen. */
+@keyframes ni-fly {
+  0% {
+    transform: translateX(0);
+  }
+  65%,
+  100% {
+    transform: translateX(-820px);
+  }
+}
+@keyframes ni-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes ni-flap {
+  0%,
+  100% {
+    transform: rotate(-30deg);
+  }
+  50% {
+    transform: rotate(34deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .no-image svg * {
+    animation: none !important;
+  }
+  /* The crow would stand still in the middle of the sky: keep it out of the picture. */
+  .ni-crow-path {
+    display: none;
+  }
+}
+
+/* ───────────── an image that is still loading (ImageWithFallback.tsx): a pale box with a picture mark and a shimmer */
+img.image-loading {
+  background-color: var(--surface-alt);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgb%28140%2C146%2C156%29' stroke-opacity='.85' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Ccircle cx='9' cy='10' r='1.6'/%3E%3Cpath d='m21 16-5-5-8 8'/%3E%3C/svg%3E"),
+    linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--surface-strong) 75%, transparent) 50%, transparent 70%);
+  background-repeat: no-repeat, no-repeat;
+  background-position:
+    center,
+    200% 0;
+  background-size:
+    min(2.5rem, 45%),
+    200% 100%;
+  animation: image-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes image-shimmer {
+  from {
+    background-position:
+      center,
+      200% 0;
+  }
+  to {
+    background-position:
+      center,
+      -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  img.image-loading {
+    animation: none;
+  }
+}
+
 /* The box under selected article text: copy as a Telegram link / Markdown link / plain text (SelectionCopyMenu.tsx). */
 .selection-menu {
   position: absolute;
