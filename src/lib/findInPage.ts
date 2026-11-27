@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { normalizeWithMap, type NormalizedText } from './normalize'
 import { QUOTE_EXPAND_EVENT } from './quotes'
+import type { TextAnchor } from './textLink'
 
 const HIGHLIGHT_NAME = 'search-hit'
 /** How long the found text stays highlighted before the colour fades away. */
@@ -99,16 +100,6 @@ export function locateText(root: Element, query: string, occurrence = 0, endQuer
 const ANCHOR_WHOLE_MAX = 200
 const ANCHOR_START = 120
 const ANCHOR_END = 60
-
-/** Where a piece of the article is, in the words `?find=` / `&e=` / `&n=` understand (see `locateText`). */
-export interface TextAnchor {
-  /** The passage (or, for a long one, its beginning). */
-  find: string
-  /** The end of a long passage. */
-  end?: string
-  /** 0-based: which occurrence of `find` on the page it is. */
-  occurrence: number
-}
 
 /**
  * Describes where `range` (something the reader selected inside `root`) is, so that `locateText` finds the same

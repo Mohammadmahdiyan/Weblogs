@@ -1,4 +1,3 @@
-import type { TextAnchor } from './findInPage.ts'
 import { FIND_END_PARAM, FIND_INDEX_PARAM, FIND_PARAM } from './contentSearch.ts'
 
 /**
@@ -11,6 +10,16 @@ import { FIND_END_PARAM, FIND_INDEX_PARAM, FIND_PARAM } from './contentSearch.ts
 /** A longer selection is shown shortened with "..." in the link text, unless the reader asks for the whole text. */
 export const LABEL_MAX_LENGTH = 50
 export const ELLIPSIS = '...'
+
+/** Where a piece of the article is, in the words `?find=` / `&e=` / `&n=` understand (see `locateText`). */
+export interface TextAnchor {
+  /** The passage (or, for a long one, its beginning). */
+  find: string
+  /** The end of a long passage. */
+  end?: string
+  /** 0-based: which occurrence of `find` on the page it is. */
+  occurrence: number
+}
 
 const squash = (value: string) => value.replace(/\s+/g, ' ').trim()
 

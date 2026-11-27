@@ -102,9 +102,17 @@ export function buildSummaryPrompt(url: string, kind: SummaryKind): string {
 
 const STORAGE_KEY = 'summary-ai'
 
+/** Only the two calls used: this file is also compiled by the Node-side TypeScript project, which has no DOM types. */
+interface KeyValueStore {
+  getItem(key: string): string | null
+  setItem(key: string, value: string): void
+}
+
+const store = (): KeyValueStore | undefined => (globalThis as unknown as { localStorage?: KeyValueStore }).localStorage
+
 export function readSummaryAi(): SummaryAi | undefined {
   try {
-    return summaryAiById(localStorage.getItem(STORAGE_KEY))
+    return summaryAiById(store()?.getItem(STORAGE_KEY))
   } catch {
     return undefined
   }
@@ -112,7 +120,7 @@ export function readSummaryAi(): SummaryAi | undefined {
 
 export function saveSummaryAi(id: SummaryAiId): void {
   try {
-    localStorage.setItem(STORAGE_KEY, id)
+    store()?.setItem(STORAGE_KEY, id)
   } catch {
     // Private mode: the choice just is not remembered.
   }
