@@ -21,6 +21,7 @@ import { Basmala } from '../components/Basmala'
 import { IncompleteNotice } from '../components/IncompleteNotice'
 import { TelegramCopy } from '../components/TelegramCopy'
 import { SelectionCopyMenu } from '../components/SelectionCopyMenu'
+import { SummaryButton } from '../components/SummaryButton'
 import { HiddenArticlePage } from './HiddenArticlePage'
 import { NotFoundPage } from './NotFoundPage'
 import { confirmAdultAccess, useAdultAccess } from '../lib/adultAccess'
@@ -414,6 +415,10 @@ export function ArticlePage({
               )}
             </nav>
             {collectionId === 'books' && <BookSearch bookSlug={slug} pages={article.pages} />}
+          </div>
+
+          <div className="mb-5">
+            <SummaryButton url={pageUrl} kind={collectionId === 'books' ? 'books' : 'media'} />
           </div>
 
           {pageNumber === undefined ? (

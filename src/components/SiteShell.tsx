@@ -10,6 +10,7 @@ import type { ArticleMeta } from '../lib/types'
 import { useAdultAccess } from '../lib/adultAccess'
 import { useDismissibleDetails } from '../lib/useDismissibleDetails'
 import { StoryButton } from './Stories'
+import { ScrollToTopButton } from './ScrollToTopButton'
 import storiesJson from '../generated/stories.json'
 import { pickStory, type StoriesData } from '../lib/story'
 
@@ -296,6 +297,7 @@ export function SiteShell({ children, articles }: { children: ReactNode; article
       <Header />
       {children}
       <Footer articles={articles} />
+      <ScrollToTopButton />
     </div>
   )
 }

@@ -193,6 +193,15 @@
   box-shadow: 0 5px 18px rgb(0 0 0 / 10%);
 }
 
+/* bold text: the Vazir bold file is only slightly heavier than the regular one, so on its own it hardly stands
+   out. A faint brand tint and a hairline of extra stroke make it clearly bolder (tint: --bold-tint, stroke: --bold-stroke). */
+.blog-scope .article-body :is(strong, b) {
+  font-weight: 800;
+  color: color-mix(in srgb, var(--brand-dark) var(--bold-tint, 38%), var(--text));
+  -webkit-text-stroke: var(--bold-stroke, 0.03em) currentColor;
+  paint-order: stroke fill;
+}
+
 /* a link inside a quote: a soft tinted chip with an underline, so it stands out from the tinted card */
 .blog-scope .article-body .md-quote a {
   padding: 0.05em 0.4em;

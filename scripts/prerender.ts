@@ -1,18 +1,19 @@
 /*
-  Meta-only prerender, run after `vite build`.
+  Prerender, run after `vite build`.
   For every article it writes dist/<category>/<path>/index.html: a copy of dist/index.html
   with the article's <title>, description, canonical, Open Graph / Twitter tags,
   JSON-LD, the <h1> and a short description inside #root and in <noscript>.
+  The article TEXT (headings, paragraphs, quotes …) follows inside #root as plain HTML
+  (scripts/lib/static-body.ts), so crawlers and AI assistants that do not run JavaScript, like
+  the ones behind the «summarize with AI» button, can read the whole page.
   The SPA still boots and replaces the static markup normally.
-
-  Limitation: the article BODY is not prerendered (only title + description), so
-  crawlers that do not run JavaScript see the h1 and summary, not the full text.
 */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import siteConfig from '../src/site.config.ts'
 import type { ArticleMeta } from '../src/lib/types.ts'
+import { readStaticBody, renderStaticBody } from './lib/static-body.ts'
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distRoot = path.join(projectRoot, 'dist')
@@ -102,12 +103,23 @@ async function main(): Promise<void> {
           .filter(Boolean)
           .join('\n    ')
 
-        const staticMarkup = `<main id="main-content" class="prerender"><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.description)}</p></main>`
+        const shortMarkup = `<main id="main-content" class="prerender"><h1>${escapeHtml(article.title)}</h1><p>${escapeHtml(article.description)}</p></main>`
+        // The text itself goes in #root only (not again in <noscript>), as plain HTML for readers without JavaScript.
+        let bodyHtml = ''
+        try {
+          const markdown = await readStaticBody(target.route, item.slug, variant.sub === '' ? undefined : Number(variant.sub))
+          if (markdown) bodyHtml = await renderStaticBody(markdown)
+        } catch (error) {
+          console.warn(`prerender: the text of ${target.route}/${item.slug} could not be rendered:`, error)
+        }
+        const staticMarkup = bodyHtml
+          ? shortMarkup.replace(/<\/main>$/, () => `<article dir="${item.dir ?? 'rtl'}" lang="${item.lang ?? 'fa'}">${bodyHtml}</article></main>`)
+          : shortMarkup
         const html = template
-          .replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeHtml(title)}</title>\n    ${head}`)
+          .replace(/<title>[\s\S]*?<\/title>/, () => `<title>${escapeHtml(title)}</title>\n    ${head}`)
           .replace(
             /<div id="root">[\s\S]*<\/div>(?=\s*(?:<script[^>]*><\/script>\s*)*<\/body>)/,
-            `<div id="root">${staticMarkup}</div>\n  <noscript>${staticMarkup}</noscript>`,
+            () => `<div id="root">${staticMarkup}</div>\n  <noscript>${shortMarkup}</noscript>`,
           )
         if (!html.includes('class="prerender"'))
           throw new Error('prerender: could not find <div id="root"> in dist/index.html')
