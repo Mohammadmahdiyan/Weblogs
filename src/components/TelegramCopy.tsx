@@ -4,7 +4,7 @@ import { ToastContainer, toast } from 'react-toastify'
 import { copyToClipboard, isTouchDevice } from '../lib/clipboard'
 import { telegramFromMarkdown, telegramPart, type TelegramOptions, type TelegramPartKind, type TelegramPayload } from '../lib/telegram'
 
-/** Telegram on phones takes only the plain text, which has no typed markup for quotes: wrap them in « … » there. */
+/** Telegram on phones has no way to paste a quote (it drops the HTML <blockquote>, and has no typed markup for one): wrap quotes in « … » there, in both halves of the clipboard. */
 const telegramOptions = (): TelegramOptions => ({ plainQuote: isTouchDevice() ? 'guillemets' : 'marker' })
 
 const PART_LABEL: Record<TelegramPartKind, string> = { section: 'بخش', quote: 'نقل‌قول' }

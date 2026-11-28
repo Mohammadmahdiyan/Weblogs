@@ -49,10 +49,15 @@ describe('telegramFromMarkdown', () => {
 })
 
 describe('plainQuote for phones', () => {
-  it('wraps a quote in « … » instead of starting each line with >, and keeps the HTML quote', () => {
+  it('wraps a quote in « … » instead of starting each line with >, in the plain text and in the HTML', () => {
     const { text, html } = telegramFromMarkdown('پیش\n\n> نقل **مهم**\n\nپس', { plainQuote: 'guillemets' })
     expect(text).toBe('پیش\n\n«نقل **مهم**»\n\nپس')
-    expect(html).toContain('<blockquote>نقل <b>مهم</b></blockquote>')
+    expect(html).toContain('«نقل <b>مهم</b>»')
+    expect(html).not.toContain('<blockquote>')
+  })
+
+  it('keeps the real <blockquote> in the HTML by default (desktop)', () => {
+    expect(telegramFromMarkdown('> نقل **مهم**').html).toContain('<blockquote>نقل <b>مهم</b></blockquote>')
   })
 
   it('keeps several paragraphs of one quote inside one pair of « »', () => {

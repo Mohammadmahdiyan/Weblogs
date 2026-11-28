@@ -4,8 +4,8 @@ export interface ClipboardPayload {
 }
 
 /**
- * Phones and tablets. Telegram on these devices pastes only the plain half of the clipboard (it ignores the HTML
- * half), so what is copied there must read well as plain text.
+ * Phones and tablets. Telegram there does not turn a pasted HTML `<blockquote>` into a quote (and it has no typed
+ * markup for one), so what is copied must still read well when the quote marking is gone (see `plainQuote`).
  */
 export function isTouchDevice(): boolean {
   if (typeof navigator === 'undefined') return false

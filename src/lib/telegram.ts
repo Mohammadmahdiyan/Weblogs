@@ -32,8 +32,11 @@ export interface TelegramOptions {
    * How a quote is written in the PLAIN text.
    *  - `marker` (default): every line starts with `> `. Telegram Desktop turns the HTML into a real quote, so this
    *    only shows in plain-text places.
-   *  - `guillemets`: the quote is wrapped in « … ». Telegram on phones ignores the HTML half of the clipboard and
-   *    has no typed markup for quotes, so a `>` would stay as a stray character there; «…» reads naturally.
+   *  - `guillemets`: the quote is wrapped in « … », in the plain text AND in the HTML. Telegram on phones has no
+   *    typed markup for quotes, and what it takes from the clipboard (the HTML half on Android, the plain half
+   *    elsewhere) keeps bold / italic / links but drops a `<blockquote>` without a trace, so a quote would lose all
+   *    sign of being one; «…» survives either way and reads naturally. (A real quote can be made afterwards from
+   *    Telegram's own menu: select the text → Quote.)
    */
   plainQuote?: 'marker' | 'guillemets'
 }
@@ -454,16 +457,17 @@ function inlineHtml(item: Inline): string {
   return `<${item.kind}>${inner}</${item.kind}>`
 }
 
-function blockHtml(block: Block): string {
+function blockHtml(block: Block, quote: TelegramOptions['plainQuote']): string {
   if (block.kind === 'text') return block.content.map(inlineHtml).join('')
   if (block.kind === 'pre') return `<pre>${escapeHtml(block.text)}</pre>`
-  return `<blockquote>${joinHtml(block.blocks)}</blockquote>`
+  const inner = joinHtml(block.blocks, quote)
+  return quote === 'guillemets' ? `«${inner}»` : `<blockquote>${inner}</blockquote>`
 }
 
-function joinHtml(blocks: Block[]): string {
+function joinHtml(blocks: Block[], quote: TelegramOptions['plainQuote']): string {
   return blocks
     .map((block, index) => {
-      const html = blockHtml(block)
+      const html = blockHtml(block, quote)
       if (index === 0) return html
       // A quote already ends its own line, so one <br> is enough around it.
       const single = block.kind === 'quote' || blocks[index - 1].kind === 'quote'
@@ -530,7 +534,8 @@ function payloadOf(blocks: Block[], options: TelegramOptions = {}): TelegramPayl
   const meaningful = blocks.filter(
     (block) => block.kind !== 'text' || block.content.some((item) => typeof item !== 'string' || item.trim() !== ''),
   )
-  return { html: joinHtml(meaningful), text: joinText(meaningful, options.plainQuote ?? 'marker').trim() }
+  const quote = options.plainQuote ?? 'marker'
+  return { html: joinHtml(meaningful, quote), text: joinText(meaningful, quote).trim() }
 }
 
 // ───────────────────────────── public API
