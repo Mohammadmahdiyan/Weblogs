@@ -39,6 +39,44 @@ export interface TelegramOptions {
    *    Telegram's own menu: select the text → Quote.)
    */
   plainQuote?: 'marker' | 'guillemets'
+  /**
+   * `false`: a copy with no link in it at all, for groups that delete messages with links. Links keep only their
+   * words, pictures / videos / sounds only their labels, the «view the source» link is left out, and a bare
+   * address written in the text is removed.
+   */
+  links?: boolean
+  /**
+   * The address of the page being copied (no fragment). A link such as `#section` or `#t=2m30s` only works inside
+   * its own page, so it is made `<page address>#section`; without this it cannot be linked and keeps only its words.
+   */
+  pageUrl?: string
+}
+
+// What the current copy is asked for. Set by the public functions at the bottom, for the length of one conversion.
+const context: { links: boolean; pageUrl: string | null } = { links: true, pageUrl: null }
+
+function withContext<T>(options: TelegramOptions, run: () => T): T {
+  const previous = { ...context }
+  context.links = options.links !== false
+  context.pageUrl = options.pageUrl ? options.pageUrl.split('#')[0] : null
+  try {
+    return run()
+  } finally {
+    Object.assign(context, previous)
+  }
+}
+
+/** A bare address in the text, for a copy without links. */
+const BARE_ADDRESS = /(?:https?:\/\/|www\.)[^\s<>()«»]+/gi
+
+/** Removing an address can leave two spaces side by side: close them up (in a copy without links only). */
+const tidy = (value: string): string => (context.links ? value : value.replace(/[ \t]{2,}/g, ' '))
+
+function withoutAddresses(value: string): string {
+  return value
+    .replace(BARE_ADDRESS, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
 }
 
 export type TelegramPartKind = 'section' | 'quote'
@@ -122,9 +160,11 @@ function writeHonorifics(value: string): string {
 }
 
 function absoluteUrl(href: string): string | null {
+  if (!context.links) return null
+  if (href.startsWith('#')) return context.pageUrl && href.length > 1 ? `${context.pageUrl}${href}` : null
   if (/^https?:\/\//i.test(href) || /^(tg|mailto):/i.test(href)) return href
   if (href.startsWith('/') && !href.startsWith('//')) return `${siteConfig.siteUrl.replace(/\/$/, '')}${href}`
-  return null // `#section`, `./file`, `javascript:` … cannot work inside Telegram
+  return null // `./file`, `javascript:` … cannot work inside Telegram
 }
 
 /** Plain text of the article: mini-text keeps its words; a `{name}` sticker disappears, a typed emoji stays as the emoji. */
@@ -195,7 +235,8 @@ function pictureHref(url: string): string | null {
 function mediaOf(url: string, fallback: string, kind?: MediaKind): Inline {
   const name = fileName(url) || fallback
   const media: MediaKind = kind ?? (VIDEO_FILE.test(name) ? 'video' : AUDIO_FILE.test(name) ? 'audio' : 'image')
-  const href = media === 'image' ? pictureHref(url) : null
+  // Every kind can be opened from its address: the label of a picture, a video or a sound is a link to the file.
+  const href = context.links ? pictureHref(url) : null
   return { kind: 'media', media, name, ...(href ? { href } : {}) }
 }
 
@@ -390,7 +431,7 @@ function blocksOf(node: MdNode): Block[] {
         const head = [node.attributes?.site, title, node.attributes?.ref].filter(Boolean).join(' · ')
         const heading: Inline[] = head ? [bold(head)] : []
         const url = node.attributes?.url
-        if (url && /^https?:\/\//i.test(url)) {
+        if (context.links && url && /^https?:\/\//i.test(url)) {
           if (heading.length > 0) heading.push(' · ')
           heading.push({ kind: 'a', href: url, children: ['مشاهده در منبع'] })
         }
@@ -446,19 +487,19 @@ function mediaLabel(item: { media: MediaKind; name: string; number?: number }): 
 }
 
 function inlineHtml(item: Inline): string {
-  if (typeof item === 'string') return escapeHtml(item).replace(/\n/g, '<br>')
+  if (typeof item === 'string') return escapeHtml(context.links ? item : withoutAddresses(item)).replace(/\n/g, '<br>')
   if (item.kind === 'media') {
     const label = escapeHtml(mediaLabel(item))
-    return item.href ? `<a href="${escapeAttribute(item.href)}">${label}</a>` : label
+    return item.href && context.links ? `<a href="${escapeAttribute(item.href)}">${label}</a>` : label
   }
   const inner = item.children.map(inlineHtml).join('')
-  if (item.kind === 'a') return `<a href="${escapeAttribute(item.href)}">${inner}</a>`
+  if (item.kind === 'a') return context.links ? `<a href="${escapeAttribute(item.href)}">${inner}</a>` : inner
   if (item.kind === 'spoiler') return `<tg-spoiler>${inner}</tg-spoiler>`
   return `<${item.kind}>${inner}</${item.kind}>`
 }
 
 function blockHtml(block: Block, quote: TelegramOptions['plainQuote']): string {
-  if (block.kind === 'text') return block.content.map(inlineHtml).join('')
+  if (block.kind === 'text') return tidy(block.content.map(inlineHtml).join(''))
   if (block.kind === 'pre') return `<pre>${escapeHtml(block.text)}</pre>`
   const inner = joinHtml(block.blocks, quote)
   return quote === 'guillemets' ? `«${inner}»` : `<blockquote>${inner}</blockquote>`
@@ -479,11 +520,12 @@ function joinHtml(blocks: Block[], quote: TelegramOptions['plainQuote']): string
 const MARKERS = { b: '**', i: '__', s: '~~', code: '`', spoiler: '||' } as const
 
 function inlineText(item: Inline): string {
-  if (typeof item === 'string') return item
-  if (item.kind === 'media') return mediaLabel(item)
+  if (typeof item === 'string') return context.links ? item : withoutAddresses(item)
+  // Plain text cannot hide an address behind words (Telegram on a phone pastes only this half), so it follows them.
+  if (item.kind === 'media') return item.href && context.links ? `${mediaLabel(item)} (${item.href})` : mediaLabel(item)
   const inner = item.children.map(inlineText).join('')
   if (item.kind === 'u') return inner
-  if (item.kind === 'a') return inner.trim() === item.href ? item.href : `${inner} (${item.href})`
+  if (item.kind === 'a') return !context.links ? inner : inner.trim() === item.href ? item.href : `${inner} (${item.href})`
   // Telegram only understands the markers when they touch the words, so spaces are moved outside them.
   const parts = /^(\s*)([\s\S]*?)(\s*)$/.exec(inner) as RegExpExecArray
   const marker = MARKERS[item.kind]
@@ -491,7 +533,7 @@ function inlineText(item: Inline): string {
 }
 
 function blockText(block: Block, quote: TelegramOptions['plainQuote']): string {
-  if (block.kind === 'text') return block.content.map(inlineText).join('')
+  if (block.kind === 'text') return tidy(block.content.map(inlineText).join(''))
   if (block.kind === 'pre') return `\`\`\`\n${block.text}\n\`\`\``
   const inner = joinText(block.blocks, quote)
   if (quote === 'guillemets') return `«${inner.trim()}»`
@@ -542,7 +584,7 @@ function payloadOf(blocks: Block[], options: TelegramOptions = {}): TelegramPayl
 
 /** The whole article. */
 export function telegramFromMarkdown(markdown: string, options: TelegramOptions = {}): TelegramPayload {
-  return payloadOf(blocksOf(parse(markdown)), options)
+  return withContext(options, () => payloadOf(blocksOf(parse(markdown)), options))
 }
 
 /** Block types a click can copy: headings and quotes (they carry `data-src`, see `remarkSourceOffsets` in markdown.ts). */
@@ -569,6 +611,14 @@ export function telegramPart(
   markdown: string,
   offset: number,
   options: TelegramOptions = {},
+): { payload: TelegramPayload; kind: TelegramPartKind } | null {
+  return withContext(options, () => partOf(markdown, offset, options))
+}
+
+function partOf(
+  markdown: string,
+  offset: number,
+  options: TelegramOptions,
 ): { payload: TelegramPayload; kind: TelegramPartKind } | null {
   const found = locate(parse(markdown), offset)
   if (!found) return null

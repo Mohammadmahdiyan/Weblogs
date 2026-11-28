@@ -117,22 +117,18 @@ describe('enters and images', () => {
   it('writes a picture as «عکس» (never its file name or alt text); a video or sound keeps its file name', () => {
     expect(telegramFromMarkdown('![عکس پروژه](./17hazar-in-qadir-top-site.png)').text).toBe('عکس')
     expect(telegramFromMarkdown('![](./photos/my%20pic.png?v=2)').text).toBe('عکس')
-    expect(telegramFromMarkdown('![](https://cdn.steadylink.io/a/0cf9f84a-67ab-4786-8f51-eb98a6a4b2f8)').text).toBe(
-      'عکس',
-    )
     expect(telegramFromMarkdown('![](./a.mp4)').text).toBe('a.mp4')
     expect(telegramFromMarkdown('::video{link="./clip.mp4", cover="./c.jpg"}').text).toBe('clip.mp4')
-    expect(telegramFromMarkdown('::audio{link="https://example.com/x/music.mp3"}').text).toBe('music.mp3')
   })
 
   it('names several pictures «عکس اول»، «عکس دوم»، «عکس سوم»', () => {
-    const three = '![](https://example.com/a)\n![](https://example.com/b)\n![](https://example.com/c)'
+    const three = '![](a.png)\n![](b.png)\n![](c.png)'
     expect(telegramFromMarkdown(three).text).toBe('عکس اول\nعکس دوم\nعکس سوم')
     expect(telegramFromMarkdown('متن\n\n![](a.png)\n\nمتن دو\n\n![](b.png)').text).toBe(
       'متن\n\nعکس اول\n\nمتن دو\n\nعکس دوم',
     )
     expect(telegramFromMarkdown('![](a.png)\n\n::video{link="v.mp4"}').text).toBe('عکس\n\nv.mp4')
-    const many = Array.from({ length: 21 }, (_, index) => `![](https://example.com/${index})`).join('\n')
+    const many = Array.from({ length: 21 }, (_, index) => `![](${index}.png)`).join('\n')
     expect(telegramFromMarkdown(many).text.split('\n').slice(-2)).toEqual([
       'عکس بیستم',
       `عکس ${(21).toLocaleString('fa-IR')}`,
@@ -147,9 +143,60 @@ describe('enters and images', () => {
     expect(telegramFromMarkdown('![](./a.png)').html).toBe('عکس')
   })
 
+  it('links a video and a sound to their files as well, and writes the address after the label in the plain text', () => {
+    const video = telegramFromMarkdown('::video{link="https://example.com/x/clip.mp4"}')
+    expect(video.html).toBe('<a href="https://example.com/x/clip.mp4">clip.mp4</a>')
+    expect(video.text).toBe('clip.mp4 (https://example.com/x/clip.mp4)')
+    expect(telegramFromMarkdown('::audio{link="https://example.com/m.mp3"}').html).toBe('<a href="https://example.com/m.mp3">m.mp3</a>')
+    expect(telegramFromMarkdown('![](https://example.com/a)').text).toBe('عکس (https://example.com/a)')
+  })
+
   it('turns --- into a long line of dashes and `--- text ---` into a line with the text in the middle', () => {
     const line = '-'.repeat(42)
     expect(telegramFromMarkdown('الف\n\n---\n\nب').text).toBe(`الف\n\n${line}\n\nب`)
     expect(telegramFromMarkdown('--- سلام دنیا ---').text).toBe(`${'-'.repeat(14)} سلام دنیا ${'-'.repeat(14)}`)
+  })
+})
+
+describe('links inside the page (pageUrl)', () => {
+  const pageUrl = 'https://example.com/Weblogs/media/a/b'
+
+  it('makes #section and #t=… links work from outside the page', () => {
+    const { html, text } = telegramFromMarkdown('[بخش](#دلیل-پاسخ) و [دقیقه](#t=2m30s)', { pageUrl })
+    expect(html).toContain(`<a href="${pageUrl}#دلیل-پاسخ">بخش</a>`)
+    expect(html).toContain(`<a href="${pageUrl}#t=2m30s">دقیقه</a>`)
+    expect(text).toContain(`بخش (${pageUrl}#دلیل-پاسخ)`)
+  })
+
+  it('without a page address such a link keeps only its words', () => {
+    expect(telegramFromMarkdown('[بخش](#x)').html).toBe('بخش')
+  })
+})
+
+describe('links: false (a copy for groups)', () => {
+  const options = { links: false }
+
+  it('keeps only the words of a link, and no address anywhere', () => {
+    const { html, text } = telegramFromMarkdown('ببین [اینجا](https://example.com/a) را', options)
+    expect(html).toBe('ببین اینجا را')
+    expect(text).toBe('ببین اینجا را')
+  })
+
+  it('writes pictures, videos and sounds as labels only', () => {
+    const { html, text } = telegramFromMarkdown('![](https://example.com/a.png)\n\n::video{link="https://example.com/c.mp4"}', options)
+    expect(html).toBe('عکس<br><br>c.mp4')
+    expect(text).toBe('عکس\n\nc.mp4')
+  })
+
+  it('removes an address that is written in the text, and the source link of a source card', () => {
+    expect(telegramFromMarkdown('منبع: https://example.com/x/y دیگر', options).text).toBe('منبع: دیگر')
+    const card = telegramFromMarkdown(':::source{site="سایت" title="عنوان" url="https://example.com/s"}\nمتن\n:::', options)
+    expect(card.text).not.toContain('http')
+    expect(card.text).not.toContain('مشاهده در منبع')
+  })
+
+  it('does not leak into the next copy', () => {
+    telegramFromMarkdown('[a](https://example.com)', options)
+    expect(telegramFromMarkdown('[a](https://example.com)').html).toBe('<a href="https://example.com">a</a>')
   })
 })

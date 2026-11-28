@@ -462,7 +462,7 @@ export function ArticlePage({
             {markdown !== null && <MarkdownRenderer markdown={markdown} className="[&_h2]:scroll-mt-24" />}
           </div>
 
-          {markdown !== null && <TelegramCopy markdown={markdown} bodyRef={bodyRef} />}
+          {markdown !== null && <TelegramCopy markdown={markdown} bodyRef={bodyRef} pageUrl={pageUrl} />}
           {markdown !== null && <SelectionCopyMenu bodyRef={bodyRef} articleUrl={pageUrl} />}
 
           {/* `sources:` of the frontmatter: one closed accordion at the end of the article (for a book: of its introduction). */}

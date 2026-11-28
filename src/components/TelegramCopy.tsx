@@ -1,11 +1,15 @@
 import { useEffect, type RefObject } from 'react'
-import { Copy } from 'lucide-react'
+import { Copy, Link2Off } from 'lucide-react'
 import { ToastContainer, toast } from 'react-toastify'
 import { copyToClipboard, isTouchDevice } from '../lib/clipboard'
 import { telegramFromMarkdown, telegramPart, type TelegramOptions, type TelegramPartKind, type TelegramPayload } from '../lib/telegram'
 
 /** Telegram on phones has no way to paste a quote (it drops the HTML <blockquote>, and has no typed markup for one): wrap quotes in « … » there, in both halves of the clipboard. */
-const telegramOptions = (): TelegramOptions => ({ plainQuote: isTouchDevice() ? 'guillemets' : 'marker' })
+const telegramOptions = (pageUrl: string, links = true): TelegramOptions => ({
+  plainQuote: isTouchDevice() ? 'guillemets' : 'marker',
+  pageUrl,
+  links,
+})
 
 const PART_LABEL: Record<TelegramPartKind, string> = { section: 'بخش', quote: 'نقل‌قول' }
 
@@ -35,7 +39,16 @@ function outermostQuote(element: Element): HTMLElement | null {
  * The text keeps bold / italic / underline / strike / mono / spoiler / quote / links (HTML for pasting into
  * Telegram, plus Telegram's own markup as plain text).
  */
-export function TelegramCopy({ markdown, bodyRef }: { markdown: string; bodyRef: RefObject<HTMLElement | null> }) {
+export function TelegramCopy({
+  markdown,
+  bodyRef,
+  pageUrl,
+}: {
+  markdown: string
+  bodyRef: RefObject<HTMLElement | null>
+  /** The article's own address: it makes links such as `#section` work once pasted into Telegram. */
+  pageUrl: string
+}) {
   useEffect(() => {
     const body = bodyRef.current
     if (!body) return
@@ -50,9 +63,10 @@ export function TelegramCopy({ markdown, bodyRef }: { markdown: string; bodyRef:
       if (!element || !body.contains(element)) return
 
       try {
-        const part = telegramPart(markdown, Number(element.dataset.src), telegramOptions())
+        // Holding Shift while clicking copies the part without any link (for groups that delete them).
+        const part = telegramPart(markdown, Number(element.dataset.src), telegramOptions(pageUrl, !event.shiftKey))
         if (!part) throw new Error(`No copyable block starts at offset ${element.dataset.src}.`)
-        void copy(part.payload, `«${PART_LABEL[part.kind]}»`)
+        void copy(part.payload, `«${PART_LABEL[part.kind]}»${event.shiftKey ? ' (بدون لینک)' : ''}`)
       } catch (error) {
         console.error('Converting the part for Telegram failed:', error)
         toast.error('کپی کردن متن با شکست مواجه شد. دلیلش در کنسول مرورگر نوشته شده است.')
@@ -61,11 +75,11 @@ export function TelegramCopy({ markdown, bodyRef }: { markdown: string; bodyRef:
 
     body.addEventListener('click', onClick)
     return () => body.removeEventListener('click', onClick)
-  }, [markdown, bodyRef])
+  }, [markdown, bodyRef, pageUrl])
 
-  function copyArticle() {
+  function copyArticle(links: boolean) {
     try {
-      void copy(telegramFromMarkdown(markdown, telegramOptions()), 'متن مقاله')
+      void copy(telegramFromMarkdown(markdown, telegramOptions(pageUrl, links)), links ? 'متن مقاله' : 'متن مقاله (بدون لینک)')
     } catch (error) {
       console.error('Converting the article for Telegram failed:', error)
       toast.error('کپی کردن متن با شکست مواجه شد. دلیلش در کنسول مرورگر نوشته شده است.')
@@ -74,15 +88,24 @@ export function TelegramCopy({ markdown, bodyRef }: { markdown: string; bodyRef:
 
   return (
     <>
-      <div className="not-prose mt-10 flex">
+      <div className="not-prose mt-10 flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={copyArticle}
+          onClick={() => copyArticle(true)}
           title="کپی متن مقاله برای تلگرام (با کلیک روی هر عنوان یا نقل‌قول هم فقط همان بخش کپی می‌شود)"
           className="md-button inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--brand)] px-5 py-2 text-sm font-semibold text-[var(--brand-foreground)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]"
         >
           <Copy aria-hidden="true" className="size-4" />
           کپی متن مقاله
+        </button>
+        <button
+          type="button"
+          onClick={() => copyArticle(false)}
+          title="همان متن، ولی بدون هیچ لینک و آدرسی؛ برای گروه‌هایی که پیام دارای لینک را پاک می‌کنند (با Shift+کلیک روی عنوان یا نقل‌قول هم فقط همان بخش بدون لینک کپی می‌شود)"
+          className="md-button inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface)] px-5 py-2 text-sm font-semibold text-[var(--text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--info)]"
+        >
+          <Link2Off aria-hidden="true" className="size-4" />
+          کپی بدون لینک (برای گروه‌ها)
         </button>
       </div>
       <ToastContainer position="bottom-center" rtl newestOnTop limit={3} autoClose={4000} />
